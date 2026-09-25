@@ -46,13 +46,19 @@ services:
       # ── Django core ────────────────────────────────────────────────────
       - DJANGO_SECRET_KEY=CHANGE_ME_GENERATE_RANDOM   # Secret key | Any random string | ⚠ CHANGE THIS
       - DJANGO_DEBUG=False                            # Debug mode | true, false | Default: False
-      - DJANGO_ALLOWED_HOSTS=localhost,127.0.0.1      # Comma-separated hosts | e.g. darts.example.com
+      - DJANGO_ALLOWED_HOSTS=localhost,127.0.0.1      # Comma-separated HOSTNAMES only | e.g. darts.example.com — never https://... !
       # - DJANGO_CSRF_TRUSTED_ORIGINS=https://darts.example.com  # behind reverse proxy / HTTPS
+      # - DJANGO_SECURE_PROXY_SSL_HEADER=true                    # trust X-Forwarded-Proto of the proxy | Default: False
       - DJANGO_SECURE_SSL_REDIRECT=false              # HTTP->HTTPS redirect + secure cookies | Default: False
       - DJANGO_SECURE_HSTS_SECONDS=0                  # HSTS max-age (0 disables, e.g. 31536000 = 1 year) | Default: 0
       - DJANGO_LANGUAGE_CODE=de                       # Default language | de, en | Default: de
       - DJANGO_TIME_ZONE=Europe/Berlin                # IANA timezone | Default: Europe/Berlin
       - SQLITE_PATH=data/db.sqlite3                   # SQLite path inside the container | Default: data/db.sqlite3
+      # Owner of the data dir on the HOST (linuxserver convention — the
+      # entrypoint chowns data/ and drops privileges to it). Get the ids with:
+      #   stat -c '%u %g' <data-dir>     (Synology "reserve" user e.g. 1026 100)
+      - PUID=1000                                     # data/ owner uid | Default: 1000
+      - PGID=1000                                     # data/ owner gid | Default: 1000
 
       # ── Bootstrap admin (idempotent; empty password disables) ──────────
       - DJANGO_SUPERUSER_EMAIL=admin@example.com      # Admin login e-mail | Any valid e-mail

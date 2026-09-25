@@ -37,12 +37,20 @@ services:
       # ── Application settings (self-contained) ─────────────────────────
       - DJANGO_SECRET_KEY=CHANGE_ME_random_secret_key          # python -c "import secrets; print(secrets.token_urlsafe(50))"
       - DJANGO_DEBUG=False
-      - DJANGO_ALLOWED_HOSTS=localhost,127.0.0.1
+      - DJANGO_ALLOWED_HOSTS=localhost,127.0.0.1    # hostnames ONLY — never http(s):// !
+      # Behind an HTTPS reverse proxy (Synology DSM / nginx):
+      # - DJANGO_CSRF_TRUSTED_ORIGINS=https://darts.example.com  # scheme + host
+      # - DJANGO_SECURE_PROXY_SSL_HEADER=true                     # trust X-Forwarded-Proto
       - DJANGO_LANGUAGE_CODE=de
       - DJANGO_SECURE_SSL_REDIRECT=false              # HTTP->HTTPS redirect + secure cookies | Default: False
       - DJANGO_SECURE_HSTS_SECONDS=0                  # HSTS max-age (0 disables, e.g. 31536000 = 1 year) | Default: 0
       - DJANGO_TIME_ZONE=Europe/Berlin
       - SQLITE_PATH=data/db.sqlite3
+      # Host-Besitzer von ./data (linuxserver-Konvention — der Entrypoint
+      # chowned die Daten und droppt auf diese Rechte). Synology-Beispiel:
+      #   PUID=1026 (id des Users "reserve")  PGID=100 (Gruppe "users")
+      - PUID=1000                                  # uid des data/-Besitzers | Default: 1000
+      - PGID=1000                                  # gid des data/-Besitzers | Default: 1000
 
       # ── Bootstrap admin (created ONLY when missing from the backup; ──
       #    existing live users are left untouched by `bootstrap`)

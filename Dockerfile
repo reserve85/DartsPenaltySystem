@@ -32,12 +32,13 @@ RUN sed -i 's/\r$//' /app/entrypoint.sh && chmod +x /app/entrypoint.sh \
     && python manage.py collectstatic --noinput \
     && python manage.py compilemessages
 
-# Non-root runtime user; /app/data (SQLite volume) is owned by this user.
+# Non-root runtime user (uid 1000); /app/data (SQLite volume) belongs to it.
+# The image STARTS as root so entrypoint.sh can honor PUID/PGID (chown the
+# data dir to the host owner, then drop privileges via setpriv) — gunicorn
+# itself always runs unprivileged (as PUID/appuser).
 RUN useradd --create-home --uid 1000 appuser \
     && mkdir -p /app/data \
     && chown -R appuser:appuser /app/data
-
-USER appuser
 
 EXPOSE 8000
 

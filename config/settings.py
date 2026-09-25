@@ -151,6 +151,15 @@ X_FRAME_OPTIONS = "DENY"
 SECURE_CONTENT_TYPE_NOSNIFF = True
 SECURE_REFERRER_POLICY = "same-origin"
 
+# Reverse proxy: trust X-Forwarded-Proto when TLS is terminated in front of the
+# app (Synology DSM, nginx, …) so request.is_secure() and the CSRF origin check
+# see the original https:// scheme instead of the container's plain HTTP.
+# Enable ONLY when the proxy always sets (or strips) the header — over direct
+# plain HTTP a client could otherwise spoof it. Default: off.
+SECURE_PROXY_SSL_HEADER = (
+    ("HTTP_X_FORWARDED_PROTO", "https") if env_bool("DJANGO_SECURE_PROXY_SSL_HEADER") else None
+)
+
 # ---------------------------------------------------------------------------
 # Applications
 # ---------------------------------------------------------------------------

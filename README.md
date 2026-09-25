@@ -204,8 +204,10 @@ in-memory e-mail backend automatically.
 **HTTPS hardening** (enable behind a TLS reverse proxy / Portainer):
 `DJANGO_SECURE_SSL_REDIRECT=True` turns on HTTP→HTTPS redirects plus secure
 session/CSRF cookies; `DJANGO_SECURE_HSTS_SECONDS=31536000` enables HSTS once
-the domain is permanently on HTTPS. With both set, `manage.py check --deploy`
-reports zero issues. Always-on: HttpOnly session cookie, `X-Frame-Options:
+the domain is permanently on HTTPS; `DJANGO_SECURE_PROXY_SSL_HEADER=True`
+makes Django trust the proxy's `X-Forwarded-Proto` (TLS terminated at the
+proxy). With all three set, `manage.py check --deploy` reports zero issues.
+Always-on: HttpOnly session cookie, `X-Frame-Options:
 DENY`, nosniff, `Referrer-Policy: same-origin`, strong password validators,
 CSRF/clickjacking protection, explicit form field lists (no mass assignment)
 and an audit entry for every user-initiated mutation.

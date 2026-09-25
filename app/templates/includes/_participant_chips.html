@@ -3,11 +3,12 @@
     <span class="form-label d-block">{{ field.label }}</span>
     {% if field.help_text %}<div class="form-text mb-2">{{ field.help_text }}</div>{% endif %}
     <div id="participant-chips" class="d-flex flex-wrap gap-2 mb-2">
+        {# field.value holds ints (GET initial) or strings (re-posted data after a failed save) — match both #}
         {% for pk, label in field.field.choices %}
             <label class="form-check form-chip">
                 <input type="checkbox" name="{{ field.html_name }}" value="{{ pk }}"
                        class="form-check-input chip-checkbox position-static me-2"
-                       {% if pk in field.value %}checked{% endif %}>
+                       {% if pk in field.value or pk|stringformat:"s" in field.value %}checked{% endif %}>
                 <span class="chip-label">{{ label }}</span>
             </label>
         {% endfor %}

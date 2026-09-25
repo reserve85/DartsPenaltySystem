@@ -1,5 +1,6 @@
 """Matchday tests — create/edit/delete guards, chips validation, scoping."""
 
+import re
 from datetime import date
 
 import pytest
@@ -108,7 +109,7 @@ def test_admin_team_filter(admin_client, team, other_team):
 
 
 def test_admin_sorting(admin_client, team, other_team):
-    """Column headers sort via ?sort=…&dir=…; unknown keys fall back to date."""
+    """Column headers sort via ?sort=…&dir=…; unknown keys fall back to date (ASC)."""
     Matchday.objects.create(team=team, opponent="Zebra", venue="home", date=date(2026, 3, 1))
     Matchday.objects.create(team=team, opponent="Alpha", venue="away", date=date(2026, 1, 1))
     Matchday.objects.create(team=other_team, opponent="Mid", venue="home", date=date(2026, 2, 1))
@@ -125,9 +126,17 @@ def test_admin_sorting(admin_client, team, other_team):
     ]
     assert dates == sorted(dates)
 
-    # default / unknown sort key: date descending
+    # default / unknown sort key: date ascending (oldest first)
     dates = [m.date for m in admin_client.get(url, {"sort": "bogus"}).context["page_obj"]]
-    assert dates == sorted(dates, reverse=True)
+    assert dates == sorted(dates)
+
+
+def test_matchday_list_default_sort_is_ascending(admin_client, team):
+    """Without any query params the oldest matchdays come first (ASC)."""
+    Matchday.objects.create(team=team, opponent="New", venue="home", date=date(2026, 6, 1))
+    Matchday.objects.create(team=team, opponent="Old", venue="home", date=date(2026, 1, 1))
+    page = admin_client.get(reverse("matchdays:matchday_list")).context["page_obj"]
+    assert [m.opponent for m in page] == ["Old", "New"]
 
 
 def test_captain_team_filter_ignored(captain_client, team, other_team):
@@ -174,6 +183,33 @@ def test_inactive_players_not_selectable(admin_client, team):
     participant_qs = response.context["form"].fields["participants"].queryset
     available_names = set(participant_qs.values_list("name", flat=True))
     assert available_names == {"Active"}
+
+
+def test_matchday_edit_prefills_existing_date(admin_client, matchday):
+    """type="date" must receive an ISO value.
+
+    The German locale format (dd.mm.yyyy) is unparseable for the date input,
+    so the browser showed an EMPTY field although the date was stored.
+    """
+    response = admin_client.get(reverse("matchdays:matchday_update", args=[matchday.pk]))
+    assert response.status_code == 200
+    assert 'value="2026-09-24"' in str(response.context["form"]["date"])
+
+
+def test_matchday_edit_keeps_participants_checked_after_error(admin_client, matchday_with_players):
+    """Chips must stay checked when the save fails (e.g. empty date).
+
+    Otherwise the next submit sends no participants and dies with
+    "This field is required." while the user only wanted to assign players.
+    """
+    md, players = matchday_with_players(3)
+    data = _form_data(md.team, players, md_date="")  # date missing -> form error
+    response = admin_client.post(reverse("matchdays:matchday_update", args=[md.pk]), data)
+    assert response.status_code == 200
+    assert "date" in response.context["form"].errors
+    html = response.content.decode()
+    for p in players:
+        assert re.search(rf'value="{p.pk}"[^>]*checked', html), f"chip for {p.name} lost its state"
 
 
 # ---------------------------------------------------------------------------

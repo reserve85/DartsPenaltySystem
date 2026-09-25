@@ -130,6 +130,17 @@ def test_player_nav_only_shows_user_pages(player_client):
     assert "nav-sep" not in content
 
 
+def test_navbar_follows_color_mode(db):
+    """The navbar must adapt to light/dark mode — no hardcoded black bar."""
+    content = Client().get(reverse("account_login")).content.decode()
+    assert 'class="navbar navbar-expand-lg bg-body-secondary sticky-top"' in content
+    assert "navbar-dark" not in content  # was the reason for the black menu in light mode
+    assert "bg-dark" not in content
+    # Django strips only SINGLE-line {# ... #} comments — a multi-line one would
+    # leak into the page as visible text.
+    assert "{#" not in content
+
+
 def test_dashboard_links_team_name_to_financial_overview(admin_client, team):
     """No 'Open' button — the team name itself opens the financial overview."""
     content = admin_client.get(reverse("dashboard:index")).content.decode()

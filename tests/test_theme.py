@@ -4,6 +4,8 @@ import pytest
 from django.test import Client
 from django.urls import reverse
 
+from app.core.choices import THEME_COOKIE_NAME
+
 pytestmark = pytest.mark.django_db
 
 
@@ -72,3 +74,56 @@ def test_language_switcher_renders_for_everyone(db):
     assert reverse("set_language") in html
     assert 'name="language" value="de"' in html
     assert 'name="language" value="en"' in html
+
+
+# ---------------------------------------------------------------------------
+# Flash-free rendering (dark mode must be dark from the first painted frame)
+# ---------------------------------------------------------------------------
+
+
+def test_head_resolves_theme_before_stylesheet(db):
+    """The choice must be resolved inline in <head>, before the stylesheet.
+
+    Bootstrap only knows ``light``/``dark``, so a server-rendered ``auto``
+    would paint the LIGHT theme first and flash bright on every page change
+    until theme.js (end of <body>) runs.
+    """
+    html = Client().get(reverse("account_login")).content.decode()
+    head = html.split("</head>")[0]
+    # Earliest bytes carry the dark-canvas hints (meta for Chrome/FF, inline
+    # style for browsers that ignore the meta — e.g. Safari).
+    assert head.index('name="color-scheme"') < head.index('name="viewport"')
+    assert ":root { color-scheme: dark light; }" in head
+    resolver = 'root.getAttribute("data-theme-choice")'
+    assert resolver in head  # inline pre-paint resolver is present
+    assert head.index(resolver) < head.index("bootstrap.min.css")
+    # …and it paints the canvas explicitly while the CSS is still loading.
+    assert "root.style.backgroundColor" in head
+
+
+def test_anonymous_theme_cookie_is_rendered(db):
+    """The dpm_theme cookie keeps an anonymous toggle across page changes."""
+    client = Client()
+    client.cookies[THEME_COOKIE_NAME] = "dark"
+    html = client.get(reverse("account_login")).content.decode()
+    assert 'data-bs-theme="dark"' in html
+    assert 'data-theme-choice="dark"' in html
+
+
+def test_invalid_theme_cookie_falls_back_to_auto(db):
+    client = Client()
+    client.cookies[THEME_COOKIE_NAME] = "neon"
+    html = client.get(reverse("account_login")).content.decode()
+    assert 'data-bs-theme="auto"' in html
+    assert 'data-theme-choice="auto"' in html
+
+
+def test_account_preference_wins_over_theme_cookie(admin_user):
+    admin_user.preferred_theme = "light"
+    admin_user.save(update_fields=["preferred_theme"])
+    client = Client()
+    client.force_login(admin_user)
+    client.cookies[THEME_COOKIE_NAME] = "dark"
+    html = client.get(reverse("dashboard:index")).content.decode()
+    assert 'data-bs-theme="light"' in html
+    assert 'data-theme-choice="light"' in html

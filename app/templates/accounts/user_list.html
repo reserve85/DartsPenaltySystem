@@ -17,6 +17,7 @@
         <thead>
         <tr>
             <th>{% translate "Email" %}</th>
+            <th>{% translate "Linked player" %}</th>
             <th>{% translate "Role" %}</th>
             <th>{% translate "Team" %}</th>
             <th>{% translate "Status" %}</th>
@@ -28,6 +29,11 @@
         {% for user in users %}
             <tr>
                 <td>{{ user.email }}</td>
+                <td>
+                    {% if user.player_link %}
+                        <a href="{% url 'players:player_detail' user.player_link.pk %}">{{ user.player_link.name }}</a>
+                    {% else %}<span class="text-muted">–</span>{% endif %}
+                </td>
                 <td>
                     {% if user.role %}<span class="badge text-bg-secondary">{{ user.role|capfirst }}</span>
                     {% else %}<span class="text-muted">–</span>{% endif %}
@@ -58,7 +64,7 @@
                 </td>
             </tr>
         {% empty %}
-            <tr><td colspan="6" class="text-center text-muted py-4">{% translate "No users yet." %}</td></tr>
+            <tr><td colspan="7" class="text-center text-muted py-4">{% translate "No users yet." %}</td></tr>
         {% endfor %}
         </tbody>
     </table>

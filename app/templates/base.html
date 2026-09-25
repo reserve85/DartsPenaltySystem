@@ -3,13 +3,40 @@
       {% if request.user.is_authenticated %}data-theme-url="{% url 'accounts:settings_theme' %}"{% endif %}>
 <head>
     <meta charset="utf-8">
+    {# Earliest possible dark canvas: meta (Chrome/FF) + inline style (browsers ignoring the meta) — the navigation gap stays dark before any stylesheet arrives. #}
+    <meta name="color-scheme" content="dark light">
+    <style>:root { color-scheme: dark light; }</style>
     <meta name="viewport" content="width=device-width, initial-scale=1">
+    <script>
+        /* Pre-paint theme resolver — MUST run before the first painted frame.
+         * The server can only send the stored choice ("auto"|"light"|"dark"),
+         * but Bootstrap understands only "light"|"dark": with "auto" the page
+         * would be painted LIGHT first and flash bright on every page change
+         * until theme.js (loaded at the end of <body>) resolves it. Resolving
+         * data-theme-choice here, before the CSS is even parsed, keeps dark
+         * mode dark from the very first frame. color-scheme + an explicit
+         * canvas colour keep the UA background dark as well — even before
+         * (or without) any stylesheet and in browsers ignoring the
+         * color-scheme meta. */
+        (function () {
+            var root = document.documentElement;
+            var choice = root.getAttribute("data-theme-choice") || "auto";
+            var prefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
+            var theme = choice === "auto" ? (prefersDark ? "dark" : "light") : choice;
+            root.setAttribute("data-bs-theme", theme);
+            root.style.colorScheme = theme;
+            // Canvas colour matching Bootstrap's --bs-body-bg — the UA default
+            // is white and would flash bright while the CSS is still loading.
+            root.style.backgroundColor = theme === "dark" ? "#212529" : "#ffffff";
+        })();
+    </script>
     <title>{% block title %}{% translate "Darts Penalty Manager" %}{% endblock %}</title>
     <link rel="stylesheet" href="{% static 'vendor/bootstrap/css/bootstrap.min.css' %}">
     <link rel="stylesheet" href="{% static 'css/style.css' %}">
 </head>
 <body class="d-flex flex-column min-vh-100">
-<nav class="navbar navbar-expand-lg navbar-dark bg-dark sticky-top">
+{# Navbar surface/colors follow data-bs-theme via the Bootstrap .navbar variables (no hardcoded dark bar). #}
+<nav class="navbar navbar-expand-lg bg-body-secondary sticky-top">
     <div class="container">
         <a class="navbar-brand" href="{% url 'dashboard:index' %}">🎯 {% translate "Darts Penalty Manager" %}</a>
         <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#mainNav"

@@ -33,7 +33,7 @@ class MatchdayListView(LoginRequiredMixin, View):
     Captain: own team only (the team parameter is ignored for them).
 
     Columns are sortable via ``?sort=date|venue|opponent|team&dir=asc|desc``
-    (default: date descending, the model's natural order).
+    (default: date ascending — oldest entries first).
     """
 
     template_name = "matchdays/matchday_list.html"
@@ -72,7 +72,8 @@ class MatchdayListView(LoginRequiredMixin, View):
         sort = request.GET.get("sort", "date")
         if sort not in self.sort_fields:
             sort = "date"
-        direction = "asc" if request.GET.get("dir") == "asc" else "desc"
+        # Default ASC — oldest matchdays first; only an explicit ?dir=desc flips it.
+        direction = "desc" if request.GET.get("dir") == "desc" else "asc"
         prefix = "" if direction == "asc" else "-"
         queryset = queryset.order_by(f"{prefix}{self.sort_fields[sort]}", f"{prefix}created_at")
 

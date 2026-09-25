@@ -3,6 +3,7 @@
 from django.conf import settings
 from django.utils import timezone
 
+from app.core.choices import THEME_COOKIE_NAME, ThemeChoice
 from app.core.version import get_version_info
 from app.matchdays.models import Season
 from app.matchdays.services import season_for_request
@@ -52,12 +53,29 @@ def _nav_section(request) -> str:
     return ""
 
 
+def _theme_choice(request) -> str:
+    """Effective theme choice rendered into ``data-theme-choice``.
+
+    Signed-in users get their account preference. Anonymous visitors get the
+    ``dpm_theme`` cookie written by theme.js — their toggle has no POST
+    endpoint — so the next page is already server-rendered in the chosen mode
+    instead of flashing bright while "auto" is resolved client-side.
+    Invalid or missing values fall back to ``auto``.
+    """
+    user = getattr(request, "user", None)
+    if user is not None and user.is_authenticated:
+        return getattr(user, "preferred_theme", None) or "auto"
+    cookie = request.COOKIES.get(THEME_COOKIE_NAME)
+    if cookie in ThemeChoice.values:
+        return cookie
+    return "auto"
+
+
 def site_context(request):
-    theme = "auto"
+    theme = _theme_choice(request)
     seasons = []
     active_season = None
     if getattr(request, "user", None) is not None and request.user.is_authenticated:
-        theme = getattr(request.user, "preferred_theme", "auto") or "auto"
         # ONE query for the dropdown; the active season resolves from the same
         # list (session id -> default flag -> newest) without extra queries.
         seasons = list(Season.objects.order_by("-name"))

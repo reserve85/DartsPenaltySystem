@@ -80,7 +80,11 @@ class MatchdayForm(forms.ModelForm):
             "participants",
         ]
         widgets: ClassVar[dict] = {
-            "date": forms.DateInput(attrs={"type": "date"}),
+            # type="date" strictly requires ISO (YYYY-MM-DD). Without an explicit
+            # format the locale decides (de: dd.mm.yyyy), which the browser cannot
+            # map onto the date input -> it shows an EMPTY field although the date
+            # is stored, and every save then fails with "This field is required."
+            "date": forms.DateInput(attrs={"type": "date"}, format="%Y-%m-%d"),
         }
 
     def __init__(self, *args, user=None, season=None, **kwargs):

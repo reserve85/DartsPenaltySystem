@@ -16,12 +16,19 @@ body {
     font-weight: 600;
 }
 
+/* Navbar follows the active color mode (base.html renders no navbar-dark/
+   bg-dark anymore). The hairline keeps the sticky bar distinguishable from
+   the content behind it — most noticeable on phones with the expanded menu. */
+.navbar {
+    border-bottom: 1px solid var(--bs-border-color);
+}
+
 /* Navigation groups: Übersicht/Finanzen | Team area | Administration */
 .navbar-nav .nav-sep {
     width: 1px;
     align-self: stretch;
     margin: 0.5rem 0.75rem;
-    background-color: rgba(255, 255, 255, 0.35);
+    background-color: rgba(var(--bs-emphasis-color-rgb), 0.15);
 }
 .navbar-nav .nav-link.active {
     font-weight: 600;

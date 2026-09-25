@@ -101,6 +101,19 @@ def test_user_list_permissions(admin_client, captain_client, player_client, clie
     assert client.get(reverse("accounts:user_list")).status_code == 302
 
 
+def test_user_list_shows_linked_player(admin_client, player_user, player):
+    """Column 'Verknüpfter Spieler' — player name + detail link, dash if none."""
+    content = admin_client.get(reverse("accounts:user_list")).content.decode()
+    assert "Verknüpfter Spieler" in content  # header (de is the default language)
+    assert player.name not in content  # not linked yet
+
+    player_user.player_link = player
+    player_user.save(update_fields=["player_link"])
+    content = admin_client.get(reverse("accounts:user_list")).content.decode()
+    assert player.name in content
+    assert reverse("players:player_detail", args=[player.pk]) in content
+
+
 def test_admin_creates_team_admin(admin_client):
     response = admin_client.post(
         reverse("accounts:user_create"),

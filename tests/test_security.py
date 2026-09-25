@@ -50,6 +50,7 @@ def test_security_settings_defaults():
     assert settings.SECURE_REFERRER_POLICY == "same-origin"
     assert settings.SECURE_SSL_REDIRECT is False  # opt-in via env (dev default)
     assert settings.SECURE_HSTS_SECONDS == 0
+    assert settings.SECURE_PROXY_SSL_HEADER is None  # opt-in via env (dev default)
 
 
 def test_clickjacking_header_on_responses():
@@ -63,6 +64,33 @@ def test_ssl_redirect_when_enabled():
     response = Client().get(reverse("account_login"))
     assert response.status_code == 301
     assert response["Location"].startswith("https://")
+
+
+# ---------------------------------------------------------------------------
+# Reverse proxy (Synology DSM / nginx) — host validation & forwarded proto
+# ---------------------------------------------------------------------------
+def test_allowed_hosts_entry_must_not_carry_a_scheme():
+    """Regression: ``https://host`` in ALLOWED_HOSTS never matches the incoming
+    Host header — every request through the reverse proxy died with the plain
+    "Bad Request (400)" page while direct LAN access kept working."""
+    domain = "wildboarspenalty.reserve85.synology.me"
+    with override_settings(ALLOWED_HOSTS=["localhost", "127.0.0.1", domain]):
+        response = Client().get("/", HTTP_HOST=domain)
+        assert response.status_code != 400  # anonymous -> redirect to login
+
+    with override_settings(ALLOWED_HOSTS=[f"https://{domain}"]):
+        response = Client().get("/", HTTP_HOST=domain)
+        assert response.status_code == 400  # the original bug
+
+
+@override_settings(SECURE_PROXY_SSL_HEADER=("HTTP_X_FORWARDED_PROTO", "https"))
+def test_forwarded_proto_marks_request_secure():
+    """TLS terminated at the proxy: X-Forwarded-Proto=https -> secure request
+    (CSRF origin check + secure cookies work for the https:// origin)."""
+    from django.test import RequestFactory
+
+    assert RequestFactory().get("/", HTTP_X_FORWARDED_PROTO="https").is_secure()
+    assert RequestFactory().get("/").is_secure() is False  # plain stays plain
 
 
 # ---------------------------------------------------------------------------
