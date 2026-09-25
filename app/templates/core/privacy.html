@@ -1,0 +1,65 @@
+{% extends "base.html" %}
+{% load i18n %}
+{% block title %}{% translate "Privacy Policy" %} – {% translate "Darts Penalty Manager" %}{% endblock %}
+{% block content %}
+<h1>{% translate "Privacy Policy" %}</h1>
+<div class="card">
+    <div class="card-body">
+        <h2 class="h5">{% translate "1. Responsible Party" %}</h2>
+        <p>
+            {{ CONTACT_COMPANY }}<br>
+            {% if CONTACT_NAME %}{{ CONTACT_NAME }}<br>{% endif %}
+            {% if CONTACT_STREET %}{{ CONTACT_STREET }}<br>{% endif %}
+            {% if CONTACT_CITY %}{{ CONTACT_CITY }}<br>{% endif %}
+            {% if CONTACT_EMAIL %}{% translate "E-mail" %}: <a href="mailto:{{ CONTACT_EMAIL }}">{{ CONTACT_EMAIL }}</a>{% endif %}
+        </p>
+
+        <h2 class="h5">{% translate "2. Data We Collect" %}</h2>
+        <p>{% translate "This application stores the following data to provide its services:" %}</p>
+        <ul>
+            <li>{% translate "User accounts: e-mail address, password hash, role, team assignment and language/theme preferences." %}</li>
+            <li>{% translate "Player and team data: names, team memberships and active status." %}</li>
+            <li>{% translate "Matchday and penalty data: dates, participants, penalties, payments and balances." %}</li>
+            <li>{% translate "Audit logs: who changed which record and when." %}</li>
+            <li>{% translate "Authentication cookies: a secure HttpOnly session cookie is used to keep you logged in." %}</li>
+        </ul>
+
+        <h2 class="h5">{% translate "3. Purpose of Data Processing" %}</h2>
+        <p>{% translate "Data is processed exclusively to operate the club's penalty system, including matchday planning, balances and financial reporting." %}</p>
+
+        <h2 class="h5">{% translate "4. Cookies" %}</h2>
+        <p>{% translate "This website uses the following cookies:" %}</p>
+        <ul>
+            <li>{% translate "Session cookie (HttpOnly):" %} {% translate "Required for login sessions. This cookie is essential and cannot be declined." %}</li>
+            <li>{% translate "CSRF and language cookies:" %} {% translate "Required for secure forms and your language choice. These cookies are essential and cannot be declined." %}</li>
+            <li>{% translate "Cookie consent flag:" %} {% translate "Stored in your browser's localStorage after you confirm the cookie notice. This cookie is essential and cannot be declined." %}</li>
+        </ul>
+        <p>{% translate "No third-party tracking or analytics cookies are used." %}</p>
+
+        <h2 class="h5">{% translate "5. Data Retention" %}</h2>
+        <p>{% translate "Data is retained as long as necessary for the operation of the penalty system. Matchday, penalty and audit records are preserved to maintain a complete financial history." %}</p>
+
+        <h2 class="h5">{% translate "6. Your Rights" %}</h2>
+        <p>{% translate "Under the GDPR, you have the right to:" %}</p>
+        <ul>
+            <li>{% translate "Access your personal data" %}</li>
+            <li>{% translate "Rectify inaccurate data" %}</li>
+            <li>{% translate "Request deletion of your data" %}</li>
+            <li>{% translate "Object to data processing" %}</li>
+            <li>{% translate "Data portability" %}</li>
+        </ul>
+        <p>{% translate "To exercise these rights, please contact us at" %} <a href="mailto:{{ CONTACT_EMAIL }}">{{ CONTACT_EMAIL }}</a>.</p>
+
+        <h2 class="h5">{% translate "7. Data Security" %}</h2>
+        <p>{% translate "We implement appropriate technical and organizational measures to protect your data, including password hashing, CSRF protection, optional HTTPS enforcement and a full audit trail." %}</p>
+
+        <h2 class="h5">{% translate "8. Contact" %}</h2>
+        <p>{% translate "For questions about this privacy policy, please contact:" %}</p>
+        <p>
+            {{ CONTACT_COMPANY }}<br>
+            {% if CONTACT_NAME %}{{ CONTACT_NAME }}<br>{% endif %}
+            {% if CONTACT_EMAIL %}<a href="mailto:{{ CONTACT_EMAIL }}">{{ CONTACT_EMAIL }}</a>{% endif %}
+        </p>
+    </div>
+</div>
+{% endblock %}

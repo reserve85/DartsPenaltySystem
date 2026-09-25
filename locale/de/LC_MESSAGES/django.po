@@ -1,0 +1,2322 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) YEAR THE PACKAGE'S COPYRIGHT HOLDER
+# This file is distributed under the same license as the PACKAGE package.
+# FIRST AUTHOR <EMAIL@ADDRESS>, YEAR.
+# 
+msgid ""
+msgstr ""
+"Project-Id-Version: PACKAGE VERSION\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2026-09-25 12:09+0200\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language-Team: LANGUAGE <LL@li.org>\n"
+"Language: \n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+
+#: .\app\accounts\forms.py:26
+msgid "Admin"
+msgstr "Administrator"
+
+#: .\app\accounts\forms.py:27
+msgid "Captain"
+msgstr "Kapitän"
+
+#: .\app\accounts\forms.py:28 .\app\penalties\forms.py:41
+#: .\app\penalties\forms.py:109
+#: .\app\templates\dashboard\financial_overview.html:64
+#: .\app\templates\dashboard\financial_overview.html:101
+#: .\app\templates\dashboard\financial_overview.html:139
+#: .\app\templates\dashboard\financial_overview.html:199
+#: .\app\templates\matchdays\matchday_detail.html:32
+#: .\app\templates\players\player_form.html:3
+#: .\app\templates\teams\team_detail.html:20
+msgid "Player"
+msgstr "Spieler"
+
+#: .\app\accounts\forms.py:46 .\app\accounts\middleware.py:32
+msgid "Your registration has been declined. Please contact the club."
+msgstr "Ihre Registrierung wurde abgelehnt. Bitte kontaktieren Sie den Verein."
+
+#: .\app\accounts\forms.py:50 .\app\accounts\middleware.py:38
+msgid ""
+"Your account has not been approved by an administrator yet. Please contact "
+"the club."
+msgstr "Ihr Konto wurde noch nicht von einem Administrator freigegeben. Bitte kontaktieren Sie den Verein."
+
+#: .\app\accounts\forms.py:70 .\app\accounts\forms.py:166
+#: .\app\templates\accounts\user_list.html:20
+#: .\app\templates\dashboard\dashboard.html:7
+msgid "Role"
+msgstr "Rolle"
+
+#: .\app\accounts\forms.py:71 .\app\templates\account\login.html:18
+msgid "Password"
+msgstr "Passwort"
+
+#: .\app\accounts\forms.py:72
+msgid "Password confirmation"
+msgstr "Passwortbestätigung"
+
+#: .\app\accounts\forms.py:89 .\app\accounts\forms.py:190
+msgid "A user with this email address already exists."
+msgstr "Ein Benutzer mit dieser E-Mail-Adresse existiert bereits."
+
+#: .\app\accounts\forms.py:95 .\app\accounts\forms.py:196
+msgid "A Captain needs an assigned team."
+msgstr "Ein Kapitän braucht ein zugewiesenes Team."
+
+#: .\app\accounts\forms.py:102
+msgid "The two password fields didn't match."
+msgstr "Die beiden Passwortfelder stimmen nicht überein."
+
+#: .\app\accounts\forms.py:140
+msgid "Existing player"
+msgstr "Bestehender Spieler"
+
+#: .\app\accounts\forms.py:141
+msgid "Optional: link this account to an existing player."
+msgstr "Optional: Dieses Konto mit einem bestehenden Spieler verknüpfen."
+
+#: .\app\accounts\forms.py:146 .\app\templates\players\player_form.html:5
+#: .\app\templates\players\player_list.html:7
+msgid "New player"
+msgstr "Neuer Spieler"
+
+#: .\app\accounts\forms.py:147
+msgid "Optional: create a new player and link it immediately."
+msgstr "Optional: Einen neuen Spieler anlegen und direkt verknüpfen."
+
+#: .\app\accounts\forms.py:160
+msgid "Choose an existing player OR enter a new player name — not both."
+msgstr "Wählen Sie einen bestehenden Spieler ODER geben Sie einen neuen Spielernamen ein — beides zusammen ist nicht möglich."
+
+#: .\app\accounts\managers.py:15
+msgid "The email address must be set"
+msgstr "Die E-Mail-Adresse muss angegeben werden"
+
+#: .\app\accounts\managers.py:33
+msgid "Superuser must have is_staff=True."
+msgstr "Superuser muss is_staff=True haben."
+
+#: .\app\accounts\managers.py:35
+msgid "Superuser must have is_superuser=True."
+msgstr "Superuser muss is_superuser=True haben."
+
+#: .\app\accounts\models.py:26
+#: .\app\templates\emails\account_registered.html:8
+#: .\app\templates\emails\account_registered.txt:7
+msgid "Pending approval"
+msgstr "Wartet auf Freigabe"
+
+#: .\app\accounts\models.py:27 .\app\templates\accounts\approval_form.html:27
+#: .\app\templates\accounts\user_list.html:42
+msgid "Approved"
+msgstr "Freigegeben"
+
+#: .\app\accounts\models.py:28 .\app\templates\accounts\approval_form.html:25
+#: .\app\templates\accounts\user_list.html:40
+msgid "Rejected"
+msgstr "Abgelehnt"
+
+#: .\app\accounts\models.py:33
+msgid "email address"
+msgstr "E-Mail-Adresse"
+
+#: .\app\accounts\models.py:39
+msgid "approval status"
+msgstr "Freigabestatus"
+
+#: .\app\accounts\models.py:44
+msgid "Pending users cannot log in until an admin approves them."
+msgstr "Benutzer in der Warteliste können sich erst nach der Freigabe durch einen Administrator anmelden."
+
+#: .\app\accounts\models.py:53 .\app\matchdays\models.py:84
+#: .\app\penalties\models.py:62 .\app\penalties\models.py:115
+#: .\app\players\models.py:31 .\app\teams\models.py:28
+msgid "team"
+msgstr "Team"
+
+#: .\app\accounts\models.py:54
+msgid "Required for Captain role; ignored for Admin."
+msgstr "Für die Rolle Kapitän erforderlich; bei Admin wird es ignoriert."
+
+#: .\app\accounts\models.py:62
+msgid "linked player"
+msgstr "verknüpfter Spieler"
+
+#: .\app\accounts\models.py:63
+msgid "Optional: lets a Player-role user see their own penalties."
+msgstr ""
+"Optional: erlaubt einem Benutzer mit Spielerrolle, eigene Strafen zu sehen."
+
+#: .\app\accounts\models.py:66
+msgid "preferred language"
+msgstr "bevorzugte Sprache"
+
+#: .\app\accounts\models.py:72
+msgid "preferred theme"
+msgstr "bevorzugtes Design"
+
+#: .\app\accounts\models.py:125 .\app\core\models.py:54
+msgid "user"
+msgstr "Benutzer"
+
+#: .\app\accounts\models.py:126
+msgid "users"
+msgstr "Benutzer"
+
+#: .\app\accounts\views.py:98
+msgid "User rejected."
+msgstr "Benutzer abgelehnt."
+
+#: .\app\accounts\views.py:102
+msgid "Please choose an action."
+msgstr "Bitte wählen Sie eine Aktion."
+
+#: .\app\accounts\views.py:146
+msgid "User approved."
+msgstr "Benutzer freigegeben."
+
+#: .\app\accounts\views.py:160
+msgid "User created."
+msgstr "Benutzer erstellt."
+
+#: .\app\accounts\views.py:186 .\app\accounts\views.py:210
+msgid "You cannot deactivate your own account."
+msgstr "Sie können Ihr eigenes Konto nicht deaktivieren."
+
+#: .\app\accounts\views.py:195
+msgid "You are the only Admin. Give the Admin role to another user first."
+msgstr ""
+"Sie sind der einzige Admin. Weisen Sie zuerst einem anderen Benutzer die "
+"Admin-Rolle zu."
+
+#: .\app\accounts\views.py:200
+msgid "User updated."
+msgstr "Benutzer aktualisiert."
+
+#: .\app\accounts\views.py:215
+msgid "User deactivated."
+msgstr "Benutzer deaktiviert."
+
+#: .\app\accounts\views.py:233
+msgid "Settings saved."
+msgstr "Einstellungen gespeichert."
+
+#: .\app\core\choices.py:6 .\app\templates\includes\_theme_switcher.html:6
+msgid "Auto"
+msgstr "Auto"
+
+#: .\app\core\choices.py:7 .\app\templates\includes\_theme_switcher.html:7
+msgid "Light"
+msgstr "Hell"
+
+#: .\app\core\choices.py:8 .\app\templates\includes\_theme_switcher.html:8
+msgid "Dark"
+msgstr "Dunkel"
+
+#: .\app\core\models.py:14 .\app\templates\429.html:11
+#: .\app\templates\account\login.html:8 .\app\templates\base.html:117
+msgid "Login"
+msgstr "Anmelden"
+
+#: .\app\core\models.py:15 .\app\templates\account\logout.html:8
+#: .\app\templates\account\logout.html:13 .\app\templates\base.html:112
+msgid "Logout"
+msgstr "Abmelden"
+
+#: .\app\core\models.py:16
+msgid "Team created"
+msgstr "Team erstellt"
+
+#: .\app\core\models.py:17
+msgid "Team updated"
+msgstr "Team aktualisiert"
+
+#: .\app\core\models.py:18
+msgid "Team deleted"
+msgstr "Team gelöscht"
+
+#: .\app\core\models.py:19
+msgid "Player created"
+msgstr "Spieler erstellt"
+
+#: .\app\core\models.py:20
+msgid "Player updated"
+msgstr "Spieler aktualisiert"
+
+#: .\app\core\models.py:21
+msgid "Player deactivated"
+msgstr "Spieler deaktiviert"
+
+#: .\app\core\models.py:22
+msgid "Matchday created"
+msgstr "Spieltag erstellt"
+
+#: .\app\core\models.py:23
+msgid "Matchday updated"
+msgstr "Spieltag aktualisiert"
+
+#: .\app\core\models.py:24
+msgid "Matchday deleted"
+msgstr "Spieltag gelöscht"
+
+#: .\app\core\models.py:25
+msgid "Season created"
+msgstr "Saison angelegt"
+
+#: .\app\core\models.py:26
+msgid "Season updated"
+msgstr "Saison aktualisiert"
+
+#: .\app\core\models.py:27
+msgid "Season deleted"
+msgstr "Saison gelöscht"
+
+#: .\app\core\models.py:28
+msgid "Penalty assigned"
+msgstr "Strafe verhängt"
+
+#: .\app\core\models.py:29
+msgid "Penalty edited"
+msgstr "Strafe bearbeitet"
+
+#: .\app\core\models.py:30
+msgid "Penalty deleted"
+msgstr "Strafe gelöscht"
+
+#: .\app\core\models.py:32
+msgid "Penalty paid"
+msgstr "Strafe bezahlt"
+
+#: .\app\core\models.py:33
+msgid "Penalty payment reverted"
+msgstr "Strafenzahlung storniert"
+
+#: .\app\core\models.py:34
+msgid "Payment recorded"
+msgstr "Zahlung erfasst"
+
+#: .\app\core\models.py:35
+msgid "Payment reverted"
+msgstr "Zahlung storniert"
+
+#: .\app\core\models.py:36
+msgid "User created"
+msgstr "Benutzer erstellt"
+
+#: .\app\core\models.py:37
+msgid "User updated"
+msgstr "Benutzer aktualisiert"
+
+#: .\app\core\models.py:38
+msgid "User deactivated"
+msgstr "Benutzer deaktiviert"
+
+#: .\app\core\models.py:39
+msgid "User self-registered"
+msgstr "Benutzer hat sich selbst registriert"
+
+#: .\app\core\models.py:40
+msgid "User approved"
+msgstr "Benutzer freigegeben"
+
+#: .\app\core\models.py:41
+msgid "User rejected"
+msgstr "Benutzer abgelehnt"
+
+#: .\app\core\models.py:46
+msgid "action"
+msgstr "Aktion"
+
+#: .\app\core\models.py:56
+msgid "target type"
+msgstr "Zieltyp"
+
+#: .\app\core\models.py:57
+msgid "target id"
+msgstr "Ziel-ID"
+
+#: .\app\core\models.py:58
+msgid "metadata"
+msgstr "Metadaten"
+
+#: .\app\core\models.py:60 .\app\matchdays\models.py:57
+#: .\app\matchdays\models.py:110 .\app\penalties\models.py:26
+#: .\app\penalties\models.py:135 .\app\penalties\models.py:202
+#: .\app\players\models.py:43 .\app\players\models.py:114
+#: .\app\teams\models.py:7
+msgid "created at"
+msgstr "erstellt am"
+
+#: .\app\core\models.py:69
+msgid "audit log entry"
+msgstr "Audit-Eintrag"
+
+#: .\app\core\models.py:70
+msgid "audit log entries"
+msgstr "Audit-Einträge"
+
+#: .\app\core\views.py:118
+msgid "Season created."
+msgstr "Saison angelegt."
+
+#: .\app\core\views.py:152
+msgid "Season updated."
+msgstr "Saison aktualisiert."
+
+#: .\app\core\views.py:180
+#, python-format
+msgid "Season '%(name)s' is now the default season."
+msgstr "Saison '%(name)s' ist jetzt die Standard-Saison."
+
+#: .\app\core\views.py:201
+msgid ""
+"This season cannot be deleted because it still has open amounts. Settle all "
+"balances first."
+msgstr "Diese Saison kann nicht gelöscht werden, weil sie noch offene Beträge enthält. Stellen Sie zuerst alle Salden auf null."
+
+#: .\app\core\views.py:209
+msgid ""
+"This season cannot be deleted because it still has matchdays or payments."
+msgstr ""
+"Diese Saison kann nicht gelöscht werden, weil sie noch Spieltage oder "
+"Zahlungen enthält."
+
+#: .\app\core\views.py:215
+msgid "This season cannot be deleted because players are still assigned to it."
+msgstr "Diese Saison kann nicht gelöscht werden, weil ihr noch Spieler zugeordnet sind."
+
+#: .\app\core\views.py:220
+msgid "Season deleted."
+msgstr "Saison gelöscht."
+
+#: .\app\core\views.py:236
+msgid "Season not found."
+msgstr "Saison nicht gefunden."
+
+#: .\app\matchdays\forms.py:24 .\app\templates\core\season_list.html:20
+msgid "Active teams"
+msgstr "Aktive Teams"
+
+#: .\app\matchdays\forms.py:26 .\app\matchdays\models.py:44
+msgid ""
+"Only these teams are active in this season. Select no team to activate every "
+"team."
+msgstr ""
+"Nur diese Teams sind in dieser Saison aktiv. Wähle kein Team aus, um alle "
+"Teams zu aktivieren."
+
+#: .\app\matchdays\forms.py:34
+msgid "Default season"
+msgstr "Standard-Saison"
+
+#: .\app\matchdays\forms.py:37 .\app\matchdays\models.py:52
+msgid ""
+"The default season is shown to every user who has not picked a season "
+"themselves. A personal choice in the navbar only lasts for the session and "
+"never changes this default."
+msgstr ""
+"Die Standard-Saison sieht jeder Benutzer, der nicht selbst eine Saison "
+"gewählt hat. Eine persönliche Auswahl in der Navigationsleiste gilt nur für "
+"die Sitzung und ändert dieses Standard nie."
+
+#: .\app\matchdays\forms.py:54 .\app\penalties\forms.py:108
+#: .\app\templates\accounts\user_list.html:21
+#: .\app\templates\dashboard\dashboard.html:14
+#: .\app\templates\dashboard\financial_overview.html:19
+#: .\app\templates\dashboard\financial_overview.html:41
+#: .\app\templates\emails\penalty_created.html:23
+#: .\app\templates\emails\penalty_created.txt:9
+#: .\app\templates\emails\penalty_repayment.html:15
+#: .\app\templates\emails\penalty_repayment.txt:7
+#: .\app\templates\matchdays\matchday_list.html:16
+#: .\app\templates\penalties\catalog_team_amounts.html:18
+#: .\app\templates\players\player_detail.html:24
+#: .\app\templates\players\player_detail.html:50
+#: .\app\templates\teams\team_form.html:3
+msgid "Team"
+msgstr "Team"
+
+#: .\app\matchdays\forms.py:58 .\app\templates\base.html:91
+#: .\app\templates\base.html:93 .\app\templates\emails\penalty_created.html:27
+#: .\app\templates\emails\penalty_created.txt:10
+#: .\app\templates\emails\penalty_repayment.html:19
+#: .\app\templates\emails\penalty_repayment.txt:8
+msgid "Season"
+msgstr "Saison"
+
+#: .\app\matchdays\forms.py:59 .\app\matchdays\models.py:93
+msgid "Every matchday belongs to one season (a closed cash box)."
+msgstr "Jeder Spieltag gehört zu einer Saison (abgeschlossene Kasse)."
+
+#: .\app\matchdays\forms.py:65
+#: .\app\templates\matchdays\matchday_detail.html:17
+msgid "Participants"
+msgstr "Teilnehmer"
+
+#: .\app\matchdays\forms.py:66 .\app\matchdays\forms.py:148
+msgid "Select at least one participant."
+msgstr "Wählen Sie mindestens einen Teilnehmer aus."
+
+#: .\app\matchdays\forms.py:159
+msgid "All participants must belong to the selected team."
+msgstr "Alle Teilnehmer müssen zum ausgewählten Team gehören."
+
+#: .\app\matchdays\models.py:7 .\app\templates\matchdays\matchday_list.html:23
+msgid "Home"
+msgstr "Heim"
+
+#: .\app\matchdays\models.py:8 .\app\templates\matchdays\matchday_list.html:23
+msgid "Away"
+msgstr "Auswärts"
+
+#: .\app\matchdays\models.py:35 .\app\players\models.py:102
+#: .\app\teams\models.py:6
+msgid "name"
+msgstr "Name"
+
+#: .\app\matchdays\models.py:36
+msgid "Convention YYYY/YYYY, e.g. \"2026/2027\"."
+msgstr "Konvention YYYY/YYYY, z. B. \"2026/2027\"."
+
+#: .\app\matchdays\models.py:42 .\app\players\admin.py:25
+#: .\app\players\models.py:110 .\app\teams\models.py:29
+msgid "teams"
+msgstr "Teams"
+
+#: .\app\matchdays\models.py:50
+msgid "default season"
+msgstr "Standard-Saison"
+
+#: .\app\matchdays\models.py:78 .\app\matchdays\models.py:92
+#: .\app\penalties\models.py:123 .\app\players\models.py:41
+msgid "season"
+msgstr "Saison"
+
+#: .\app\matchdays\models.py:79
+msgid "seasons"
+msgstr "Saisons"
+
+#: .\app\matchdays\models.py:96
+msgid "opponent"
+msgstr "Gegner"
+
+#: .\app\matchdays\models.py:96
+msgid "Free text, e.g. \"SV Eichenberg\"."
+msgstr "Freier Text, z. B. \"SV Eichenberg\"."
+
+#: .\app\matchdays\models.py:99
+msgid "venue"
+msgstr "Spielort"
+
+#: .\app\matchdays\models.py:101
+msgid "date"
+msgstr "Datum"
+
+#: .\app\matchdays\models.py:102 .\app\penalties\models.py:17
+msgid "description"
+msgstr "Beschreibung"
+
+#: .\app\matchdays\models.py:108 .\app\penalties\models.py:200
+msgid "created by"
+msgstr "erstellt von"
+
+#: .\app\matchdays\models.py:129 .\app\matchdays\models.py:135
+#: .\app\penalties\models.py:167
+msgid "matchday"
+msgstr "Spieltag"
+
+#: .\app\matchdays\models.py:130
+msgid "matchdays"
+msgstr "Spieltage"
+
+#: .\app\matchdays\models.py:141 .\app\penalties\models.py:109
+#: .\app\penalties\models.py:173 .\app\players\models.py:25
+#: .\app\players\models.py:137
+msgid "player"
+msgstr "Spieler"
+
+#: .\app\matchdays\models.py:151
+msgid "matchday player"
+msgstr "Spieltag-Spieler"
+
+#: .\app\matchdays\models.py:152
+msgid "matchday players"
+msgstr "Spieltag-Spieler"
+
+#: .\app\matchdays\views.py:71
+msgid "Matchday created."
+msgstr "Spieltag erstellt."
+
+#: .\app\matchdays\views.py:100
+msgid "Matchday updated."
+msgstr "Spieltag aktualisiert."
+
+#: .\app\matchdays\views.py:159
+msgid ""
+"This matchday cannot be deleted because it already has penalties (including "
+"deleted ones). Delete the penalties first."
+msgstr ""
+"Dieser Spieltag kann nicht gelöscht werden, da er bereits Strafen enthält "
+"(auch gelöschte). Löschen Sie zuerst die Strafen."
+
+#: .\app\matchdays\views.py:166
+msgid "Matchday deleted."
+msgstr "Spieltag gelöscht."
+
+#: .\app\notifications\services.py:298
+#, python-brace-format
+msgid "New registration: {email}"
+msgstr "Neue Registrierung: {email}"
+
+#: .\app\notifications\services.py:315
+#: .\app\templates\emails\account_approved.html:2
+msgid "Your account has been activated"
+msgstr "Ihr Konto wurde aktiviert"
+
+#: .\app\notifications\services.py:329
+#: .\app\templates\emails\account_rejected.html:2
+msgid "Your registration has been declined"
+msgstr "Ihre Registrierung wurde abgelehnt"
+
+#: .\app\notifications\services.py:352
+#, python-brace-format
+msgid "New penalty: {amount} €"
+msgstr "Neue Strafe: {amount} €"
+
+#: .\app\notifications\services.py:384
+#, python-brace-format
+msgid "Payment received: {amount} €"
+msgstr "Zahlung eingegangen: {amount} €"
+
+#: .\app\notifications\services.py:408
+#, python-brace-format
+msgid "Support request from {name}"
+msgstr "Supportanfrage von {name}"
+
+#: .\app\penalties\forms.py:19 .\app\penalties\forms.py:82
+#: .\app\penalties\forms.py:120 .\app\penalties\forms.py:136
+#: .\app\penalties\services.py:66 .\app\penalties\services.py:117
+msgid "The amount must be a positive number."
+msgstr "Der Betrag muss eine positive Zahl sein."
+
+#: .\app\penalties\forms.py:36
+msgid "Penalty type"
+msgstr "Straftyp"
+
+#: .\app\penalties\forms.py:42
+msgid "For group penalties this player is the trigger (e.g. the 180 thrower)."
+msgstr ""
+"Bei Gruppenstrafen ist dieser Spieler der Auslöser (z. B. der 180-Werfer)."
+
+#: .\app\penalties\forms.py:48 .\app\penalties\forms.py:113
+#: .\app\penalties\forms.py:130
+#: .\app\templates\dashboard\financial_overview.html:84
+#: .\app\templates\dashboard\financial_overview.html:121
+msgid "Amount (EUR)"
+msgstr "Betrag (EUR)"
+
+#: .\app\penalties\forms.py:49
+msgid "Only for manual penalties — entered individually each time."
+msgstr ""
+"Nur für manuelle Strafen — der Betrag wird jeweils individuell eingegeben."
+
+#: .\app\penalties\forms.py:54 .\app\penalties\forms.py:129
+#: .\app\templates\dashboard\dashboard.html:52
+#: .\app\templates\dashboard\financial_overview.html:19
+#: .\app\templates\dashboard\financial_overview.html:185
+#: .\app\templates\dashboard\financial_overview.html:199
+#: .\app\templates\matchdays\matchday_detail.html:33
+#: .\app\templates\penalties\catalog_list.html:13
+#: .\app\templates\players\player_detail.html:51
+msgid "Description"
+msgstr "Beschreibung"
+
+#: .\app\penalties\forms.py:55
+msgid "Only for normal penalties — leave empty to use the catalog description."
+msgstr ""
+"Nur für normale Strafen — leer lassen, um die Katalogbeschreibung zu "
+"verwenden."
+
+#: .\app\penalties\forms.py:80 .\app\penalties\services.py:114
+msgid "A manual penalty needs an individual amount."
+msgstr "Eine manuelle Strafe braucht einen individuellen Betrag."
+
+#: .\app\penalties\forms.py:84 .\app\penalties\services.py:120
+msgid "A manual penalty needs a comment."
+msgstr "Eine manuelle Strafe braucht einen Kommentar."
+
+#: .\app\penalties\forms.py:93 .\app\penalties\services.py:153
+msgid "A group penalty needs at least two participants."
+msgstr "Eine Gruppenstraße braucht mindestens zwei Teilnehmer."
+
+#: .\app\penalties\forms.py:95
+msgid "Select a player."
+msgstr "Wählen Sie einen Spieler aus."
+
+#: .\app\penalties\forms.py:114
+msgid "Partial payment — any positive amount up to the full debt."
+msgstr "Teilzahlung — jeder positive Betrag bis zur vollständigen Schuld."
+
+#: .\app\penalties\models.py:7
+msgid "Normal"
+msgstr "Normal"
+
+#: .\app\penalties\models.py:10
+msgid "Per all other matchday players"
+msgstr "Pro alle anderen Spieltagsteilnehmer"
+
+#: .\app\penalties\models.py:13
+msgid "Manual"
+msgstr "Manuell"
+
+#: .\app\penalties\models.py:18 .\app\penalties\models.py:70
+#: .\app\penalties\models.py:126 .\app\penalties\models.py:186
+msgid "amount (EUR)"
+msgstr "Betrag (EUR)"
+
+#: .\app\penalties\models.py:23
+msgid "type"
+msgstr "Typ"
+
+#: .\app\penalties\models.py:25 .\app\players\models.py:113
+#: .\app\templates\core\season_list.html:35
+msgid "active"
+msgstr "aktiv"
+
+#: .\app\penalties\models.py:46
+msgid "penalty catalog item"
+msgstr "Strafkatalog-Eintrag"
+
+#: .\app\penalties\models.py:47
+msgid "penalty catalog items"
+msgstr "Strafkatalog-Einträge"
+
+#: .\app\penalties\models.py:68 .\app\penalties\models.py:180
+msgid "catalog item"
+msgstr "Katalogeintrag"
+
+#: .\app\penalties\models.py:76
+msgid "updated by"
+msgstr "zuletzt geändert von"
+
+#: .\app\penalties\models.py:78
+msgid "updated at"
+msgstr "zuletzt geändert am"
+
+#: .\app\penalties\models.py:92
+msgid "team catalog amount"
+msgstr "Mannschaftsgebühr"
+
+#: .\app\penalties\models.py:93
+msgid "team catalog amounts"
+msgstr "Mannschaftsgebühren"
+
+#: .\app\penalties\models.py:124
+msgid "Payments only reduce debt of the same season."
+msgstr "Zahlungen mindern nur die Schulden derselben Saison."
+
+#: .\app\penalties\models.py:132
+msgid "recorded by"
+msgstr "erfasst von"
+
+#: .\app\penalties\models.py:148
+msgid "payment"
+msgstr "Zahlung"
+
+#: .\app\penalties\models.py:149
+msgid "payments"
+msgstr "Zahlungen"
+
+#: .\app\penalties\models.py:183
+msgid "description (snapshot)"
+msgstr "Beschreibung (Momentaufnahme)"
+
+#: .\app\penalties\models.py:192
+msgid "group id"
+msgstr "Gruppen-ID"
+
+#: .\app\penalties\models.py:193
+msgid "Shared by all rows of one group penalty."
+msgstr "Wird von allen Zeilen einer Gruppenstraße geteilt."
+
+#: .\app\penalties\models.py:204
+msgid "deleted at"
+msgstr "gelöscht am"
+
+#: .\app\penalties\models.py:211
+msgid "deleted by"
+msgstr "gelöscht von"
+
+#: .\app\penalties\models.py:231
+msgid "penalty"
+msgstr "Strafe"
+
+#: .\app\penalties\models.py:232
+msgid "penalties"
+msgstr "Strafen"
+
+#: .\app\penalties\services.py:95
+msgid "Player is not a participant of this matchday."
+msgstr "Der Spieler ist kein Teilnehmer dieses Spieltags."
+
+#: .\app\penalties\services.py:109
+msgid "A normal penalty requires a NORMAL catalog item."
+msgstr "Eine normale Strafe erfordert einen NORMAL-Katalogeintrag."
+
+#: .\app\penalties\services.py:148
+msgid "A group penalty requires a group catalog item."
+msgstr "Eine Gruppenstraße erfordert einen Gruppen-Katalogeintrag."
+
+#: .\app\penalties\services.py:215
+msgid "The penalty amount must be positive."
+msgstr "Der Strafbetrag muss positiv sein."
+
+#: .\app\penalties\views.py:131
+#, python-format
+msgid "'%(value)s' is not a valid amount for team '%(team)s'."
+msgstr "'%(value)s' ist kein gültiger Betrag für Mannschaft '%(team)s'."
+
+#: .\app\penalties\views.py:137
+#, python-format
+msgid "The amount for team '%(team)s' must be a positive number or empty."
+msgstr ""
+"Der Betrag für Mannschaft '%(team)s' muss eine positive Zahl oder leer sein."
+
+#: .\app\penalties\views.py:161
+msgid "Team fees saved."
+msgstr "Mannschaftsgebühren gespeichert."
+
+#: .\app\penalties\views.py:174
+msgid "Catalog item created."
+msgstr "Katalogeintrag erstellt."
+
+#: .\app\penalties\views.py:187
+msgid "Catalog item updated."
+msgstr "Katalogeintrag aktualisiert."
+
+#: .\app\penalties\views.py:198
+msgid "activated"
+msgstr "aktiviert"
+
+#: .\app\penalties\views.py:198
+msgid "deactivated"
+msgstr "deaktiviert"
+
+#: .\app\penalties\views.py:201
+#, python-format
+msgid "Catalog item '%(name)s' %(state)s."
+msgstr "Katalogeintrag '%(name)s' %(state)s."
+
+#: .\app\penalties\views.py:268
+#, python-format
+msgid "%(count)s penalties assigned to the other participants."
+msgstr "%(count)s Strafen den anderen Teilnehmern zugewiesen."
+
+#: .\app\penalties\views.py:272
+msgid "Penalty assigned."
+msgstr "Strafe verhängt."
+
+#: .\app\penalties\views.py:305
+msgid "Penalty updated (all rows of the group, if any)."
+msgstr "Strafe aktualisiert (alle Zeilen der Gruppe, falls vorhanden)."
+
+#: .\app\penalties\views.py:321
+msgid "Penalty deleted."
+msgstr "Strafe gelöscht."
+
+#: .\app\penalties\views.py:351
+msgid "Payment recorded."
+msgstr "Zahlung erfasst."
+
+#: .\app\penalties\views.py:363
+msgid "Payment reverted."
+msgstr "Zahlung storniert."
+
+#: .\app\players\forms.py:30 .\app\templates\base.html:43
+#: .\app\templates\dashboard\dashboard.html:10
+#: .\app\templates\players\player_detail.html:20
+#: .\app\templates\players\player_list.html:17
+#: .\app\templates\teams\team_list.html:3
+#: .\app\templates\teams\team_list.html:6
+msgid "Teams"
+msgstr "Teams"
+
+#: .\app\players\forms.py:31
+msgid "A player can belong to multiple teams."
+msgstr "Ein Spieler kann mehreren Teams angehören."
+
+#: .\app\players\forms.py:49
+#, python-format
+msgid ""
+"Assignments are season-dependent — this saves the teams of season "
+"%(season)s; other seasons keep their own assignment."
+msgstr ""
+"Zuordnungen sind saisonabhängig — gespeichert werden die Teams der Saison "
+"%(season)s; andere Saisons behalten ihre eigene Zuordnung."
+
+#: .\app\players\models.py:46
+msgid "no season"
+msgstr "ohne Saison"
+
+#: .\app\players\models.py:62
+msgid "player team assignment"
+msgstr "Spielerteam-Zuordnung"
+
+#: .\app\players\models.py:63
+msgid "player team assignments"
+msgstr "Spielerteam-Zuordnungen"
+
+#: .\app\players\models.py:111
+msgid "A player can belong to multiple teams — per season."
+msgstr "Ein Spieler kann mehreren Teams angehören — pro Saison."
+
+#: .\app\players\models.py:138
+msgid "players"
+msgstr "Spieler"
+
+#: .\app\players\views.py:133
+msgid "Player created."
+msgstr "Spieler erstellt."
+
+#: .\app\players\views.py:167
+msgid "Player updated."
+msgstr "Spieler aktualisiert."
+
+#: .\app\players\views.py:182
+#, python-format
+msgid "Player '%(name)s' deactivated."
+msgstr "Spieler '%(name)s' deaktiviert."
+
+#: .\app\teams\forms.py:12
+msgid "e.g. Wildboars 1"
+msgstr "z. B. Wildboars 1"
+
+#: .\app\teams\views.py:107
+msgid "Team created."
+msgstr "Team erstellt."
+
+#: .\app\teams\views.py:121
+msgid "Team updated."
+msgstr "Team aktualisiert."
+
+#: .\app\teams\views.py:143
+msgid ""
+"This team cannot be deleted because it still contains players, matchdays or "
+"linked captain accounts."
+msgstr ""
+"Dieses Team kann nicht gelöscht werden, da es noch Spieler, Spieltage oder "
+"verknüpfte Kapitänskonten enthält."
+
+#: .\app\teams\views.py:151
+#, python-format
+msgid "Team '%(name)s' deleted."
+msgstr "Team '%(name)s' gelöscht."
+
+#: .\app\templates\429.html:3 .\app\templates\429.html:9
+msgid "Too many requests"
+msgstr "Zu viele Anfragen"
+
+#: .\app\templates\429.html:3 .\app\templates\accounts\approval_form.html:3
+#: .\app\templates\accounts\pending_list.html:3
+#: .\app\templates\accounts\settings.html:3
+#: .\app\templates\accounts\user_form.html:3
+#: .\app\templates\accounts\user_list.html:3 .\app\templates\base.html:7
+#: .\app\templates\base.html:14 .\app\templates\base.html:131
+#: .\app\templates\core\audit_log_list.html:3
+#: .\app\templates\core\imprint.html:3 .\app\templates\core\privacy.html:3
+#: .\app\templates\core\season_form.html:3
+#: .\app\templates\core\season_list.html:3
+#: .\app\templates\dashboard\dashboard.html:3
+#: .\app\templates\dashboard\financial_overview.html:3
+#: .\app\templates\emails\base_email.html:15
+#: .\app\templates\emails\base_email.txt:1
+#: .\app\templates\matchdays\matchday_confirm_delete.html:3
+#: .\app\templates\matchdays\matchday_detail.html:3
+#: .\app\templates\matchdays\matchday_form.html:3
+#: .\app\templates\matchdays\matchday_list.html:3
+#: .\app\templates\penalties\catalog_form.html:3
+#: .\app\templates\penalties\catalog_list.html:3
+#: .\app\templates\penalties\catalog_team_amounts.html:3
+#: .\app\templates\penalties\penalty_form.html:3
+#: .\app\templates\players\player_detail.html:3
+#: .\app\templates\players\player_form.html:3
+#: .\app\templates\players\player_list.html:3
+#: .\app\templates\teams\team_confirm_delete.html:3
+#: .\app\templates\teams\team_detail.html:3
+#: .\app\templates\teams\team_form.html:3
+#: .\app\templates\teams\team_list.html:3
+msgid "Darts Penalty Manager"
+msgstr "Darts Penalty Manager"
+
+#: .\app\templates\429.html:10
+msgid "You have sent too many requests. Please wait a moment and try again."
+msgstr ""
+"Sie haben zu viele Anfragen gesendet. Bitte warten Sie einen Moment und "
+"versuchen Sie es erneut."
+
+#: .\app\templates\account\email_confirm.html:8
+msgid "Confirm e-mail address"
+msgstr "E-Mail-Adresse bestätigen"
+
+#: .\app\templates\account\email_confirm.html:12
+#, python-format
+msgid "Please confirm that %(email)s is your e-mail address."
+msgstr "Bitte bestätigen Sie, dass %(email)s Ihre E-Mail-Adresse ist."
+
+#: .\app\templates\account\email_confirm.html:17
+msgid "Confirm"
+msgstr "Bestätigen"
+
+#: .\app\templates\account\email_confirm.html:21
+msgid ""
+"Unable to confirm this address because it is already confirmed by a "
+"different account."
+msgstr ""
+
+#: .\app\templates\account\email_confirm.html:26
+msgid ""
+"This confirmation link expired or is invalid. Please request a new "
+"confirmation e-mail after logging in."
+msgstr ""
+
+#: .\app\templates\account\login.html:13
+#: .\app\templates\accounts\approval_form.html:16
+#: .\app\templates\core\imprint.html:20 .\app\templates\core\privacy.html:14
+#: .\app\templates\emails\account_approved.txt:5
+#: .\app\templates\emails\account_registered.html:6
+#: .\app\templates\emails\account_registered.txt:5
+#: .\app\templates\emails\account_rejected.html:5
+#: .\app\templates\emails\account_rejected.txt:5
+#: .\app\templates\emails\support_request.html:7
+#: .\app\templates\emails\support_request.txt:6
+msgid "E-mail"
+msgstr "E-Mail"
+
+#: .\app\templates\account\login.html:25
+msgid "Remember Me"
+msgstr "Angemeldet bleiben"
+
+
+#: .\app\templates\account\login.html:32
+msgid "Forgot your password?"
+msgstr "Passwort vergessen?"
+
+#: .\app\templates\account\login.html:33 .\app\templates\account\signup.html:8
+msgid "Create an account"
+msgstr "Konto erstellen"
+
+#: .\app\templates\account\logout.html:9
+msgid "Do you really want to log out?"
+msgstr "Möchten Sie sich wirklich abmelden?"
+
+#: .\app\templates\account\logout.html:14
+#: .\app\templates\account\password_change.html:21
+#: .\app\templates\accounts\user_form.html:19
+#: .\app\templates\core\season_form.html:38
+#: .\app\templates\matchdays\matchday_confirm_delete.html:18
+#: .\app\templates\matchdays\matchday_form.html:29
+#: .\app\templates\penalties\catalog_form.html:18
+#: .\app\templates\penalties\catalog_team_amounts.html:37
+#: .\app\templates\penalties\penalty_form.html:31
+#: .\app\templates\players\player_form.html:24
+#: .\app\templates\teams\team_confirm_delete.html:18
+#: .\app\templates\teams\team_form.html:18
+msgid "Cancel"
+msgstr "Abbrechen"
+
+#: .\app\templates\account\password_change.html:8
+#: .\app\templates\account\password_change.html:20
+#: .\app\templates\accounts\settings.html:24
+#: .\app\templates\accounts\settings.html:26
+msgid "Change password"
+msgstr "Passwort ändern"
+
+#: .\app\templates\account\password_reset.html:8
+#: .\app\templates\account\password_reset_done.html:8
+msgid "Password reset"
+msgstr "Passwort zurücksetzen"
+
+#: .\app\templates\account\password_reset.html:10
+msgid ""
+"Forgotten your password? Enter your e-mail address below and we will send "
+"you a link to set a new one."
+msgstr ""
+
+#: .\app\templates\account\password_reset.html:23
+msgid "Send reset link"
+msgstr "Zurücksetzlink senden"
+
+#: .\app\templates\account\password_reset.html:25
+#: .\app\templates\account\password_reset_done.html:12
+#: .\app\templates\account\password_reset_from_key_done.html:10
+#: .\app\templates\account\verification_sent.html:15
+msgid "Back to login"
+msgstr "Zurück zum Login"
+
+#: .\app\templates\account\password_reset_done.html:10
+msgid ""
+"We have sent you an e-mail. If you have not received it, please check your "
+"spam folder."
+msgstr ""
+
+#: .\app\templates\account\password_reset_from_key.html:8
+msgid "Invalid link"
+msgstr "Ungültiger Link"
+
+#: .\app\templates\account\password_reset_from_key.html:8
+#: .\app\templates\account\password_reset_from_key.html:26
+msgid "Set new password"
+msgstr "Neues Passwort festlegen"
+
+#: .\app\templates\account\password_reset_from_key.html:11
+msgid "The password reset link was invalid or has already been used."
+msgstr "Der Link zum Zurücksetzen des Passworts ist ungültig oder wurde bereits verwendet."
+
+#: .\app\templates\account\password_reset_from_key.html:12
+msgid "Request a new link."
+msgstr "Neuen Link anfordern."
+
+#: .\app\templates\account\password_reset_from_key_done.html:8
+msgid "Password changed"
+msgstr "Passwort geändert"
+
+#: .\app\templates\account\password_reset_from_key_done.html:9
+msgid "Your password is now changed."
+msgstr "Ihr Passwort wurde geändert."
+
+#: .\app\templates\account\signup.html:10
+msgid ""
+"After registration, an administrator must release your account before you "
+"can log in. You will receive an e-mail as soon as your account is active."
+msgstr ""
+
+#: .\app\templates\account\signup.html:28 .\app\templates\base.html:116
+msgid "Register"
+msgstr "Registrieren"
+
+#: .\app\templates\account\signup.html:31
+msgid "Already have an account?"
+msgstr "Sie haben bereits ein Konto?"
+
+#: .\app\templates\account\signup.html:32
+msgid "Sign in"
+msgstr "Anmelden"
+
+#: .\app\templates\account\verification_sent.html:8
+msgid "Confirm your e-mail address"
+msgstr "Bestätigen Sie Ihre E-Mail-Adresse"
+
+#: .\app\templates\account\verification_sent.html:10
+msgid ""
+"We have sent you an e-mail for verification. Follow the link in the message "
+"to finalize your registration. If you do not see the e-mail, check your spam "
+"folder."
+msgstr ""
+
+#: .\app\templates\account\verification_sent.html:13
+msgid ""
+"Your account will be activated by an administrator after the registration "
+"has been checked."
+msgstr ""
+
+#: .\app\templates\accounts\approval_form.html:3
+#: .\app\templates\accounts\approval_form.html:8
+msgid "Review registration"
+msgstr "Registrierung prüfen"
+
+#: .\app\templates\accounts\approval_form.html:9
+msgid "Back"
+msgstr "Zurück"
+
+#: .\app\templates\accounts\approval_form.html:14
+msgid "Registered user"
+msgstr "Registrierter Benutzer"
+
+#: .\app\templates\accounts\approval_form.html:18
+#: .\app\templates\accounts\pending_list.html:15
+#: .\app\templates\emails\account_registered.html:7
+#: .\app\templates\emails\account_registered.txt:6
+msgid "Registered at"
+msgstr "Registriert am"
+
+#: .\app\templates\accounts\approval_form.html:20
+#: .\app\templates\accounts\user_list.html:22
+#: .\app\templates\emails\account_registered.html:8
+#: .\app\templates\emails\account_registered.txt:7
+#: .\app\templates\emails\penalty_repayment.html:24
+#: .\app\templates\emails\penalty_repayment.html:31
+#: .\app\templates\emails\penalty_repayment.txt:10
+#: .\app\templates\emails\penalty_repayment.txt:12
+msgid "Status"
+msgstr "Status"
+
+#: .\app\templates\accounts\approval_form.html:23
+#: .\app\templates\accounts\user_list.html:38
+msgid "Pending"
+msgstr "Ausstehend"
+
+#: .\app\templates\accounts\approval_form.html:30
+#: .\app\templates\emails\account_approved.html:6
+#: .\app\templates\emails\account_approved.txt:6
+msgid "Linked player"
+msgstr "Verknüpfter Spieler"
+
+#: .\app\templates\accounts\approval_form.html:40
+msgid "Approve and assign player"
+msgstr "Freigeben und Spieler zuordnen"
+
+#: .\app\templates\accounts\approval_form.html:55
+msgid "Approve"
+msgstr "Freigeben"
+
+#: .\app\templates\accounts\approval_form.html:60
+msgid "Reject this registration?"
+msgstr "Diese Registrierung ablehnen?"
+
+#: .\app\templates\accounts\approval_form.html:63
+msgid "Reject"
+msgstr "Ablehnen"
+
+#: .\app\templates\accounts\pending_list.html:3
+#: .\app\templates\accounts\pending_list.html:6
+#: .\app\templates\accounts\user_list.html:9
+msgid "Pending approvals"
+msgstr "Offene Freigaben"
+
+#: .\app\templates\accounts\pending_list.html:7
+msgid "Back to users"
+msgstr "Zurück zu den Benutzern"
+
+#: .\app\templates\accounts\pending_list.html:9
+msgid "Newly registered accounts must be released before the users can log in."
+msgstr "Neu registrierte Konten müssen freigegeben werden, bevor sich die Benutzer anmelden können."
+
+#: .\app\templates\accounts\pending_list.html:14
+#: .\app\templates\accounts\user_list.html:19
+msgid "Email"
+msgstr "E-Mail"
+
+#: .\app\templates\accounts\pending_list.html:16
+#: .\app\templates\includes\_language_switcher.html:4
+msgid "Language"
+msgstr "Sprache"
+
+#: .\app\templates\accounts\pending_list.html:28
+#: .\app\templates\accounts\user_list.html:48
+msgid "Review"
+msgstr "Prüfen"
+
+#: .\app\templates\accounts\pending_list.html:33
+msgid "No pending registrations."
+msgstr "Keine ausstehenden Registrierungen."
+
+#: .\app\templates\accounts\settings.html:3
+#: .\app\templates\accounts\settings.html:5 .\app\templates\base.html:108
+msgid "Settings"
+msgstr "Einstellungen"
+
+#: .\app\templates\accounts\settings.html:9
+msgid "Preferences"
+msgstr "Voreinstellungen"
+
+#: .\app\templates\accounts\settings.html:19
+msgid "Save preferences"
+msgstr "Einstellungen speichern"
+
+#: .\app\templates\accounts\settings.html:25
+msgid "Set a new password for your account."
+msgstr "Legen Sie ein neues Passwort für Ihr Konto fest."
+
+#: .\app\templates\accounts\user_form.html:3
+msgid "User"
+msgstr "Benutzer"
+
+#: .\app\templates\accounts\user_form.html:5
+msgid "Edit user"
+msgstr "Benutzer bearbeiten"
+
+#: .\app\templates\accounts\user_form.html:5
+#: .\app\templates\accounts\user_list.html:12
+msgid "New user"
+msgstr "Neuer Benutzer"
+
+#: .\app\templates\accounts\user_form.html:18
+#: .\app\templates\core\season_form.html:37
+#: .\app\templates\matchdays\matchday_form.html:28
+#: .\app\templates\penalties\catalog_form.html:17
+#: .\app\templates\penalties\catalog_team_amounts.html:36
+#: .\app\templates\players\player_form.html:23
+#: .\app\templates\teams\team_form.html:17
+msgid "Save"
+msgstr "Speichern"
+
+#: .\app\templates\accounts\user_list.html:3
+#: .\app\templates\accounts\user_list.html:6 .\app\templates\base.html:74
+msgid "Users"
+msgstr "Benutzer"
+
+#: .\app\templates\accounts\user_list.html:23
+#: .\app\templates\penalties\catalog_list.html:16
+#: .\app\templates\players\player_list.html:18
+msgid "Active"
+msgstr "Aktiv"
+
+#: .\app\templates\accounts\user_list.html:50
+#: .\app\templates\core\season_list.html:48
+#: .\app\templates\matchdays\matchday_detail.html:11
+#: .\app\templates\matchdays\matchday_detail.html:49
+#: .\app\templates\penalties\catalog_list.html:38
+#: .\app\templates\players\player_detail.html:10
+#: .\app\templates\players\player_list.html:31
+#: .\app\templates\teams\team_detail.html:9
+#: .\app\templates\teams\team_list.html:31
+msgid "Edit"
+msgstr "Bearbeiten"
+
+#: .\app\templates\accounts\user_list.html:53
+msgid "Deactivate this user?"
+msgstr "Diesen Benutzer deaktivieren?"
+
+#: .\app\templates\accounts\user_list.html:55
+#: .\app\templates\penalties\catalog_list.html:42
+#: .\app\templates\players\player_list.html:36
+msgid "Deactivate"
+msgstr "Deaktivieren"
+
+#: .\app\templates\accounts\user_list.html:61
+msgid "No users yet."
+msgstr "Noch keine Benutzer."
+
+#: .\app\templates\base.html:16
+msgid "Toggle navigation"
+msgstr "Navigation umschalten"
+
+#: .\app\templates\base.html:25 .\app\templates\dashboard\dashboard.html:3
+#: .\app\templates\dashboard\dashboard.html:5
+msgid "Dashboard"
+msgstr "Übersicht"
+
+#: .\app\templates\base.html:29
+msgid "Financial"
+msgstr "Finanzen"
+
+#: .\app\templates\base.html:38
+msgid "Team area"
+msgstr "Mannschaft"
+
+#: .\app\templates\base.html:47
+msgid "My Team"
+msgstr "Mein Team"
+
+#: .\app\templates\base.html:51 .\app\templates\dashboard\dashboard.html:14
+#: .\app\templates\dashboard\dashboard.html:32
+#: .\app\templates\players\player_list.html:3
+#: .\app\templates\players\player_list.html:6
+#: .\app\templates\teams\team_detail.html:15
+#: .\app\templates\teams\team_list.html:19
+msgid "Players"
+msgstr "Spieler"
+
+#: .\app\templates\base.html:54 .\app\templates\core\season_list.html:21
+#: .\app\templates\dashboard\dashboard.html:14
+#: .\app\templates\dashboard\dashboard.html:33
+#: .\app\templates\matchdays\matchday_list.html:3
+#: .\app\templates\matchdays\matchday_list.html:6
+#: .\app\templates\teams\team_detail.html:44
+msgid "Matchdays"
+msgstr "Spieltage"
+
+#: .\app\templates\base.html:60
+msgid "Catalog"
+msgstr "Katalog"
+
+#: .\app\templates\base.html:70
+msgid "Administration"
+msgstr "Verwaltung"
+
+#: .\app\templates\base.html:77
+msgid "Audit"
+msgstr "Audit"
+
+#: .\app\templates\base.html:80 .\app\templates\core\season_list.html:3
+#: .\app\templates\core\season_list.html:6
+msgid "Seasons"
+msgstr "Saisons"
+
+#: .\app\templates\base.html:94
+msgid ""
+"Your personal view for this session — it never changes the default season "
+"for other users."
+msgstr ""
+"Deine persönliche Ansicht für diese Sitzung — sie ändert die Standard-Saison "
+"für andere Benutzer nie."
+
+#: .\app\templates\base.html:98 .\app\templates\core\season_list.html:32
+msgid "default"
+msgstr "Standard"
+
+#: .\app\templates\base.html:132 .\app\templates\core\imprint.html:3
+#: .\app\templates\core\imprint.html:5
+msgid "Imprint"
+msgstr "Impressum"
+
+#: .\app\templates\base.html:133 .\app\templates\core\privacy.html:3
+#: .\app\templates\core\privacy.html:5
+msgid "Privacy Policy"
+msgstr "Datenschutzerklärung"
+
+#: .\app\templates\base.html:135
+msgid "Build"
+msgstr "Build"
+
+#: .\app\templates\core\audit_log_list.html:3
+#: .\app\templates\core\audit_log_list.html:5
+msgid "Audit log"
+msgstr "Audit-Protokoll"
+
+#: .\app\templates\core\audit_log_list.html:10
+msgid "All actions"
+msgstr "Alle Aktionen"
+
+#: .\app\templates\core\audit_log_list.html:18
+msgid "Actor email"
+msgstr "E-Mail des Akteurs"
+
+#: .\app\templates\core\audit_log_list.html:21
+msgid "Filter"
+msgstr "Filtern"
+
+#: .\app\templates\core\audit_log_list.html:22
+msgid "Reset"
+msgstr "Zurücksetzen"
+
+#: .\app\templates\core\audit_log_list.html:30
+#: .\app\templates\matchdays\matchday_detail.html:31
+msgid "When"
+msgstr "Wann"
+
+#: .\app\templates\core\audit_log_list.html:31
+msgid "Action"
+msgstr "Aktion"
+
+#: .\app\templates\core\audit_log_list.html:32
+msgid "Actor"
+msgstr "Akteur"
+
+#: .\app\templates\core\audit_log_list.html:33
+msgid "Target"
+msgstr "Ziel"
+
+#: .\app\templates\core\audit_log_list.html:47
+msgid "No audit entries."
+msgstr "Keine Audit-Einträge."
+
+#: .\app\templates\core\imprint.html:17
+msgid "Contact"
+msgstr "Kontakt"
+
+#: .\app\templates\core\imprint.html:27
+msgid "No imprint configured."
+msgstr "Kein Impressum konfiguriert."
+
+#: .\app\templates\core\privacy.html:8
+msgid "1. Responsible Party"
+msgstr "1. Verantwortliche Stelle"
+
+#: .\app\templates\core\privacy.html:17
+msgid "2. Data We Collect"
+msgstr "2. Erhobene Daten"
+
+#: .\app\templates\core\privacy.html:18
+msgid "This application stores the following data to provide its services:"
+msgstr ""
+"Diese Anwendung speichert folgende Daten, um ihre Dienste bereitzustellen:"
+
+#: .\app\templates\core\privacy.html:20
+msgid ""
+"User accounts: e-mail address, password hash, role, team assignment and "
+"language/theme preferences."
+msgstr ""
+"Benutzerkonten: E-Mail-Adresse, Passwort-Hash, Rolle, Mannschaftszuweisung "
+"sowie Sprach- und Design-Einstellungen."
+
+#: .\app\templates\core\privacy.html:21
+msgid "Player and team data: names, team memberships and active status."
+msgstr ""
+"Spieler- und Mannschaftsdaten: Namen, Mannschaftszugehörigkeit und "
+"Aktivstatus."
+
+#: .\app\templates\core\privacy.html:22
+msgid ""
+"Matchday and penalty data: dates, participants, penalties, payments and "
+"balances."
+msgstr ""
+"Spieltags- und Strafendaten: Daten, Teilnehmer, Strafen, Zahlungen und "
+"Salden."
+
+#: .\app\templates\core\privacy.html:23
+msgid "Audit logs: who changed which record and when."
+msgstr "Audit-Protokolle: wer welchen Eintrag wann geändert hat."
+
+#: .\app\templates\core\privacy.html:24
+msgid ""
+"Authentication cookies: a secure HttpOnly session cookie is used to keep you "
+"logged in."
+msgstr ""
+"Authentifizierungs-Cookies: ein sicheres HttpOnly-Session-Cookie hält Sie "
+"angemeldet."
+
+#: .\app\templates\core\privacy.html:27
+msgid "3. Purpose of Data Processing"
+msgstr "3. Zweck der Datenverarbeitung"
+
+#: .\app\templates\core\privacy.html:28
+msgid ""
+"Data is processed exclusively to operate the club's penalty system, "
+"including matchday planning, balances and financial reporting."
+msgstr ""
+"Die Daten werden ausschließlich zum Betrieb des Vereins-Strafensystems "
+"einschließlich Spieltagsplanung, Salden und Finanzberichten verarbeitet."
+
+#: .\app\templates\core\privacy.html:30
+msgid "4. Cookies"
+msgstr "4. Cookies"
+
+#: .\app\templates\core\privacy.html:31
+msgid "This website uses the following cookies:"
+msgstr "Diese Website verwendet folgende Cookies:"
+
+#: .\app\templates\core\privacy.html:33
+msgid "Session cookie (HttpOnly):"
+msgstr "Session-Cookie (HttpOnly):"
+
+#: .\app\templates\core\privacy.html:33
+msgid ""
+"Required for login sessions. This cookie is essential and cannot be declined."
+msgstr ""
+"Erforderlich für Anmeldesitzungen. Dieses Cookie ist notwendig und kann "
+"nicht abgelehnt werden."
+
+#: .\app\templates\core\privacy.html:34
+msgid "CSRF and language cookies:"
+msgstr "CSRF- und Sprach-Cookies:"
+
+#: .\app\templates\core\privacy.html:34
+msgid ""
+"Required for secure forms and your language choice. These cookies are "
+"essential and cannot be declined."
+msgstr ""
+"Erforderlich für sichere Formulare und Ihre Sprachauswahl. Diese Cookies "
+"sind notwendig und können nicht abgelehnt werden."
+
+#: .\app\templates\core\privacy.html:35
+msgid "Cookie consent flag:"
+msgstr "Cookie-Zustimmungsmerkmal:"
+
+#: .\app\templates\core\privacy.html:35
+msgid ""
+"Stored in your browser's localStorage after you confirm the cookie notice. "
+"This cookie is essential and cannot be declined."
+msgstr ""
+"Wird nach Ihrer Bestätigung des Cookie-Hinweises im localStorage Ihres "
+"Browsers gespeichert. Dieses Merkmal ist notwendig und kann nicht abgelehnt "
+"werden."
+
+#: .\app\templates\core\privacy.html:37
+msgid "No third-party tracking or analytics cookies are used."
+msgstr ""
+"Es werden keine Cookies von Drittanbietern zu Tracking- oder Analysezwecken "
+"verwendet."
+
+#: .\app\templates\core\privacy.html:39
+msgid "5. Data Retention"
+msgstr "5. Speicherdauer"
+
+#: .\app\templates\core\privacy.html:40
+msgid ""
+"Data is retained as long as necessary for the operation of the penalty "
+"system. Matchday, penalty and audit records are preserved to maintain a "
+"complete financial history."
+msgstr ""
+"Die Daten werden so lange gespeichert, wie es für den Betrieb des "
+"Strafensystems erforderlich ist. Spieltags-, Strafen- und Audit-Datensätze "
+"werden zur Wahrung der Finanzhistorie aufbewahrt."
+
+#: .\app\templates\core\privacy.html:42
+msgid "6. Your Rights"
+msgstr "6. Ihre Rechte"
+
+#: .\app\templates\core\privacy.html:43
+msgid "Under the GDPR, you have the right to:"
+msgstr "Nach der DSGVO haben Sie das Recht auf:"
+
+#: .\app\templates\core\privacy.html:45
+msgid "Access your personal data"
+msgstr "Auskunft über Ihre personenbezogenen Daten"
+
+#: .\app\templates\core\privacy.html:46
+msgid "Rectify inaccurate data"
+msgstr "Berichtigung unrichtiger Daten"
+
+#: .\app\templates\core\privacy.html:47
+msgid "Request deletion of your data"
+msgstr "Löschung Ihrer Daten"
+
+#: .\app\templates\core\privacy.html:48
+msgid "Object to data processing"
+msgstr "Widerspruch gegen die Datenverarbeitung"
+
+#: .\app\templates\core\privacy.html:49
+msgid "Data portability"
+msgstr "Datenübertragbarkeit"
+
+#: .\app\templates\core\privacy.html:51
+msgid "To exercise these rights, please contact us at"
+msgstr "Um diese Rechte auszuüben, kontaktieren Sie uns bitte unter"
+
+#: .\app\templates\core\privacy.html:53
+msgid "7. Data Security"
+msgstr "7. Datensicherheit"
+
+#: .\app\templates\core\privacy.html:54
+msgid ""
+"We implement appropriate technical and organizational measures to protect "
+"your data, including password hashing, CSRF protection, optional HTTPS "
+"enforcement and a full audit trail."
+msgstr ""
+"Wir setzen geeignete technische und organisatorische Maßnahmen zum Schutz "
+"Ihrer Daten ein, darunter Passwort-Hashing, CSRF-Schutz, optionale HTTPS-"
+"Erzwingung und eine vollständige Audit-Protokollierung."
+
+#: .\app\templates\core\privacy.html:56
+msgid "8. Contact"
+msgstr "8. Kontakt"
+
+#: .\app\templates\core\privacy.html:57
+msgid "For questions about this privacy policy, please contact:"
+msgstr "Bei Fragen zu dieser Datenschutzerklärung kontaktieren Sie bitte:"
+
+#: .\app\templates\core\season_form.html:3
+msgid "Edit season"
+msgstr "Saison bearbeiten"
+
+#: .\app\templates\core\season_form.html:3
+#: .\app\templates\core\season_form.html:9
+#: .\app\templates\core\season_list.html:7
+msgid "New season"
+msgstr "Neue Saison"
+
+#: .\app\templates\core\season_form.html:7
+#, python-format
+msgid "Edit season \"%(name)s\""
+msgstr "Saison „%(name)s“ bearbeiten"
+
+#: .\app\templates\core\season_form.html:23
+#: .\app\templates\players\player_form.html:11
+msgid "1 team selected"
+msgstr "1 Team ausgewählt"
+
+#: .\app\templates\core\season_form.html:24
+#: .\app\templates\players\player_form.html:12
+msgid "#count# teams selected"
+msgstr "#count# Teams ausgewählt"
+
+#: .\app\templates\core\season_list.html:9
+msgid ""
+"Every season is a closed cash box — open amounts are never carried over to "
+"the next season."
+msgstr ""
+"Jede Saison ist eine abgeschlossene Kasse — offene Beträge werden nie in die "
+"nächste Saison übertragen."
+
+#: .\app\templates\core\season_list.html:11
+msgid ""
+"The default season is shown to every user who has not picked a season "
+"themselves."
+msgstr ""
+"Die Standard-Saison sieht jeder Benutzer, der nicht selbst eine Saison "
+"gewählt hat."
+
+#: .\app\templates\core\season_list.html:12
+msgid ""
+"Switching the season in the navbar is a personal choice for the session only."
+msgstr ""
+"Das Umschalten der Saison in der Navigationsleiste ist eine persönliche "
+"Wahl, die nur für die Sitzung gilt."
+
+#: .\app\templates\core\season_list.html:19
+#: .\app\templates\emails\support_request.html:6
+#: .\app\templates\emails\support_request.txt:5
+#: .\app\templates\players\player_list.html:16
+#: .\app\templates\teams\team_list.html:18
+msgid "Name"
+msgstr "Name"
+
+#: .\app\templates\core\season_list.html:22
+#: .\app\templates\dashboard\financial_overview.html:134
+msgid "Payments"
+msgstr "Zahlungen"
+
+#: .\app\templates\core\season_list.html:42
+msgid "all"
+msgstr "alle"
+
+#: .\app\templates\core\season_list.html:52
+msgid "Set as default"
+msgstr "Als Standard setzen"
+
+#: .\app\templates\core\season_list.html:57
+msgid "Delete this season?"
+msgstr "Diese Saison löschen?"
+
+#: .\app\templates\core\season_list.html:59
+#: .\app\templates\matchdays\matchday_detail.html:12
+#: .\app\templates\matchdays\matchday_detail.html:53
+#: .\app\templates\teams\team_detail.html:10
+#: .\app\templates\teams\team_list.html:32
+msgid "Delete"
+msgstr "Löschen"
+
+#: .\app\templates\core\season_list.html:65
+msgid "No seasons yet."
+msgstr "Noch keine Saisons."
+
+#: .\app\templates\dashboard\dashboard.html:6
+msgid "Logged in as"
+msgstr "Angemeldet als"
+
+#: .\app\templates\dashboard\dashboard.html:11
+msgid "The team name opens its financial overview."
+msgstr "Der Teamname öffnet die Finanzübersicht des Teams."
+
+#: .\app\templates\dashboard\dashboard.html:22
+#: .\app\templates\teams\team_list.html:36
+msgid "No teams yet."
+msgstr "Noch keine Teams."
+
+#: .\app\templates\dashboard\dashboard.html:34
+#: .\app\templates\dashboard\dashboard.html:47
+#: .\app\templates\dashboard\financial_overview.html:13
+#: .\app\templates\dashboard\financial_overview.html:55
+#: .\app\templates\dashboard\financial_overview.html:65
+#: .\app\templates\dashboard\financial_overview.html:102
+#: .\app\templates\players\player_detail.html:15
+#: .\app\templates\players\player_detail.html:25
+#: .\app\templates\teams\team_detail.html:21
+msgid "Penalties total"
+msgstr "Strafe gesamt"
+
+#: .\app\templates\dashboard\dashboard.html:35
+#: .\app\templates\dashboard\dashboard.html:48
+#: .\app\templates\dashboard\financial_overview.html:14
+#: .\app\templates\dashboard\financial_overview.html:56
+#: .\app\templates\dashboard\financial_overview.html:66
+#: .\app\templates\dashboard\financial_overview.html:103
+#: .\app\templates\players\player_detail.html:16
+#: .\app\templates\players\player_detail.html:26
+#: .\app\templates\teams\team_detail.html:22
+msgid "Penalties settled"
+msgstr "Strafe getilgt"
+
+#: .\app\templates\dashboard\dashboard.html:36
+#: .\app\templates\dashboard\dashboard.html:49
+#: .\app\templates\dashboard\financial_overview.html:15
+#: .\app\templates\dashboard\financial_overview.html:57
+#: .\app\templates\dashboard\financial_overview.html:67
+#: .\app\templates\dashboard\financial_overview.html:104
+#: .\app\templates\players\player_detail.html:17
+#: .\app\templates\players\player_detail.html:27
+#: .\app\templates\teams\team_detail.html:23
+msgid "Penalties open"
+msgstr "Strafe noch offen"
+
+#: .\app\templates\dashboard\dashboard.html:38
+#: .\app\templates\matchdays\matchday_form.html:6
+#: .\app\templates\matchdays\matchday_list.html:7
+msgid "New matchday"
+msgstr "Neuer Spieltag"
+
+#: .\app\templates\dashboard\dashboard.html:40
+msgid "Your account has no team assigned."
+msgstr "Ihrem Konto ist kein Team zugeordnet."
+
+#: .\app\templates\dashboard\dashboard.html:45
+#: .\app\templates\dashboard\financial_overview.html:8
+msgid "My penalties"
+msgstr "Meine Strafen"
+
+#: .\app\templates\dashboard\dashboard.html:52
+#: .\app\templates\dashboard\financial_overview.html:19
+#: .\app\templates\dashboard\financial_overview.html:138
+#: .\app\templates\dashboard\financial_overview.html:199
+#: .\app\templates\emails\penalty_created.html:15
+#: .\app\templates\emails\penalty_created.txt:7
+#: .\app\templates\emails\penalty_repayment.html:11
+#: .\app\templates\emails\penalty_repayment.txt:6
+#: .\app\templates\matchdays\matchday_list.html:13
+#: .\app\templates\players\player_detail.html:49
+msgid "Date"
+msgstr "Datum"
+
+#: .\app\templates\dashboard\dashboard.html:52
+#: .\app\templates\dashboard\financial_overview.html:19
+#: .\app\templates\dashboard\financial_overview.html:140
+#: .\app\templates\dashboard\financial_overview.html:199
+#: .\app\templates\emails\penalty_created.html:7
+#: .\app\templates\emails\penalty_created.txt:5
+#: .\app\templates\matchdays\matchday_detail.html:34
+#: .\app\templates\penalties\catalog_list.html:14
+#: .\app\templates\players\player_detail.html:52
+msgid "Amount"
+msgstr "Betrag"
+
+#: .\app\templates\dashboard\dashboard.html:58
+#: .\app\templates\dashboard\financial_overview.html:29
+#: .\app\templates\players\player_detail.html:64
+msgid "No penalties."
+msgstr "Keine Strafen."
+
+#: .\app\templates\dashboard\dashboard.html:63
+msgid ""
+"Your account is not linked to a player yet. Ask an administrator to link "
+"your account."
+msgstr ""
+"Ihr Konto ist noch mit keinem Spieler verknüpft. Bitten Sie einen "
+"Administrator, Ihr Konto zu verknüpfen."
+
+#: .\app\templates\dashboard\financial_overview.html:3
+#: .\app\templates\dashboard\financial_overview.html:5
+msgid "Financial overview"
+msgstr "Finanzübersicht"
+
+#: .\app\templates\dashboard\financial_overview.html:10
+msgid "Your account is not linked to a player yet."
+msgstr "Ihr Konto ist noch mit keinem Spieler verknüpft."
+
+#: .\app\templates\dashboard\financial_overview.html:60
+msgid "Players (active)"
+msgstr "Spieler (aktiv)"
+
+#: .\app\templates\dashboard\financial_overview.html:68
+#: .\app\templates\dashboard\financial_overview.html:105
+msgid "Payment"
+msgstr "Zahlung"
+
+#: .\app\templates\dashboard\financial_overview.html:85
+#: .\app\templates\dashboard\financial_overview.html:122
+msgid "Record payment"
+msgstr "Bezahlen"
+
+#: .\app\templates\dashboard\financial_overview.html:91
+msgid "No active players."
+msgstr "Keine aktiven Spieler."
+
+#: .\app\templates\dashboard\financial_overview.html:97
+msgid "Players (inactive)"
+msgstr "Spieler (inaktiv)"
+
+#: .\app\templates\dashboard\financial_overview.html:110
+#: .\app\templates\players\player_detail.html:7
+#: .\app\templates\teams\team_detail.html:31
+msgid "inactive"
+msgstr "inaktiv"
+
+#: .\app\templates\dashboard\financial_overview.html:128
+msgid "No inactive players with balances."
+msgstr "Keine inaktiven Spieler mit Salden."
+
+#: .\app\templates\dashboard\financial_overview.html:152
+msgid "Revert this payment?"
+msgstr "Diese Zahlung stornieren?"
+
+#: .\app\templates\dashboard\financial_overview.html:155
+msgid "Revert payment"
+msgstr "Zahlung stornieren"
+
+#: .\app\templates\dashboard\financial_overview.html:161
+msgid "No payments yet."
+msgstr "Noch keine Zahlungen."
+
+#: .\app\templates\dashboard\financial_overview.html:168
+msgid "Matchday totals"
+msgstr "Spieltagssummen"
+
+#: .\app\templates\dashboard\financial_overview.html:171
+#: .\app\templates\dashboard\financial_overview.html:199
+#: .\app\templates\emails\penalty_created.html:19
+#: .\app\templates\emails\penalty_created.txt:8
+#: .\app\templates\matchdays\matchday_form.html:3
+msgid "Matchday"
+msgstr "Spieltag"
+
+#: .\app\templates\dashboard\financial_overview.html:171
+#: .\app\templates\dashboard\financial_overview.html:185
+msgid "Total"
+msgstr "Summe"
+
+#: .\app\templates\dashboard\financial_overview.html:176
+#: .\app\templates\teams\team_detail.html:51
+msgid "No matchdays."
+msgstr "Keine Spieltage."
+
+#: .\app\templates\dashboard\financial_overview.html:182
+msgid "Most common penalties"
+msgstr "Häufigste Strafen"
+
+#: .\app\templates\dashboard\financial_overview.html:185
+msgid "Count"
+msgstr "Anzahl"
+
+#: .\app\templates\dashboard\financial_overview.html:190
+#: .\app\templates\matchdays\matchday_detail.html:58
+msgid "No penalties yet."
+msgstr "Noch keine Strafen."
+
+#: .\app\templates\dashboard\financial_overview.html:196
+msgid "Assigned penalties"
+msgstr "Vergebene Strafen"
+
+#: .\app\templates\dashboard\financial_overview.html:210
+msgid "No penalties assigned."
+msgstr "Keine Strafen vergeben."
+
+#: .\app\templates\dashboard\financial_overview.html:216
+msgid "No team selected."
+msgstr "Kein Team ausgewählt."
+
+#: .\app\templates\emails\account_approved.html:4
+#: .\app\templates\emails\account_approved.txt:3
+msgid ""
+"Your account on the Darts Penalty Manager has been approved by an "
+"administrator. You can now log in with your e-mail address:"
+msgstr ""
+
+#: .\app\templates\emails\account_approved.html:9
+#: .\app\templates\emails\account_approved.txt:8
+msgid "Log in now"
+msgstr "Jetzt anmelden"
+
+#: .\app\templates\emails\account_registered.html:2
+msgid "New registration"
+msgstr "Neue Registrierung"
+
+#: .\app\templates\emails\account_registered.html:4
+#: .\app\templates\emails\account_registered.txt:3
+msgid "A new user has registered and is waiting for approval:"
+msgstr "Ein neuer Benutzer hat sich registriert und wartet auf die Freigabe:"
+
+#: .\app\templates\emails\account_registered.html:10
+#: .\app\templates\emails\account_registered.txt:9
+msgid "The account cannot log in until it has been approved."
+msgstr "Das Konto kann sich erst nach der Freigabe anmelden."
+
+#: .\app\templates\emails\account_registered.html:12
+#: .\app\templates\emails\account_registered.txt:10
+msgid "Review user"
+msgstr "Benutzer prüfen"
+
+#: .\app\templates\emails\account_rejected.html:4
+#: .\app\templates\emails\account_rejected.txt:3
+msgid ""
+"Unfortunately, your registration on the Darts Penalty Manager has been "
+"reviewed and declined:"
+msgstr ""
+
+#: .\app\templates\emails\account_rejected.html:6
+#: .\app\templates\emails\account_rejected.txt:7
+msgid ""
+"If you think this is a mistake, please contact the club (support address "
+"below)."
+msgstr ""
+
+#: .\app\templates\emails\base_email.html:20
+msgid "This is an automated message from the Darts Penalty Manager."
+msgstr "Dies ist eine automatisch erstellte Nachricht des Darts Penalty Manager."
+
+#: .\app\templates\emails\base_email.html:21
+#: .\app\templates\emails\base_email.txt:6
+msgid "Support"
+msgstr "Support"
+
+#: .\app\templates\emails\penalty_created.html:2
+msgid "New penalty"
+msgstr "Neue Strafe"
+
+#: .\app\templates\emails\penalty_created.html:4
+#: .\app\templates\emails\penalty_created.txt:3
+#, python-format
+msgid "Hi %(name)s, a new penalty has been recorded for you:"
+msgstr "Hallo %(name)s, für Sie wurde eine neue Strafe erfasst:"
+
+#: .\app\templates\emails\penalty_created.html:11
+#: .\app\templates\emails\penalty_created.txt:6
+msgid "Reason"
+msgstr "Grund"
+
+#: .\app\templates\emails\penalty_created.html:31
+#: .\app\templates\emails\penalty_created.txt:11
+msgid "Current open total"
+msgstr "Aktueller offener Betrag"
+
+#: .\app\templates\emails\penalty_repayment.html:2
+msgid "Payment received"
+msgstr "Zahlung eingegangen"
+
+#: .\app\templates\emails\penalty_repayment.html:4
+#: .\app\templates\emails\penalty_repayment.txt:3
+#, python-format
+msgid "Hi %(name)s, your payment has been recorded:"
+msgstr "Hallo %(name)s, Ihre Zahlung wurde erfasst:"
+
+#: .\app\templates\emails\penalty_repayment.html:7
+#: .\app\templates\emails\penalty_repayment.txt:5
+msgid "Amount paid"
+msgstr "Bezahlter Betrag"
+
+#: .\app\templates\emails\penalty_repayment.html:26
+#: .\app\templates\emails\penalty_repayment.txt:10
+msgid "Full repayment — nothing is owed anymore."
+msgstr "Vollständig beglichen — es wird nichts mehr geschuldet."
+
+#: .\app\templates\emails\penalty_repayment.html:32
+#: .\app\templates\emails\penalty_repayment.txt:12
+msgid "Partial repayment"
+msgstr "Teilzahlung"
+
+#: .\app\templates\emails\penalty_repayment.html:35
+#: .\app\templates\emails\penalty_repayment.txt:13
+msgid "Remaining balance"
+msgstr "Restbetrag"
+
+#: .\app\templates\emails\support_request.html:2
+msgid "Support request"
+msgstr "Supportanfrage"
+
+#: .\app\templates\emails\support_request.html:4
+#: .\app\templates\emails\support_request.txt:3
+#, python-format
+msgid ""
+"A support request has been sent via the Darts Penalty Manager by %(name)s:"
+msgstr ""
+
+#: .\app\templates\includes\_cookie_consent.html:3
+msgid "Cookie notice"
+msgstr "Cookie-Hinweis"
+
+#: .\app\templates\includes\_cookie_consent.html:6
+msgid ""
+"This site sets only essential cookies (session for login, your language "
+"choice); no tracking or third-party cookies are set."
+msgstr ""
+"Diese Website setzt nur notwendige Cookies (Sitzung für die Anmeldung, Ihre "
+"Sprachauswahl); es werden keine Tracking- oder Cookies von Drittanbietern "
+"gesetzt."
+
+#: .\app\templates\includes\_cookie_consent.html:9
+msgid "Understood"
+msgstr "Verstanden"
+
+#: .\app\templates\includes\_pagination.html:3
+msgid "Page navigation"
+msgstr "Seitennavigation"
+
+#: .\app\templates\includes\_participant_chips.html:16
+msgid "1 participant selected"
+msgstr "1 Teilnehmer ausgewählt"
+
+#: .\app\templates\includes\_participant_chips.html:17
+msgid "#count# participants selected"
+msgstr "#count# Teilnehmer ausgewählt"
+
+#: .\app\templates\includes\_theme_switcher.html:4
+msgid "Theme"
+msgstr "Design"
+
+#: .\app\templates\matchdays\matchday_confirm_delete.html:3
+#: .\app\templates\matchdays\matchday_confirm_delete.html:6
+msgid "Delete matchday"
+msgstr "Spieltag löschen"
+
+#: .\app\templates\matchdays\matchday_confirm_delete.html:8
+#, python-format
+msgid ""
+"\n"
+"            Do you really want to delete the matchday \"%(label)s\"?\n"
+"        "
+msgstr ""
+"\n"
+"            Möchten Sie den Spieltag \"%(label)s\" wirklich löschen?\n"
+"        "
+
+#: .\app\templates\matchdays\matchday_confirm_delete.html:13
+msgid ""
+"Deletion is only possible if this matchday has no penalties (including "
+"deleted ones)."
+msgstr ""
+"Eine Löschung ist nur möglich, wenn dieser Spieltag keine Strafen enthält "
+"(auch keine gelöschten)."
+
+#: .\app\templates\matchdays\matchday_confirm_delete.html:17
+#: .\app\templates\teams\team_confirm_delete.html:17
+msgid "Delete permanently"
+msgstr "Endgültig löschen"
+
+#: .\app\templates\matchdays\matchday_detail.html:10
+msgid "Add penalty"
+msgstr "Strafe hinzufügen"
+
+#: .\app\templates\matchdays\matchday_detail.html:22
+msgid "No participants."
+msgstr "Keine Teilnehmer."
+
+#: .\app\templates\matchdays\matchday_detail.html:26
+#: .\app\templates\players\player_detail.html:44
+msgid "Penalties"
+msgstr "Strafen"
+
+#: .\app\templates\matchdays\matchday_detail.html:44
+msgid "Group penalty"
+msgstr "Gruppenstraße"
+
+#: .\app\templates\matchdays\matchday_detail.html:44
+msgid "group"
+msgstr "Gruppe"
+
+#: .\app\templates\matchdays\matchday_detail.html:45
+msgid "Manual penalty"
+msgstr "Manuelle Strafe"
+
+#: .\app\templates\matchdays\matchday_detail.html:45
+msgid "manual"
+msgstr "manuell"
+
+#: .\app\templates\matchdays\matchday_detail.html:51
+msgid "Delete this penalty? All rows of the group will be deleted."
+msgstr "Diese Strafe löschen? Alle Zeilen der Gruppe werden gelöscht."
+
+#: .\app\templates\matchdays\matchday_form.html:6
+msgid "Edit matchday"
+msgstr "Spieltag bearbeiten"
+
+#: .\app\templates\matchdays\matchday_list.html:14
+msgid "Venue"
+msgstr "Spielort"
+
+#: .\app\templates\matchdays\matchday_list.html:15
+msgid "Opponent"
+msgstr "Gegner"
+
+#: .\app\templates\matchdays\matchday_list.html:28
+msgid "No matchdays yet."
+msgstr "Noch keine Spieltage."
+
+#: .\app\templates\matchdays\matchday_list.html:16
+msgid "All teams"
+msgstr "Alle Mannschaften"
+
+#: .\app\templates\penalties\catalog_form.html:3
+msgid "Catalog item"
+msgstr "Katalogeintrag"
+
+#: .\app\templates\penalties\catalog_form.html:5
+msgid "Edit catalog item"
+msgstr "Katalogeintrag bearbeiten"
+
+#: .\app\templates\penalties\catalog_form.html:5
+msgid "New catalog item"
+msgstr "Neuer Katalogeintrag"
+
+#: .\app\templates\penalties\catalog_list.html:3
+#: .\app\templates\penalties\catalog_list.html:6
+msgid "Penalty catalog"
+msgstr "Strafkatalog"
+
+#: .\app\templates\penalties\catalog_list.html:7
+msgid "New item"
+msgstr "Neuer Eintrag"
+
+#: .\app\templates\penalties\catalog_list.html:15
+msgid "Type"
+msgstr "Typ"
+
+#: .\app\templates\penalties\catalog_list.html:17
+#: .\app\templates\penalties\catalog_list.html:36
+#: .\app\templates\penalties\catalog_team_amounts.html:3
+#: .\app\templates\penalties\catalog_team_amounts.html:5
+msgid "Team fees"
+msgstr "Mannschaftsgebühren"
+
+#: .\app\templates\penalties\catalog_list.html:32
+msgid "Default for all teams"
+msgstr "Standard für alle Mannschaften"
+
+#: .\app\templates\penalties\catalog_list.html:42
+msgid "Activate"
+msgstr "Aktivieren"
+
+#: .\app\templates\penalties\catalog_list.html:49
+msgid "No catalog items yet."
+msgstr "Noch keine Katalogeinträge."
+
+#: .\app\templates\penalties\catalog_team_amounts.html:7
+msgid "Default"
+msgstr "Standard"
+
+#: .\app\templates\penalties\catalog_team_amounts.html:10
+msgid ""
+"Enter a team-specific fee, or leave the field empty to keep the default "
+"amount."
+msgstr ""
+"Mannschaftsspezifische Gebühr eingeben oder das Feld leer lassen, um den "
+"Standardbetrag zu behalten."
+
+#: .\app\templates\penalties\catalog_team_amounts.html:19
+msgid "Fee (EUR)"
+msgstr "Gebühr (EUR)"
+
+#: .\app\templates\penalties\penalty_form.html:3
+msgid "Penalty"
+msgstr "Strafe"
+
+#: .\app\templates\penalties\penalty_form.html:8
+#, python-format
+msgid ""
+"\n"
+"            Editing penalty (group %(group)s).\n"
+"        "
+msgstr ""
+"\n"
+"            Strafe bearbeiten (Gruppe %(group)s).\n"
+"        "
+
+#: .\app\templates\penalties\penalty_form.html:12
+msgid "Assign a penalty"
+msgstr "Strafe verhängen"
+
+#: .\app\templates\penalties\penalty_form.html:29
+msgid "Save changes"
+msgstr "Änderungen speichern"
+
+#: .\app\templates\penalties\penalty_form.html:29
+msgid "Assign penalty"
+msgstr "Strafe verhängen"
+
+#: .\app\templates\players\player_detail.html:38
+msgid "No teams."
+msgstr "Keine Mannschaften."
+
+#: .\app\templates\players\player_form.html:5
+msgid "Edit player"
+msgstr "Spieler bearbeiten"
+
+#: .\app\templates\players\player_list.html:10
+msgid "The team assignment shown belongs to this season:"
+msgstr "Die angezeigte Team-Zuordnung gehört zu dieser Saison:"
+
+#: .\app\templates\players\player_list.html:34
+msgid "Deactivate this player?"
+msgstr "Diesen Spieler deaktivieren?"
+
+#: .\app\templates\players\player_list.html:42
+msgid "No players yet."
+msgstr "Noch keine Spieler."
+
+#: .\app\templates\teams\team_confirm_delete.html:3
+#: .\app\templates\teams\team_confirm_delete.html:6
+msgid "Delete team"
+msgstr "Team löschen"
+
+#: .\app\templates\teams\team_confirm_delete.html:8
+#, python-format
+msgid ""
+"\n"
+"            Do you really want to delete the team \"%(name)s\"?\n"
+"        "
+msgstr ""
+"\n"
+"            Möchten Sie das Team \"%(name)s\" wirklich löschen?\n"
+"        "
+
+#: .\app\templates\teams\team_confirm_delete.html:13
+msgid ""
+"Deletion is only possible if the team has no players, no matchdays and no "
+"linked captain accounts."
+msgstr ""
+"Eine Löschung ist nur möglich, wenn das Team keine Spieler, keine Spieltage "
+"und keine verknüpften Kapitänskonten hat."
+
+#: .\app\templates\teams\team_detail.html:38
+msgid "No players."
+msgstr "Keine Spieler."
+
+#: .\app\templates\teams\team_form.html:5
+msgid "Edit team"
+msgstr "Team bearbeiten"
+
+#: .\app\templates\teams\team_form.html:5
+#: .\app\templates\teams\team_list.html:7
+msgid "New team"
+msgstr "Neues Team"
+
+#: .\app\templates\teams\team_list.html:11
+#, python-format
+msgid ""
+"Only the teams active in season %(name)s are shown. Manage them on the "
+"seasons page."
+msgstr ""
+"Es werden nur die in der Saison %(name)s aktiven Teams angezeigt. Verwalte "
+"sie auf der Saisons-Seite."
+
+#: .\app\templates\teams\team_list.html:20
+msgid "Captains"
+msgstr "Kapitäne"
+
+#~ msgid "Open"
+#~ msgstr "Öffnen"
+
+#~ msgid "Balance (owed)"
+#~ msgstr "Saldo (geschuldet)"
+
+#~ msgid "Total paid"
+#~ msgstr "Summe gezahlt"
+
+#~ msgid "Total balance (owed)"
+#~ msgstr "Gesamtsaldo (geschuldet)"
+
+#~ msgid "Only for normal penalties — leave empty to use the catalog amount."
+#~ msgstr ""
+#~ "Nur für normale Strafen — leer lassen, um den Katalogbetrag zu verwenden."
+
+#~ msgid "Flexible charge — must be a positive amount."
+#~ msgstr "Flexibler Betrag — muss positiv sein."
+
+#~ msgid "Comment"
+#~ msgstr "Kommentar"
+
+#~ msgid "Why the penalty? E.g. \"said stupid stuff\"."
+#~ msgstr "Warum die Strafe? Z. B. \"blödes Gelaber\"."
+
+#~ msgid "paid at"
+#~ msgstr "bezahlt am"
+
+#~ msgid "paid by"
+#~ msgstr "bezahlt von"
+
+#~ msgid "paid"
+#~ msgstr "bezahlt"
+
+#~ msgid "unpaid"
+#~ msgstr "offen"
+
+#~ msgid "Mark as paid"
+#~ msgstr "Bezahlen"
+
+#~ msgid "Manual penalty — flexible amount with a required comment."
+#~ msgstr "Manuelle Strafe — flexibler Betrag mit Pflichtkommentar."
+

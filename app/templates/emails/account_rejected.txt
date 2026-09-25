@@ -1,0 +1,8 @@
+{% extends "emails/base_email.txt" %}{% load i18n %}
+{% block content %}
+{% blocktranslate %}Unfortunately, your registration on the Darts Penalty Manager has been reviewed and declined:{% endblocktranslate %}
+
+{% translate "E-mail" %}: {{ rejected_user.email }}
+
+{% translate "If you think this is a mistake, please contact the club (support address below)." %}
+{% endblock %}

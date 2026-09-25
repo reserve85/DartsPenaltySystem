@@ -1,0 +1,48 @@
+{% extends "base.html" %}
+{% load i18n %}
+{% block title %}{% translate "Players" %} – {% translate "Darts Penalty Manager" %}{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h1 class="h3 mb-0">{% translate "Players" %}</h1>
+    <a class="btn btn-primary" href="{% url 'players:player_create' %}">{% translate "New player" %}</a>
+</div>
+{% if season %}
+    <p class="text-muted small">{% translate "The team assignment shown belongs to this season:" %} <strong>{{ season.name }}</strong></p>
+{% endif %}
+<div class="table-responsive">
+    <table class="table table-striped align-middle">
+        <thead>
+        <tr>
+            <th>{% translate "Name" %}</th>
+            <th>{% translate "Teams" %}</th>
+            <th>{% translate "Active" %}</th>
+            <th></th>
+        </tr>
+        </thead>
+        <tbody>
+        {% for player in page_obj %}
+            <tr>
+                <td><a href="{% url 'players:player_detail' player.pk %}">{{ player.name }}</a></td>
+                <td>
+                    {% for assignment in player.season_assignments %}{{ assignment.team.name }}{% if not forloop.last %}, {% endif %}{% empty %}<span class="text-muted">–</span>{% endfor %}
+                </td>
+                <td>{% if player.active %}<span class="text-success">✓</span>{% else %}<span class="text-danger">✗</span>{% endif %}</td>
+                <td class="text-end text-nowrap">
+                    <a class="btn btn-sm btn-outline-secondary" href="{% url 'players:player_update' player.pk %}">{% translate "Edit" %}</a>
+                    {% if player.active %}
+                        <form method="post" action="{% url 'players:player_deactivate' player.pk %}" class="d-inline"
+                              data-confirm="{% translate 'Deactivate this player?' %}">
+                            {% csrf_token %}
+                            <button class="btn btn-sm btn-outline-danger" type="submit">{% translate "Deactivate" %}</button>
+                        </form>
+                    {% endif %}
+                </td>
+            </tr>
+        {% empty %}
+            <tr><td colspan="4" class="text-center text-muted py-4">{% translate "No players yet." %}</td></tr>
+        {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% include "includes/_pagination.html" with page_obj=page_obj %}
+{% endblock %}

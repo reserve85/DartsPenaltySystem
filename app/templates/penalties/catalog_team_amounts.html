@@ -1,0 +1,40 @@
+{% extends "base.html" %}
+{% load i18n %}
+{% block title %}{% translate "Team fees" %} – {% translate "Darts Penalty Manager" %}{% endblock %}
+{% block content %}
+<h1 class="h3 mb-1">{% translate "Team fees" %}</h1>
+<p class="text-muted">
+    {{ item.description }} – {% translate "Default" %}: {{ default_amount|floatformat:2 }} €
+</p>
+<p class="form-text mb-3">
+    {% translate "Enter a team-specific fee, or leave the field empty to keep the default amount." %}
+</p>
+<form method="post" class="card card-body">
+    {% csrf_token %}
+    <div class="table-responsive">
+        <table class="table align-middle">
+            <thead>
+            <tr>
+                <th>{% translate "Team" %}</th>
+                <th>{% translate "Fee (EUR)" %}</th>
+            </tr>
+            </thead>
+            <tbody>
+            {% for row in rows %}
+                <tr>
+                    <td>{{ row.team.name }}</td>
+                    <td style="max-width: 12rem;">
+                        <input class="form-control" type="number" step="0.01" min="0"
+                               name="team_{{ row.team.pk }}" value="{{ row.value }}">
+                    </td>
+                </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    <div class="d-flex gap-2">
+        <button type="submit" class="btn btn-primary">{% translate "Save" %}</button>
+        <a class="btn btn-outline-secondary" href="{% url 'penalties:catalog_list' %}">{% translate "Cancel" %}</a>
+    </div>
+</form>
+{% endblock %}

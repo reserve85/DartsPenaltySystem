@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+{% load i18n %}
+{% block title %}{% translate "Delete matchday" %} – {% translate "Darts Penalty Manager" %}{% endblock %}
+{% block content %}
+<div class="card card-body border-danger">
+    <h1 class="h4 text-danger">{% translate "Delete matchday" %}</h1>
+    <p>
+        {% blocktranslate with label=matchday.display_label %}
+            Do you really want to delete the matchday "{{ label }}"?
+        {% endblocktranslate %}
+    </p>
+    <p class="text-muted">
+        {% translate "Deletion is only possible if this matchday has no penalties (including deleted ones)." %}
+    </p>
+    <form method="post">
+        {% csrf_token %}
+        <button type="submit" class="btn btn-danger">{% translate "Delete permanently" %}</button>
+        <a class="btn btn-outline-secondary" href="{% url 'matchdays:matchday_detail' matchday.pk %}">{% translate "Cancel" %}</a>
+    </form>
+</div>
+{% endblock %}

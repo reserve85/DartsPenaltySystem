@@ -1,0 +1,10 @@
+{% load i18n %}
+<li class="nav-item dropdown">
+    <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown"
+       aria-expanded="false" title="{% translate 'Theme' %}">🌗</a>
+    <ul class="dropdown-menu dropdown-menu-end">
+        <li><button type="button" class="dropdown-item" data-theme-choice-btn="auto">🌗 {% translate "Auto" %}</button></li>
+        <li><button type="button" class="dropdown-item" data-theme-choice-btn="light">☀️ {% translate "Light" %}</button></li>
+        <li><button type="button" class="dropdown-item" data-theme-choice-btn="dark">🌙 {% translate "Dark" %}</button></li>
+    </ul>
+</li>

@@ -1,0 +1,12 @@
+{% extends "emails/base_email.txt" %}{% load i18n %}
+{% block content %}
+{% blocktranslate with name=player.name %}Hi {{ name }}, a new penalty has been recorded for you:{% endblocktranslate %}
+
+{% translate "Amount" %}: {{ amount|floatformat:2 }} €
+{% translate "Reason" %}: {{ reason }}
+{% translate "Date" %}: {{ penalty_date|date:"d.m.Y" }}
+{% translate "Matchday" %}: {{ matchday.display_label }}
+{% translate "Team" %}: {{ team.name }}
+{% translate "Season" %}: {% if season %}{{ season.name }}{% else %}–{% endif %}
+{% translate "Current open total" %}: {{ open_total|floatformat:2 }} €
+{% endblock %}

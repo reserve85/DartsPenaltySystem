@@ -1,0 +1,70 @@
+# ============================================================================
+# TEMPLATE — Local Test Stack (Darts Penalty Manager)
+# ============================================================================
+#
+# THIS FILE IS COMMITTED — keep it free of secrets!
+#
+# Setup:
+#   1. Copy this file to:  docker-compose.yml   (that name is git-ignored)
+#   2. Fill in the CHANGE_ME values below with your local credentials.
+#   3. Run:  .\start-livesystem-test.ps1
+#
+# docker-compose.yml must NEVER be committed (it holds the real SMTP
+# password, superuser password and secret key) — see .gitignore in this
+# folder. Only this template + the start script are tracked by git.
+#
+# ============================================================================
+
+services:
+  app:
+    image: darts-penalty-livesystem-test:local
+    build:
+      # Build from the repository root (two levels up from this folder)
+      context: ../../
+      dockerfile: Dockerfile
+    container_name: darts-penalty-livesystem-test
+    restart: unless-stopped
+    ports:
+      # "<HOST port>:<container port>" - change the LEFT side if 8200 is
+      # already taken or excluded on this machine (Hyper-V/Docker ranges).
+      - "8200:8000"
+    volumes:
+      # Live system DB copy lives here (bind mount -> survives down -v).
+      # The root .dockerignore excludes tests/ from the build context, so
+      # the backup is never baked into the image.
+      - ./data:/app/data
+    environment:
+      # ── Application settings (self-contained) ─────────────────────────
+      - DJANGO_SECRET_KEY=CHANGE_ME_random_secret_key          # python -c "import secrets; print(secrets.token_urlsafe(50))"
+      - DJANGO_DEBUG=False
+      - DJANGO_ALLOWED_HOSTS=localhost,127.0.0.1
+      - DJANGO_LANGUAGE_CODE=de
+      - DJANGO_SECURE_SSL_REDIRECT=false              # HTTP->HTTPS redirect + secure cookies | Default: False
+      - DJANGO_SECURE_HSTS_SECONDS=0                  # HSTS max-age (0 disables, e.g. 31536000 = 1 year) | Default: 0
+      - DJANGO_TIME_ZONE=Europe/Berlin
+      - SQLITE_PATH=data/db.sqlite3
+
+      # ── Bootstrap admin (created ONLY when missing from the backup; ──
+      #    existing live users are left untouched by `bootstrap`)
+      - DJANGO_SUPERUSER_EMAIL=admin@example.com
+      - DJANGO_SUPERUSER_PASSWORD=                    # Empty: no bootstrap admin is created
+
+      # ── Optional legal info (Imprint + Privacy Policy) ─────────────────
+      - CONTACT_COMPANY=
+      - CONTACT_NAME=
+      - CONTACT_STREET=
+      - CONTACT_CITY=
+      - CONTACT_EMAIL=
+      - IMPRINT_NAME=
+      - IMPRINT_URL=
+
+      # ── SMTP / e-mail (registration, approval, penalty + repayment info) ─
+      - EMAIL_HOST=smtp.example.com                   # SMTP server | e.g. smtp.example.com | Empty: e-mails are skipped + logged
+      - EMAIL_PORT=587                                # SMTP port | 587 (STARTTLS) or 465 (SSL)
+      - EMAIL_HOST_USER=                              # SMTP user | Often the full e-mail address
+      - EMAIL_HOST_PASSWORD=                          # SMTP password | ⚠ local only, NEVER commit
+      - EMAIL_USE_TLS=True                            # STARTTLS | true, false
+      - DEFAULT_FROM_EMAIL=                           # Sender address | e.g. noreply@example.com
+      - SUPPORT_EMAIL=                                # Support/admin recipient | e.g. support@example.com
+      - PUBLIC_SITE_URL=127.0.0.1:8200                # Public base URL for e-mail links | e.g. https://darts.example.com
+      - ACCOUNT_EMAIL_VERIFICATION=mandatory          # E-mail verification | mandatory, optional, none

@@ -1,0 +1,57 @@
+{% extends "base.html" %}
+{% load i18n %}
+{% block title %}{% translate "Penalty" %} – {% translate "Darts Penalty Manager" %}{% endblock %}
+{% block content %}
+<h1 class="h3 mb-1">{{ matchday.display_label }}</h1>
+<p class="text-muted">
+    {% if editing %}
+        {% blocktranslate with group=editing.group_id|default:"–" %}
+            Editing penalty (group {{ group }}).
+        {% endblocktranslate %}
+    {% else %}
+        {% translate "Assign a penalty" %}
+    {% endif %}
+</p>
+
+<form method="post" novalidate class="card card-body">
+    {% csrf_token %}
+    {% include "includes/_form_errors.html" with form=form %}
+    {% for field in form %}
+        <div class="mb-3">
+            <label for="{{ field.id_for_label }}" class="form-label">{{ field.label }}</label>
+            {{ field }}
+            {% if field.help_text %}<div class="form-text">{{ field.help_text }}</div>{% endif %}
+            {% for error in field.errors %}<div class="text-danger small">{{ error }}</div>{% endfor %}
+        </div>
+    {% endfor %}
+    <div class="d-flex gap-2">
+        <button type="submit" class="btn btn-primary">
+            {% if editing %}{% translate "Save changes" %}{% else %}{% translate "Assign penalty" %}{% endif %}
+        </button>
+        <a class="btn btn-outline-secondary" href="{% url 'matchdays:matchday_detail' matchday.pk %}">{% translate "Cancel" %}</a>
+    </div>
+</form>
+{% if form.catalog_item %}
+<script>
+(function () {
+    // Amount input is only relevant for MANUAL catalog items (individual
+    // amount + required comment); everything else uses the catalog amount.
+    const select = document.getElementById("id_catalog_item");
+    const amount = document.getElementById("id_amount_eur");
+    const description = document.getElementById("id_description");
+    if (!select || !amount) return;
+    const manualIds = {{ manual_ids|default:"[]" }};
+    const amountBox = amount.closest(".mb-3");
+    function sync() {
+        const isManual = manualIds.indexOf(parseInt(select.value, 10)) !== -1;
+        if (amountBox) amountBox.classList.toggle("d-none", !isManual);
+        amount.disabled = !isManual;
+        amount.required = isManual;
+        if (description) description.required = isManual;
+    }
+    select.addEventListener("change", sync);
+    sync();
+})();
+</script>
+{% endif %}
+{% endblock %}

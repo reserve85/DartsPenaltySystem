@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+{% load i18n %}
+{% block title %}{% translate "Delete team" %} – {% translate "Darts Penalty Manager" %}{% endblock %}
+{% block content %}
+<div class="card card-body border-danger">
+    <h1 class="h4 text-danger">{% translate "Delete team" %}</h1>
+    <p>
+        {% blocktranslate with name=team.name %}
+            Do you really want to delete the team "{{ name }}"?
+        {% endblocktranslate %}
+    </p>
+    <p class="text-muted">
+        {% translate "Deletion is only possible if the team has no players, no matchdays and no linked captain accounts." %}
+    </p>
+    <form method="post">
+        {% csrf_token %}
+        <button type="submit" class="btn btn-danger">{% translate "Delete permanently" %}</button>
+        <a class="btn btn-outline-secondary" href="{% url 'teams:team_detail' team.pk %}">{% translate "Cancel" %}</a>
+    </form>
+</div>
+{% endblock %}

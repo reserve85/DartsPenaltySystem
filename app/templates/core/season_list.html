@@ -1,0 +1,70 @@
+{% extends "base.html" %}
+{% load i18n %}
+{% block title %}{% translate "Seasons" %} – {% translate "Darts Penalty Manager" %}{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h1 class="h3 mb-0">{% translate "Seasons" %}</h1>
+    <a class="btn btn-primary" href="{% url 'season_create' %}">{% translate "New season" %}</a>
+</div>
+<p class="text-muted">{% translate "Every season is a closed cash box — open amounts are never carried over to the next season." %}</p>
+<p class="text-muted small">
+    {% translate "The default season is shown to every user who has not picked a season themselves." %}
+    {% translate "Switching the season in the navbar is a personal choice for the session only." %}
+</p>
+
+<div class="table-responsive">
+    <table class="table table-striped align-middle">
+        <thead>
+        <tr>
+            <th>{% translate "Name" %}</th>
+            <th>{% translate "Active teams" %}</th>
+            <th class="text-end">{% translate "Matchdays" %}</th>
+            <th class="text-end">{% translate "Payments" %}</th>
+            <th></th>
+        </tr>
+        </thead>
+        <tbody>
+        {% for season in seasons %}
+            <tr>
+                <td>
+                    {{ season.name }}
+                    {% if default_season and season.pk == default_season.pk %}
+                        <span class="badge text-bg-primary">{% translate "default" %}</span>
+                    {% endif %}
+                    {% if active_season and season.pk == active_season.pk %}
+                        <span class="badge text-bg-success">{% translate "active" %}</span>
+                    {% endif %}
+                </td>
+                <td>
+                    {% if season.team_count %}
+                        {{ season.team_count }}
+                    {% else %}
+                        <span class="text-muted">{% translate "all" %}</span>
+                    {% endif %}
+                </td>
+                <td class="text-end">{{ season.matchday_count }}</td>
+                <td class="text-end">{{ season.payment_count }}</td>
+                <td class="text-end text-nowrap">
+                    <a class="btn btn-sm btn-outline-secondary" href="{% url 'season_update' season.pk %}">{% translate "Edit" %}</a>
+                    {% if not default_season or season.pk != default_season.pk %}
+                        <form method="post" action="{% url 'season_set_default' season.pk %}" class="d-inline">
+                            {% csrf_token %}
+                            <button class="btn btn-sm btn-outline-primary" type="submit">{% translate "Set as default" %}</button>
+                        </form>
+                    {% endif %}
+                    {% if season.matchday_count == 0 and season.payment_count == 0 %}
+                        <form method="post" action="{% url 'season_delete' season.pk %}" class="d-inline"
+                              data-confirm="{% translate 'Delete this season?' %}">
+                            {% csrf_token %}
+                            <button class="btn btn-sm btn-outline-danger" type="submit">{% translate "Delete" %}</button>
+                        </form>
+                    {% endif %}
+                </td>
+            </tr>
+        {% empty %}
+            <tr><td colspan="5" class="text-center text-muted py-4">{% translate "No seasons yet." %}</td></tr>
+        {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}

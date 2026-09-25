@@ -1,0 +1,11 @@
+{% extends "emails/base_email.html" %}{% load i18n %}
+{% block subject %}{% translate "Your account has been activated" %}{% endblock %}
+{% block content %}
+<p>{% blocktranslate with email=approved_user.email %}Your account on the Darts Penalty Manager has been approved by an administrator. You can now log in with your e-mail address:{% endblocktranslate %}</p>
+{% if approved_user.player_link %}
+<p><strong>{% translate "Linked player" %}:</strong> {{ approved_user.player_link.name }}</p>
+{% endif %}
+<p><a href="{{ login_url }}" style="display:inline-block;background-color:#0d6efd;color:#ffffff;text-decoration:none;padding:10px 16px;border-radius:6px;">
+    {% translate "Log in now" %}
+</a></p>
+{% endblock %}

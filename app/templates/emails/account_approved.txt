@@ -1,0 +1,9 @@
+{% extends "emails/base_email.txt" %}{% load i18n %}
+{% block content %}
+{% blocktranslate %}Your account on the Darts Penalty Manager has been approved by an administrator. You can now log in with your e-mail address:{% endblocktranslate %}
+
+{% translate "E-mail" %}: {{ approved_user.email }}
+{% if approved_user.player_link %}{% translate "Linked player" %}: {{ approved_user.player_link.name }}
+{% endif %}
+{% translate "Log in now" %}: {{ login_url }}
+{% endblock %}

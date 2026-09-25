@@ -1,0 +1,49 @@
+{% extends "base.html" %}
+{% load i18n %}
+{% block title %}{% translate "Matchdays" %} – {% translate "Darts Penalty Manager" %}{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h1 class="h3 mb-0">{% translate "Matchdays" %}</h1>
+    <a class="btn btn-primary" href="{% url 'matchdays:matchday_create' %}">{% translate "New matchday" %}</a>
+</div>
+{% if teams %}
+<form method="get" class="row g-2 mb-3">
+    <input type="hidden" name="sort" value="{{ sort }}">
+    <input type="hidden" name="dir" value="{{ dir }}">
+    <div class="col-md-4">
+        <label class="form-label" for="id_team">{% translate "Team" %}</label>
+        <select name="team" id="id_team" class="form-select" onchange="this.form.submit()">
+            <option value="">{% translate "All teams" %}</option>
+            {% for team in teams %}
+                <option value="{{ team.pk }}"{% if team.pk == selected_team.pk %} selected{% endif %}>{{ team.name }}</option>
+            {% endfor %}
+        </select>
+    </div>
+</form>
+{% endif %}
+<div class="table-responsive">
+    <table class="table table-striped align-middle">
+        <thead>
+        <tr>
+            <th><a href="?sort=date&dir={{ sort_next.date }}{% if selected_team %}&team={{ selected_team.pk }}{% endif %}">{% translate "Date" %}{% if sort == "date" %} {% if dir == "asc" %}▲{% else %}▼{% endif %}{% endif %}</a></th>
+            <th><a href="?sort=venue&dir={{ sort_next.venue }}{% if selected_team %}&team={{ selected_team.pk }}{% endif %}">{% translate "Venue" %}{% if sort == "venue" %} {% if dir == "asc" %}▲{% else %}▼{% endif %}{% endif %}</a></th>
+            <th><a href="?sort=opponent&dir={{ sort_next.opponent }}{% if selected_team %}&team={{ selected_team.pk }}{% endif %}">{% translate "Opponent" %}{% if sort == "opponent" %} {% if dir == "asc" %}▲{% else %}▼{% endif %}{% endif %}</a></th>
+            <th><a href="?sort=team&dir={{ sort_next.team }}{% if selected_team %}&team={{ selected_team.pk }}{% endif %}">{% translate "Team" %}{% if sort == "team" %} {% if dir == "asc" %}▲{% else %}▼{% endif %}{% endif %}</a></th>
+        </tr>
+        </thead>
+        <tbody>
+        {% for matchday in page_obj %}
+            <tr>
+                <td><a href="{% url 'matchdays:matchday_detail' matchday.pk %}">{{ matchday.date|date:"d.m.Y" }}</a></td>
+                <td>{% if matchday.venue == "home" %}{% translate "Home" %}{% else %}{% translate "Away" %}{% endif %}</td>
+                <td>{{ matchday.opponent }}</td>
+                <td>{{ matchday.team.name }}</td>
+            </tr>
+        {% empty %}
+            <tr><td colspan="4" class="text-center text-muted py-4">{% translate "No matchdays yet." %}</td></tr>
+        {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% include "includes/_pagination.html" with page_obj=page_obj %}
+{% endblock %}

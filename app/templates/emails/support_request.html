@@ -1,0 +1,10 @@
+{% extends "emails/base_email.html" %}{% load i18n %}
+{% block subject %}{% translate "Support request" %}: {{ sender_name }}{% endblock %}
+{% block content %}
+<p>{% blocktranslate with name=sender_name %}A support request has been sent via the Darts Penalty Manager by {{ name }}:{% endblocktranslate %}</p>
+<ul>
+    <li><strong>{% translate "Name" %}:</strong> {{ sender_name }}</li>
+    <li><strong>{% translate "E-mail" %}:</strong> {{ sender_email }}</li>
+</ul>
+<p style="white-space:pre-wrap;">{{ message }}</p>
+{% endblock %}

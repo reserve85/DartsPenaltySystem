@@ -1,0 +1,35 @@
+{% extends "emails/base_email.html" %}{% load i18n %}
+{% block subject %}{% translate "New penalty" %}: {{ amount|floatformat:2 }} €{% endblock %}
+{% block content %}
+<p>{% blocktranslate with name=player.name %}Hi {{ name }}, a new penalty has been recorded for you:{% endblocktranslate %}</p>
+<table role="presentation" cellpadding="0" cellspacing="0" style="width:100%;border-collapse:collapse;">
+    <tr>
+        <td style="padding:6px 0;"><strong>{% translate "Amount" %}</strong></td>
+        <td style="padding:6px 0;text-align:right;">{{ amount|floatformat:2 }} €</td>
+    </tr>
+    <tr>
+        <td style="padding:6px 0;border-top:1px solid #e9ecef;"><strong>{% translate "Reason" %}</strong></td>
+        <td style="padding:6px 0;border-top:1px solid #e9ecef;text-align:right;">{{ reason }}</td>
+    </tr>
+    <tr>
+        <td style="padding:6px 0;border-top:1px solid #e9ecef;"><strong>{% translate "Date" %}</strong></td>
+        <td style="padding:6px 0;border-top:1px solid #e9ecef;text-align:right;">{{ penalty_date|date:"d.m.Y" }}</td>
+    </tr>
+    <tr>
+        <td style="padding:6px 0;border-top:1px solid #e9ecef;"><strong>{% translate "Matchday" %}</strong></td>
+        <td style="padding:6px 0;border-top:1px solid #e9ecef;text-align:right;">{{ matchday.display_label }}</td>
+    </tr>
+    <tr>
+        <td style="padding:6px 0;border-top:1px solid #e9ecef;"><strong>{% translate "Team" %}</strong></td>
+        <td style="padding:6px 0;border-top:1px solid #e9ecef;text-align:right;">{{ team.name }}</td>
+    </tr>
+    <tr>
+        <td style="padding:6px 0;border-top:1px solid #e9ecef;"><strong>{% translate "Season" %}</strong></td>
+        <td style="padding:6px 0;border-top:1px solid #e9ecef;text-align:right;">{% if season %}{{ season.name }}{% else %}–{% endif %}</td>
+    </tr>
+    <tr>
+        <td style="padding:6px 0;border-top:2px solid #dee2e6;"><strong>{% translate "Current open total" %}</strong></td>
+        <td style="padding:6px 0;border-top:2px solid #dee2e6;text-align:right;"><strong>{{ open_total|floatformat:2 }} €</strong></td>
+    </tr>
+</table>
+{% endblock %}

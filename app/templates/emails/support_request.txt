@@ -1,0 +1,9 @@
+{% extends "emails/base_email.txt" %}{% load i18n %}
+{% block content %}
+{% blocktranslate with name=sender_name %}A support request has been sent via the Darts Penalty Manager by {{ name }}:{% endblocktranslate %}
+
+{% translate "Name" %}: {{ sender_name }}
+{% translate "E-mail" %}: {{ sender_email }}
+
+{{ message }}
+{% endblock %}

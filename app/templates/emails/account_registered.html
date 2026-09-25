@@ -1,0 +1,14 @@
+{% extends "emails/base_email.html" %}{% load i18n %}
+{% block subject %}{% translate "New registration" %}{% endblock %}
+{% block content %}
+<p>{% blocktranslate with email=new_user.email %}A new user has registered and is waiting for approval:{% endblocktranslate %}</p>
+<ul>
+    <li><strong>{% translate "E-mail" %}:</strong> {{ new_user.email }}</li>
+    <li><strong>{% translate "Registered at" %}:</strong> {{ registered_at|date:"d.m.Y H:i" }}</li>
+    <li><strong>{% translate "Status" %}:</strong> {% translate "Pending approval" %}</li>
+</ul>
+<p>{% translate "The account cannot log in until it has been approved." %}</p>
+<p><a href="{{ approval_url }}" style="display:inline-block;background-color:#0d6efd;color:#ffffff;text-decoration:none;padding:10px 16px;border-radius:6px;">
+    {% translate "Review user" %}
+</a></p>
+{% endblock %}

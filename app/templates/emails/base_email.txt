@@ -1,0 +1,7 @@
+{% load i18n %}{% translate "Darts Penalty Manager" %}
+========================================
+
+{% block content %}{% endblock %}
+{% if support_email %}
+{% translate "Support" %}: {{ support_email }}
+{% endif %}

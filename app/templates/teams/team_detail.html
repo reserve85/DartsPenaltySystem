@@ -1,0 +1,54 @@
+{% extends "base.html" %}
+{% load i18n %}
+{% block title %}{{ team.name }} – {% translate "Darts Penalty Manager" %}{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h1 class="h3 mb-0">{{ team.name }}</h1>
+    <div class="btn-group">
+        {% if request.user.is_admin %}
+            <a class="btn btn-outline-secondary" href="{% url 'teams:team_update' team.pk %}">{% translate "Edit" %}</a>
+            <a class="btn btn-outline-danger" href="{% url 'teams:team_delete' team.pk %}">{% translate "Delete" %}</a>
+        {% endif %}
+    </div>
+</div>
+
+<h2 class="h5">{% translate "Players" %}</h2>
+<div class="table-responsive mb-4">
+    <table class="table table-striped align-middle">
+        <thead>
+        <tr>
+            <th>{% translate "Player" %}</th>
+            <th class="text-end">{% translate "Penalties total" %}</th>
+            <th class="text-end">{% translate "Penalties settled" %}</th>
+            <th class="text-end">{% translate "Penalties open" %}</th>
+        </tr>
+        </thead>
+        <tbody>
+        {% for row in player_rows %}
+            <tr>
+                <td>
+                    <a href="{% url 'players:player_detail' row.player.pk %}">{{ row.player.name }}</a>
+                    {% if not row.player.active %}<span class="badge text-bg-secondary">{% translate "inactive" %}</span>{% endif %}
+                </td>
+                <td class="text-end text-danger">{{ row.total|floatformat:2 }} €</td>
+                <td class="text-end text-success">{{ row.paid|floatformat:2 }} €</td>
+                <td class="text-end text-danger">{{ row.balance|floatformat:2 }} €</td>
+            </tr>
+        {% empty %}
+            <tr><td colspan="4" class="text-muted text-center py-3">{% translate "No players." %}</td></tr>
+        {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+<h2 class="h5">{% translate "Matchdays" %}</h2>
+<ul class="list-group">
+    {% for matchday in team.matchdays.all %}
+        <li class="list-group-item">
+            <a href="{% url 'matchdays:matchday_detail' matchday.pk %}">{{ matchday.display_label }}</a>
+        </li>
+    {% empty %}
+        <li class="list-group-item text-muted">{% translate "No matchdays." %}</li>
+    {% endfor %}
+</ul>
+{% endblock %}

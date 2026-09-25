@@ -1,0 +1,7 @@
+{% extends "emails/base_email.html" %}{% load i18n %}
+{% block subject %}{% translate "Your registration has been declined" %}{% endblock %}
+{% block content %}
+<p>{% blocktranslate with email=rejected_user.email %}Unfortunately, your registration on the Darts Penalty Manager has been reviewed and declined:{% endblocktranslate %}</p>
+<p><strong>{% translate "E-mail" %}:</strong> {{ rejected_user.email }}</p>
+<p>{% blocktranslate %}If you think this is a mistake, please contact the club (support address below).{% endblocktranslate %}</p>
+{% endblock %}

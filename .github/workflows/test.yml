@@ -1,0 +1,41 @@
+name: Tests
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+# Cancel in-progress runs for same branch/PR
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+
+      - name: Install dependencies
+        run: pip install -r requirements-dev.txt
+
+      - name: Lint (ruff)
+        run: ruff check .
+
+      - name: Check formatting (ruff format)
+        run: ruff format --check .
+
+      - name: Install GNU gettext (msgfmt)
+        run: sudo apt-get update -qq && sudo apt-get install -y -qq gettext
+
+      - name: Compile message catalogs
+        run: python manage.py compilemessages
+
+      - name: Tests with coverage gate (>= 80%)
+        run: pytest --cov=config --cov=app --cov-fail-under=80

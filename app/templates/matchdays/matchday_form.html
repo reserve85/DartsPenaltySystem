@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+{% load i18n %}
+{% block title %}{% translate "Matchday" %} – {% translate "Darts Penalty Manager" %}{% endblock %}
+{% block content %}
+<h1 class="h3 mb-3">
+    {% if view.object.pk %}{% translate "Edit matchday" %}{% else %}{% translate "New matchday" %}{% endif %}
+</h1>
+<form method="post" novalidate class="card card-body">
+    {% csrf_token %}
+    {% include "includes/_form_errors.html" with form=form %}
+
+    <div class="row g-3">
+        {% for field in form %}
+            {% if field.name != "participants" %}
+                <div class="mb-3 col-md-6">
+                    <label for="{{ field.id_for_label }}" class="form-label">{{ field.label }}</label>
+                    {{ field }}
+                    {% if field.help_text %}<div class="form-text">{{ field.help_text }}</div>{% endif %}
+                    {% for error in field.errors %}<div class="text-danger small">{{ error }}</div>{% endfor %}
+                </div>
+            {% endif %}
+        {% endfor %}
+    </div>
+
+    {% include "includes/_participant_chips.html" with field=form.participants %}
+
+    <div class="d-flex gap-2 mt-3">
+        <button type="submit" class="btn btn-primary">{% translate "Save" %}</button>
+        <a class="btn btn-outline-secondary" href="{% url 'matchdays:matchday_list' %}">{% translate "Cancel" %}</a>
+    </div>
+</form>
+{% endblock %}

@@ -1,0 +1,12 @@
+{% load i18n %}
+<div id="cookie-consent" class="cookie-consent-bar d-none" role="dialog" aria-live="polite"
+     aria-label="{% translate 'Cookie notice' %}">
+    <div class="container d-flex flex-wrap align-items-center justify-content-between gap-2">
+        <span class="small mb-0">
+            {% translate "This site sets only essential cookies (session for login, your language choice); no tracking or third-party cookies are set." %}
+        </span>
+        <button type="button" class="btn btn-sm btn-primary" data-cookie-accept>
+            {% translate "Understood" %}
+        </button>
+    </div>
+</div>

@@ -1,0 +1,33 @@
+{% extends "account/base_entrance.html" %}
+{% load i18n %}
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-6 col-lg-5">
+        <div class="card shadow-sm">
+            <div class="card-body">
+                <h1 class="h4 mb-3">{% translate "Confirm e-mail address" %}</h1>
+                {% if confirmation %}
+                    {% if can_confirm %}
+                        <p>
+                            {% blocktranslate with email=confirmation.email_address.email %}Please confirm that {{ email }} is your e-mail address.{% endblocktranslate %}
+                        </p>
+                        <form method="post" action="{% url 'account_confirm_email' confirmation.key %}">
+                            {% csrf_token %}
+                            {{ redirect_field }}
+                            <button type="submit" class="btn btn-primary">{% translate "Confirm" %}</button>
+                        </form>
+                    {% else %}
+                        <div class="alert alert-danger py-2">
+                            {% blocktranslate %}Unable to confirm this address because it is already confirmed by a different account.{% endblocktranslate %}
+                        </div>
+                    {% endif %}
+                {% else %}
+                    <div class="alert alert-danger py-2">
+                        {% translate "This confirmation link expired or is invalid. Please request a new confirmation e-mail after logging in." %}
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

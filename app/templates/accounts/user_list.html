@@ -1,0 +1,67 @@
+{% extends "base.html" %}
+{% load i18n %}
+{% block title %}{% translate "Users" %} – {% translate "Darts Penalty Manager" %}{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h1 class="h3 mb-0">{% translate "Users" %}</h1>
+    <div class="d-flex gap-2">
+        <a class="btn btn-outline-warning" href="{% url 'accounts:approval_list' %}">
+            {% translate "Pending approvals" %}
+            {% if pending_count %}<span class="badge text-bg-warning">{{ pending_count }}</span>{% endif %}
+        </a>
+        <a class="btn btn-primary" href="{% url 'accounts:user_create' %}">{% translate "New user" %}</a>
+    </div>
+</div>
+<div class="table-responsive">
+    <table class="table table-striped align-middle">
+        <thead>
+        <tr>
+            <th>{% translate "Email" %}</th>
+            <th>{% translate "Role" %}</th>
+            <th>{% translate "Team" %}</th>
+            <th>{% translate "Status" %}</th>
+            <th>{% translate "Active" %}</th>
+            <th></th>
+        </tr>
+        </thead>
+        <tbody>
+        {% for user in users %}
+            <tr>
+                <td>{{ user.email }}</td>
+                <td>
+                    {% if user.role %}<span class="badge text-bg-secondary">{{ user.role|capfirst }}</span>
+                    {% else %}<span class="text-muted">–</span>{% endif %}
+                </td>
+                <td>{{ user.team.name|default:"–" }}</td>
+                <td>
+                    {% if user.approval_status == "pending" %}
+                        <span class="badge text-bg-warning">{% translate "Pending" %}</span>
+                    {% elif user.approval_status == "rejected" %}
+                        <span class="badge text-bg-danger">{% translate "Rejected" %}</span>
+                    {% else %}
+                        <span class="badge text-bg-success">{% translate "Approved" %}</span>
+                    {% endif %}
+                </td>
+                <td>{% if user.is_active %}<span class="text-success">✓</span>{% else %}<span class="text-danger">✗</span>{% endif %}</td>
+                <td class="text-end text-nowrap">
+                    {% if user.approval_status == "pending" %}
+                        <a class="btn btn-sm btn-warning" href="{% url 'accounts:approval' user.pk %}">{% translate "Review" %}</a>
+                    {% endif %}
+                    <a class="btn btn-sm btn-outline-secondary" href="{% url 'accounts:user_update' user.pk %}">{% translate "Edit" %}</a>
+                    {% if user != request.user and user.is_active %}
+                        <form method="post" action="{% url 'accounts:user_deactivate' user.pk %}" class="d-inline"
+                              data-confirm="{% translate 'Deactivate this user?' %}">
+                            {% csrf_token %}
+                            <button class="btn btn-sm btn-outline-danger" type="submit">{% translate "Deactivate" %}</button>
+                        </form>
+                    {% endif %}
+                </td>
+            </tr>
+        {% empty %}
+            <tr><td colspan="6" class="text-center text-muted py-4">{% translate "No users yet." %}</td></tr>
+        {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% include "includes/_pagination.html" with page_obj=page_obj %}
+{% endblock %}

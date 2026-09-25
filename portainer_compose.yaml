@@ -1,0 +1,95 @@
+# ============================================================================
+# Portainer Stack - Darts Penalty Manager
+# ============================================================================
+#
+# Purpose:
+#   This file is intended for deployment via Portainer Stacks.
+#   Portainer Stacks do not support external .env files or build contexts,
+#   so all environment variables are inlined directly in this file.
+#
+# How to use in Portainer:
+#   1. Open Portainer web UI
+#   2. Go to Stacks > Add Stack
+#   3. Name the stack (e.g. "darts-penalty")
+#   4. Paste the contents of this file into the "Web editor" field
+#   5. Replace ALL placeholder values marked with "CHANGE_ME" before deploying
+#   6. Click "Deploy the stack"
+#
+# IMPORTANT:
+#   - DJANGO_SECRET_KEY MUST be replaced with a strong random value before
+#     deployment. Generate with:
+#       python -c "import secrets; print(secrets.token_urlsafe(50))"
+#   - CONTACT_* values drive the Imprint (/imprint/) and Privacy Policy
+#     (/privacy/) pages as well as the footer links.
+#   - The version info in the footer (v1.0.38 (a718e32) · Build ...) is baked
+#     into the published image at build time and needs no configuration.
+#   - Set DJANGO_SECURE_SSL_REDIRECT=true when using HTTPS.
+#
+# Published Image:
+#   ghcr.io/reserve85/darts_penalty_system:latest
+#
+# ============================================================================
+
+services:
+  app:
+    image: ghcr.io/reserve85/darts_penalty_system:latest
+    container_name: darts-penalty-system
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+    volumes:
+      # Mount path: adjust the left side to match your NAS/Docker host path.
+      # Example for Synology NAS: /volume1/docker/darts/data:/app/data
+      # Example for generic Linux:  /opt/docker/darts/data:/app/data
+      - dart_data:/app/data
+    environment:
+      # ── Django core ────────────────────────────────────────────────────
+      - DJANGO_SECRET_KEY=CHANGE_ME_GENERATE_RANDOM   # Secret key | Any random string | ⚠ CHANGE THIS
+      - DJANGO_DEBUG=False                            # Debug mode | true, false | Default: False
+      - DJANGO_ALLOWED_HOSTS=localhost,127.0.0.1      # Comma-separated hosts | e.g. darts.example.com
+      # - DJANGO_CSRF_TRUSTED_ORIGINS=https://darts.example.com  # behind reverse proxy / HTTPS
+      - DJANGO_SECURE_SSL_REDIRECT=false              # HTTP->HTTPS redirect + secure cookies | Default: False
+      - DJANGO_SECURE_HSTS_SECONDS=0                  # HSTS max-age (0 disables, e.g. 31536000 = 1 year) | Default: 0
+      - DJANGO_LANGUAGE_CODE=de                       # Default language | de, en | Default: de
+      - DJANGO_TIME_ZONE=Europe/Berlin                # IANA timezone | Default: Europe/Berlin
+      - SQLITE_PATH=data/db.sqlite3                   # SQLite path inside the container | Default: data/db.sqlite3
+
+      # ── Bootstrap admin (idempotent; empty password disables) ──────────
+      - DJANGO_SUPERUSER_EMAIL=admin@example.com      # Admin login e-mail | Any valid e-mail
+      - DJANGO_SUPERUSER_PASSWORD=                    # Admin password | Leave empty to skip bootstrap
+
+      # ── SMTP / e-mail (registration, approval, penalty + repayment info) ─
+      - EMAIL_HOST=                                    # SMTP server | e.g. smtp.example.com | Empty: e-mails are skipped + logged
+      - EMAIL_PORT=587                                 # SMTP port | 587 (STARTTLS) or 465 (SSL)
+      - EMAIL_HOST_USER=                               # SMTP user | Often the full e-mail address
+      - EMAIL_HOST_PASSWORD=                           # SMTP password | ⚠ keep secret, never commit
+      - EMAIL_USE_TLS=True                             # STARTTLS | true, false
+      - DEFAULT_FROM_EMAIL=                            # Sender address | e.g. noreply@example.com
+      - SUPPORT_EMAIL=                                 # Support/admin recipient | e.g. support@example.com
+      - PUBLIC_SITE_URL=                               # Public base URL for e-mail links | e.g. https://darts.example.com
+      - ACCOUNT_EMAIL_VERIFICATION=mandatory           # E-mail verification | mandatory, optional, none
+
+      # ── Legal / Impressum + Privacy Policy ─────────────────────────────
+      # Contact information displayed on /imprint/ and /privacy/.
+      - CONTACT_COMPANY=Dart Club Example e.V.        # Company or club name | Any string
+      - CONTACT_NAME=Max Mustermann                   # Contact person full name | Any string
+      - CONTACT_STREET=Musterstrasse 1                # Street address | Any string
+      - CONTACT_CITY=11111 Musterstadt                # City and postal code | Any string
+      - CONTACT_EMAIL=max.Mustermann@example.com      # Contact e-mail address | Any valid e-mail
+
+      # Optional legacy imprint (CONTACT_* takes precedence for the company)
+      - IMPRINT_NAME=                                 # Optional imprint name | Any string | Default: (empty)
+      - IMPRINT_URL=                                  # Optional imprint URL | Any URL | Default: (empty)
+    healthcheck:
+      test:
+        - CMD
+        - python
+        - -c
+        - "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/health/', timeout=3)"
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 20s
+
+volumes:
+  dart_data:

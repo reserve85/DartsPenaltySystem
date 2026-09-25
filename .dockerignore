@@ -1,0 +1,22 @@
+# Build context hygiene — keep the image small and free of local state.
+.git
+.github
+.gitignore
+.env
+data/
+staticfiles/
+*.sqlite3
+__pycache__/
+**/__pycache__/
+.pytest_cache/
+.ruff_cache/
+.coverage
+.coverage.*
+htmlcov/
+locale/*/LC_MESSAGES/*.mo
+tests/
+Implementation.md
+Dart_Penalty_Manager_Specification.md
+README.md
+docker-compose.yml
+portainer_compose.yaml

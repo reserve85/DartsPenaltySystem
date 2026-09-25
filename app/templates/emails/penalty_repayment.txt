@@ -1,0 +1,15 @@
+{% extends "emails/base_email.txt" %}{% load i18n %}
+{% block content %}
+{% blocktranslate with name=player.name %}Hi {{ name }}, your payment has been recorded:{% endblocktranslate %}
+
+{% translate "Amount paid" %}: {{ amount|floatformat:2 }} €
+{% translate "Date" %}: {{ repayment_date|date:"d.m.Y" }}
+{% translate "Team" %}: {{ team.name }}
+{% translate "Season" %}: {% if season %}{{ season.name }}{% else %}–{% endif %}
+{% if is_full_repayment %}
+{% translate "Status" %}: {% translate "Full repayment — nothing is owed anymore." %}
+{% else %}
+{% translate "Status" %}: {% translate "Partial repayment" %}
+{% translate "Remaining balance" %}: {{ remaining|floatformat:2 }} €
+{% endif %}
+{% endblock %}

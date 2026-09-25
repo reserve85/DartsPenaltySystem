@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+{% load i18n %}
+{% block title %}{% translate "Teams" %} – {% translate "Darts Penalty Manager" %}{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h1 class="h3 mb-0">{% translate "Teams" %}</h1>
+    <a class="btn btn-primary" href="{% url 'teams:team_create' %}">{% translate "New team" %}</a>
+</div>
+{% if season_teams_scoped %}
+    <p class="text-muted small">
+        {% blocktranslate with name=season.name %}Only the teams active in season {{ name }} are shown. Manage them on the seasons page.{% endblocktranslate %}
+    </p>
+{% endif %}
+<div class="table-responsive">
+    <table class="table table-striped align-middle">
+        <thead>
+        <tr>
+            <th>{% translate "Name" %}</th>
+            <th>{% translate "Players" %}</th>
+            <th>{% translate "Captains" %}</th>
+            <th></th>
+        </tr>
+        </thead>
+        <tbody>
+        {% for team in teams %}
+            <tr>
+                <td><a href="{% url 'teams:team_detail' team.pk %}">{{ team.name }}</a></td>
+                <td>{{ team.player_count }}</td>
+                <td>{{ team.captain_count }}</td>
+                <td class="text-end text-nowrap">
+                    <a class="btn btn-sm btn-outline-secondary" href="{% url 'teams:team_update' team.pk %}">{% translate "Edit" %}</a>
+                    <a class="btn btn-sm btn-outline-danger" href="{% url 'teams:team_delete' team.pk %}">{% translate "Delete" %}</a>
+                </td>
+            </tr>
+        {% empty %}
+            <tr><td colspan="4" class="text-center text-muted py-4">{% translate "No teams yet." %}</td></tr>
+        {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}

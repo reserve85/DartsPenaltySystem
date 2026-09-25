@@ -1,0 +1,5 @@
+# Never let Windows checkouts break shell scripts or container configs.
+*.sh text eol=lf
+Dockerfile text eol=lf
+*.yml text eol=lf
+*.yaml text eol=lf

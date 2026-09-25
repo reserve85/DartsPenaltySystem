@@ -1,0 +1,54 @@
+{% extends "base.html" %}
+{% load i18n %}
+{% block title %}{% translate "Penalty catalog" %} – {% translate "Darts Penalty Manager" %}{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h1 class="h3 mb-0">{% translate "Penalty catalog" %}</h1>
+    {% if can_manage %}<a class="btn btn-primary" href="{% url 'penalties:catalog_create' %}">{% translate "New item" %}</a>{% endif %}
+</div>
+<div class="table-responsive">
+    <table class="table table-striped align-middle">
+        <thead>
+        <tr>
+            <th>{% translate "Description" %}</th>
+            <th class="text-end">{% translate "Amount" %}</th>
+            <th>{% translate "Type" %}</th>
+            <th>{% translate "Active" %}</th>
+            <th>{% translate "Team fees" %}</th>
+            <th></th>
+        </tr>
+        </thead>
+        <tbody>
+        {% for item in items %}
+            <tr>
+                <td>{{ item.description }}</td>
+                <td class="text-end text-danger">{{ item.amount_eur|floatformat:2 }} €</td>
+                <td>{{ item.get_type_display }}</td>
+                <td>{% if item.active %}<span class="text-success">✓</span>{% else %}<span class="text-danger">✗</span>{% endif %}</td>
+                <td>
+                    {% for team_amount in item.team_amount_list %}
+                        {{ team_amount.team.name }}: <span class="text-danger">{{ team_amount.amount_eur|floatformat:2 }} €</span><br>
+                    {% empty %}
+                        <span class="text-muted">{% translate "Default for all teams" %}</span>
+                    {% endfor %}
+                </td>
+                <td class="text-end text-nowrap">
+                    <a class="btn btn-sm btn-outline-secondary" href="{% url 'penalties:catalog_team_amounts' item.pk %}">{% translate "Team fees" %}</a>
+                    {% if can_manage %}
+                        <a class="btn btn-sm btn-outline-secondary" href="{% url 'penalties:catalog_update' item.pk %}">{% translate "Edit" %}</a>
+                        <form method="post" action="{% url 'penalties:catalog_toggle_active' item.pk %}" class="d-inline">
+                            {% csrf_token %}
+                            <button class="btn btn-sm {% if item.active %}btn-outline-danger{% else %}btn-outline-secondary{% endif %}" type="submit">
+                                {% if item.active %}{% translate "Deactivate" %}{% else %}{% translate "Activate" %}{% endif %}
+                            </button>
+                        </form>
+                    {% endif %}
+                </td>
+            </tr>
+        {% empty %}
+            <tr><td colspan="6" class="text-center text-muted py-4">{% translate "No catalog items yet." %}</td></tr>
+        {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}

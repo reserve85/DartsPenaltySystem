@@ -1,0 +1,148 @@
+{% load static i18n %}<!DOCTYPE html>
+<html lang="{{ LANGUAGE_CODE }}" data-bs-theme="{{ current_theme }}" data-theme-choice="{{ current_theme }}"
+      {% if request.user.is_authenticated %}data-theme-url="{% url 'accounts:settings_theme' %}"{% endif %}>
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>{% block title %}{% translate "Darts Penalty Manager" %}{% endblock %}</title>
+    <link rel="stylesheet" href="{% static 'vendor/bootstrap/css/bootstrap.min.css' %}">
+    <link rel="stylesheet" href="{% static 'css/style.css' %}">
+</head>
+<body class="d-flex flex-column min-vh-100">
+<nav class="navbar navbar-expand-lg navbar-dark bg-dark sticky-top">
+    <div class="container">
+        <a class="navbar-brand" href="{% url 'dashboard:index' %}">🎯 {% translate "Darts Penalty Manager" %}</a>
+        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#mainNav"
+                aria-controls="mainNav" aria-expanded="false" aria-label="{% translate 'Toggle navigation' %}">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+        <div class="collapse navbar-collapse" id="mainNav">
+            {% if request.user.is_authenticated %}
+                <ul class="navbar-nav me-auto">
+                    {# --- visible for EVERY signed-in user --- #}
+                    <li class="nav-item">
+                        <a class="nav-link{% if nav_section == 'overview' %} active{% endif %}"
+                           href="{% url 'dashboard:index' %}">{% translate "Dashboard" %}</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link{% if nav_section == 'financial' %} active{% endif %}"
+                           href="{% url 'dashboard:financial_overview' %}">{% translate "Financial" %}</a>
+                    </li>
+
+                    {# --- team area: captains and admins --- #}
+                    {% if request.user.is_admin or request.user.is_captain %}
+                        <li class="nav-item nav-sep" aria-hidden="true"></li>
+                        <li class="nav-item dropdown">
+                            <a class="nav-link dropdown-toggle{% if nav_section == 'team' %} active{% endif %}"
+                               href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                                {% translate "Team area" %}
+                            </a>
+                            <ul class="dropdown-menu">
+                                {% if request.user.is_admin %}
+                                    <li>
+                                        <a class="dropdown-item" href="{% url 'teams:team_list' %}">{% translate "Teams" %}</a>
+                                    </li>
+                                {% elif request.user.team %}
+                                    <li>
+                                        <a class="dropdown-item" href="{% url 'teams:team_detail' request.user.team.pk %}">{% translate "My Team" %}</a>
+                                    </li>
+                                {% endif %}
+                                <li>
+                                    <a class="dropdown-item" href="{% url 'players:player_list' %}">{% translate "Players" %}</a>
+                                </li>
+                                <li>
+                                    <a class="dropdown-item" href="{% url 'matchdays:matchday_list' %}">{% translate "Matchdays" %}</a>
+                                </li>
+                            </ul>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link{% if nav_section == 'catalog' %} active{% endif %}"
+                               href="{% url 'penalties:catalog_list' %}">{% translate "Catalog" %}</a>
+                        </li>
+                    {% endif %}
+
+                    {# --- admin area --- #}
+                    {% if request.user.is_admin %}
+                        <li class="nav-item nav-sep" aria-hidden="true"></li>
+                        <li class="nav-item dropdown">
+                            <a class="nav-link dropdown-toggle{% if nav_section == 'admin' %} active{% endif %}"
+                               href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                                {% translate "Administration" %}
+                            </a>
+                            <ul class="dropdown-menu">
+                                <li>
+                                    <a class="dropdown-item" href="{% url 'accounts:user_list' %}">{% translate "Users" %}</a>
+                                </li>
+                                <li>
+                                    <a class="dropdown-item" href="{% url 'audit_list' %}">{% translate "Audit" %}</a>
+                                </li>
+                                <li>
+                                    <a class="dropdown-item" href="{% url 'season_list' %}">{% translate "Seasons" %}</a>
+                                </li>
+                            </ul>
+                        </li>
+                    {% endif %}
+                </ul>
+            {% endif %}
+            {% if seasons %}
+                <form method="post" action="{% url 'season_set' %}" class="d-flex align-items-center gap-1 me-lg-3 mb-2 mb-lg-0">
+                    {% csrf_token %}
+                    <input type="hidden" name="next" value="{{ request.get_full_path }}">
+                    <label class="navbar-text small d-none d-xl-inline mb-0" for="id_season_nav">{% translate "Season" %}</label>
+                    <select id="id_season_nav" name="season" class="form-select form-select-sm" style="width: auto;"
+                            onchange="this.form.submit()" aria-label="{% translate 'Season' %}"
+                            title="{% translate 'Your personal view for this session — it never changes the default season for other users.' %}">
+                        {% for season_option in seasons %}
+                            <option value="{{ season_option.pk }}"
+                                    {% if active_season and season_option.pk == active_season.pk %}selected{% endif %}>
+                                {{ season_option.name }}{% if season_option.is_default %} ({% translate "default" %}){% endif %}
+                            </option>
+                        {% endfor %}
+                    </select>
+                </form>
+            {% endif %}
+            <ul class="navbar-nav ms-auto">
+                {% include "includes/_language_switcher.html" %}
+                {% include "includes/_theme_switcher.html" %}
+                {% if request.user.is_authenticated %}
+                    <li class="nav-item"><a class="nav-link" href="{% url 'accounts:settings' %}">{% translate "Settings" %}</a></li>
+                    <li class="nav-item">
+                        <form method="post" action="{% url 'account_logout' %}" class="d-inline">
+                            {% csrf_token %}
+                            <button type="submit" class="btn btn-link nav-link">{% translate "Logout" %}</button>
+                        </form>
+                    </li>
+                {% else %}
+                    <li class="nav-item"><a class="nav-link" href="{% url 'account_signup' %}">{% translate "Register" %}</a></li>
+                    <li class="nav-item"><a class="nav-link" href="{% url 'account_login' %}">{% translate "Login" %}</a></li>
+                {% endif %}
+            </ul>
+        </div>
+    </div>
+</nav>
+
+<main class="container flex-grow-1 py-4">
+    {% include "includes/_flash_messages.html" %}
+    {% block content %}{% endblock %}
+</main>
+
+<footer class="footer mt-auto py-3 bg-body-secondary">
+    <div class="container text-center text-muted small">
+        © {{ current_year }} {% translate "Darts Penalty Manager" %}
+        · <a href="{% url 'imprint' %}">{% translate "Imprint" %}</a>
+        · <a href="{% url 'privacy' %}">{% translate "Privacy Policy" %}</a>
+        · <a href="{{ version_info.release_url }}" rel="noopener">
+            v{{ version_info.version }} ({{ version_info.git_commit }}) · {% translate "Build" %} {{ version_info.build_date }}
+        </a>
+    </div>
+</footer>
+
+{% include "includes/_cookie_consent.html" %}
+
+<script src="{% static 'vendor/bootstrap/js/bootstrap.bundle.min.js' %}"></script>
+<script src="{% static 'js/base.js' %}"></script>
+<script src="{% static 'js/theme.js' %}"></script>
+<script src="{% static 'js/cookie-consent.js' %}"></script>
+{% block extra_js %}{% endblock %}
+</body>
+</html>

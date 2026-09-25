@@ -1,0 +1,63 @@
+{% extends "base.html" %}
+{% load i18n %}
+{% block title %}{{ matchday.display_label }} – {% translate "Darts Penalty Manager" %}{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h1 class="h3 mb-0">{{ matchday.display_label }}
+        {% if matchday.season %}<span class="badge text-bg-secondary">{{ matchday.season.name }}</span>{% endif %}
+    </h1>
+    <div class="btn-group">
+        <a class="btn btn-primary" href="{% url 'penalties:penalty_create' matchday.pk %}">{% translate "Add penalty" %}</a>
+        <a class="btn btn-outline-secondary" href="{% url 'matchdays:matchday_update' matchday.pk %}">{% translate "Edit" %}</a>
+        <a class="btn btn-outline-danger" href="{% url 'matchdays:matchday_delete' matchday.pk %}">{% translate "Delete" %}</a>
+    </div>
+</div>
+{% if matchday.description %}<p>{{ matchday.description }}</p>{% endif %}
+
+<h2 class="h5">{% translate "Participants" %} ({{ participants|length }})</h2>
+<div class="d-flex flex-wrap gap-2 mb-4">
+    {% for participation in participants %}
+        <span class="badge rounded-pill text-bg-light border">{{ participation.player.name }}</span>
+    {% empty %}
+        <span class="text-muted">{% translate "No participants." %}</span>
+    {% endfor %}
+</div>
+
+<h2 class="h5">{% translate "Penalties" %}</h2>
+<div class="table-responsive">
+    <table class="table table-striped align-middle">
+        <thead>
+        <tr>
+            <th>{% translate "When" %}</th>
+            <th>{% translate "Player" %}</th>
+            <th>{% translate "Description" %}</th>
+            <th class="text-end">{% translate "Amount" %}</th>
+            <th></th>
+        </tr>
+        </thead>
+        <tbody>
+        {% for penalty in penalties %}
+            <tr>
+                <td class="text-nowrap">{{ penalty.created_at|date:"d.m.Y H:i" }}</td>
+                <td>{{ penalty.player.name }}</td>
+                <td>{{ penalty.description_snapshot }}
+                    {% if penalty.group_id %}<span class="badge text-bg-light border" title="{% translate 'Group penalty' %}">{% translate "group" %}</span>{% endif %}
+                    {% if not penalty.catalog_item or penalty.catalog_item.type == "MANUAL" %}<span class="badge text-bg-warning border" title="{% translate 'Manual penalty' %}">{% translate "manual" %}</span>{% endif %}
+                </td>
+                <td class="text-end text-danger">{{ penalty.amount_eur|floatformat:2 }} €</td>
+                <td class="text-end text-nowrap">
+                    <a class="btn btn-sm btn-outline-primary" href="{% url 'penalties:penalty_update' penalty.pk %}">{% translate "Edit" %}</a>
+                    <form method="post" action="{% url 'penalties:penalty_delete' penalty.pk %}" class="d-inline"
+                          data-confirm="{% translate 'Delete this penalty? All rows of the group will be deleted.' %}">
+                        {% csrf_token %}
+                        <button class="btn btn-sm btn-outline-danger" type="submit">{% translate "Delete" %}</button>
+                    </form>
+                </td>
+            </tr>
+        {% empty %}
+            <tr><td colspan="5" class="text-center text-muted py-4">{% translate "No penalties yet." %}</td></tr>
+        {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}

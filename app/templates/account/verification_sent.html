@@ -1,0 +1,20 @@
+{% extends "account/base_entrance.html" %}
+{% load i18n %}
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-6 col-lg-5">
+        <div class="card shadow-sm">
+            <div class="card-body">
+                <h1 class="h4 mb-3">{% translate "Confirm your e-mail address" %}</h1>
+                <div class="alert alert-success py-2">
+                    {% translate "We have sent you an e-mail for verification. Follow the link in the message to finalize your registration. If you do not see the e-mail, check your spam folder." %}
+                </div>
+                <p class="small text-muted">
+                    {% translate "Your account will be activated by an administrator after the registration has been checked." %}
+                </p>
+                <a href="{% url 'account_login' %}" class="btn btn-outline-secondary">{% translate "Back to login" %}</a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

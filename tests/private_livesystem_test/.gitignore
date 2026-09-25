@@ -1,0 +1,11 @@
+# Private livesystem test — WHITELIST: only these files are ever committed.
+# Live-system database copies (./data/), logs and anything else stay local.
+#
+# docker-compose.yml contains REAL secrets (SMTP password, superuser password,
+# secret key) and must NEVER be committed — not even once, not in history.
+# It stays local by design: copy docker-compose.example.yml to
+# docker-compose.yml and fill in your local credentials.
+*
+!.gitignore
+!start-livesystem-test.ps1
+!docker-compose.example.yml

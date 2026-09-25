@@ -1,0 +1,69 @@
+{% extends "base.html" %}
+{% load i18n %}
+{% block title %}{{ player.name }} – {% translate "Darts Penalty Manager" %}{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h1 class="h3 mb-0">{{ player.name }}
+        {% if not player.active %}<span class="badge text-bg-secondary">{% translate "inactive" %}</span>{% endif %}
+    </h1>
+    {% if request.user.is_admin or request.user.is_captain %}
+        <a class="btn btn-outline-secondary" href="{% url 'players:player_update' player.pk %}">{% translate "Edit" %}</a>
+    {% endif %}
+</div>
+
+<p>
+    <strong class="text-danger">{% translate "Penalties total" %}:</strong> <span class="text-danger">{{ total|floatformat:2 }} €</span>
+    &middot; <strong class="text-success">{% translate "Penalties settled" %}:</strong> <span class="text-success">{{ paid|floatformat:2 }} €</span>
+    &middot; <strong class="text-danger">{% translate "Penalties open" %}:</strong> <strong class="text-danger">{{ balance|floatformat:2 }} €</strong>
+</p>
+
+<h2 class="h5">{% translate "Teams" %}</h2>
+<div class="table-responsive mb-4">
+    <table class="table table-striped align-middle" style="max-width: 40rem;">
+        <thead><tr>
+            <th>{% translate "Team" %}</th>
+            <th class="text-end">{% translate "Penalties total" %}</th>
+            <th class="text-end">{% translate "Penalties settled" %}</th>
+            <th class="text-end">{% translate "Penalties open" %}</th>
+        </tr></thead>
+        <tbody>
+        {% for row in team_rows %}
+            <tr>
+                <td><a href="{% url 'teams:team_detail' row.team.pk %}">{{ row.team.name }}</a></td>
+                <td class="text-end text-danger">{{ row.total|floatformat:2 }} €</td>
+                <td class="text-end text-success">{{ row.paid|floatformat:2 }} €</td>
+                <td class="text-end text-danger">{{ row.balance|floatformat:2 }} €</td>
+            </tr>
+        {% empty %}
+            <tr><td colspan="4" class="text-muted text-center py-3">{% translate "No teams." %}</td></tr>
+        {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+<h2 class="h5">{% translate "Penalties" %}</h2>
+<div class="table-responsive">
+    <table class="table table-sm table-striped align-middle">
+        <thead>
+        <tr>
+            <th>{% translate "Date" %}</th>
+            <th>{% translate "Team" %}</th>
+            <th>{% translate "Description" %}</th>
+            <th class="text-end">{% translate "Amount" %}</th>
+        </tr>
+        </thead>
+        <tbody>
+        {% for penalty in penalties %}
+            <tr>
+                <td>{{ penalty.created_at|date:"d.m.Y H:i" }}</td>
+                <td>{{ penalty.matchday.team.name }}</td>
+                <td>{{ penalty.description_snapshot }}</td>
+                <td class="text-end text-danger">{{ penalty.amount_eur|floatformat:2 }} €</td>
+            </tr>
+        {% empty %}
+            <tr><td colspan="4" class="text-center text-muted py-3">{% translate "No penalties." %}</td></tr>
+        {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}

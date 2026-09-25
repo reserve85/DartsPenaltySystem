@@ -1,0 +1,11 @@
+{% extends "emails/base_email.txt" %}{% load i18n %}
+{% block content %}
+{% blocktranslate with email=new_user.email %}A new user has registered and is waiting for approval:{% endblocktranslate %}
+
+{% translate "E-mail" %}: {{ new_user.email }}
+{% translate "Registered at" %}: {{ registered_at|date:"d.m.Y H:i" }}
+{% translate "Status" %}: {% translate "Pending approval" %}
+
+{% translate "The account cannot log in until it has been approved." %}
+{% translate "Review user" %}: {{ approval_url }}
+{% endblock %}

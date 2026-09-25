@@ -1,0 +1,19 @@
+{% load i18n %}
+<div class="mb-3">
+    <span class="form-label d-block">{{ field.label }}</span>
+    {% if field.help_text %}<div class="form-text mb-2">{{ field.help_text }}</div>{% endif %}
+    <div id="participant-chips" class="d-flex flex-wrap gap-2 mb-2">
+        {% for pk, label in field.field.choices %}
+            <label class="form-check form-chip">
+                <input type="checkbox" name="{{ field.html_name }}" value="{{ pk }}"
+                       class="form-check-input chip-checkbox position-static me-2"
+                       {% if pk in field.value %}checked{% endif %}>
+                <span class="chip-label">{{ label }}</span>
+            </label>
+        {% endfor %}
+    </div>
+    <div class="small text-muted" data-chip-count
+         data-singular="{% if count_singular %}{{ count_singular }}{% else %}{% translate '1 participant selected' %}{% endif %}"
+         data-plural="{% if count_plural %}{{ count_plural }}{% else %}{% translate '#count# participants selected' %}{% endif %}"></div>
+    {% for error in field.errors %}<div class="text-danger small">{{ error }}</div>{% endfor %}
+</div>

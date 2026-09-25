@@ -1,0 +1,218 @@
+{% extends "base.html" %}
+{% load i18n %}
+{% block title %}{% translate "Financial overview" %} – {% translate "Darts Penalty Manager" %}{% endblock %}
+{% block content %}
+<h1 class="h3 mb-3">{% translate "Financial overview" %}</h1>
+
+{% if own_mode %}
+    <h2 class="h5">{% translate "My penalties" %}</h2>
+    {% if no_player_link %}
+        <p class="text-muted">{% translate "Your account is not linked to a player yet." %}</p>
+    {% else %}
+        <p>
+            <strong class="text-danger">{% translate "Penalties total" %}:</strong> <span class="text-danger">{{ own_total|floatformat:2 }} €</span>
+            &middot; <strong class="text-success">{% translate "Penalties settled" %}:</strong> <span class="text-success">{{ own_paid|floatformat:2 }} €</span>
+            &middot; <strong class="text-danger">{% translate "Penalties open" %}:</strong> <strong class="text-danger">{{ own_balance|floatformat:2 }} €</strong>
+        </p>
+        <div class="table-responsive">
+            <table class="table table-striped align-middle">
+                <thead><tr><th>{% translate "Date" %}</th><th>{% translate "Team" %}</th><th>{% translate "Description" %}</th><th class="text-end">{% translate "Amount" %}</th></tr></thead>
+                <tbody>
+                {% for penalty in own_penalties %}
+                    <tr>
+                        <td>{{ penalty.created_at|date:"d.m.Y H:i" }}</td>
+                        <td>{{ penalty.matchday.team.name }}</td>
+                        <td>{{ penalty.description_snapshot }}</td>
+                        <td class="text-end text-danger">{{ penalty.amount_eur|floatformat:2 }} €</td>
+                    </tr>
+                {% empty %}
+                    <tr><td colspan="4" class="text-center text-muted py-4">{% translate "No penalties." %}</td></tr>
+                {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    {% endif %}
+    {% if selected_team %}<hr class="my-4">{% endif %}
+{% endif %}
+
+{% if teams %}
+    <form method="get" class="row g-2 mb-4">
+        <div class="col-md-4">
+            <label class="form-label" for="id_team">{% translate "Team" %}</label>
+            <select name="team" id="id_team" class="form-select" onchange="this.form.submit()">
+                {% for team in teams %}
+                    <option value="{{ team.pk }}" {% if team.pk == selected_team.pk %}selected{% endif %}>{{ team.name }}</option>
+                {% endfor %}
+            </select>
+        </div>
+    </form>
+{% endif %}
+
+{% if selected_team %}
+        <h2 class="h5">{{ selected_team.name }}
+            {% if active_season %}<span class="badge text-bg-secondary">{{ active_season.name }}</span>{% endif %}</h2>
+        <p class="mb-2">
+            <strong class="text-danger">{% translate "Penalties total" %}:</strong> <span class="text-danger">{{ team_penalties|floatformat:2 }} €</span>
+            &middot; <strong class="text-success">{% translate "Penalties settled" %}:</strong> <span class="text-success">{{ team_paid|floatformat:2 }} €</span>
+            &middot; <strong class="text-danger">{% translate "Penalties open" %}:</strong> <strong class="text-danger">{{ team_total|floatformat:2 }} €</strong>
+        </p>
+
+        <h3 class="h6 mt-4">{% translate "Players (active)" %}</h3>
+        <div class="table-responsive">
+            <table class="table table-striped align-middle">
+                <thead><tr>
+                    <th>{% translate "Player" %}</th>
+                    <th class="text-end">{% translate "Penalties total" %}</th>
+                    <th class="text-end">{% translate "Penalties settled" %}</th>
+                    <th class="text-end">{% translate "Penalties open" %}</th>
+                    {% if can_manage %}<th class="text-end">{% translate "Payment" %}</th>{% endif %}
+                </tr></thead>
+                <tbody>
+                {% for row in team_balances %}
+                    <tr>
+                        <td>{{ row.name }}</td>
+                        <td class="text-end text-danger">{{ row.total|floatformat:2 }} €</td>
+                        <td class="text-end text-success">{{ row.paid|floatformat:2 }} €</td>
+                        <td class="text-end text-danger">{{ row.balance|floatformat:2 }} €</td>
+                        {% if can_manage %}
+                        <td class="text-end text-nowrap">
+                            <form method="post" action="{% url 'penalties:payment_create' %}" class="d-flex gap-1 justify-content-end">
+                                {% csrf_token %}
+                                <input type="hidden" name="team" value="{{ selected_team.pk }}">
+                                <input type="hidden" name="player" value="{{ row.pk }}">
+                                <input type="hidden" name="next" value="{{ request.get_full_path }}">
+                                <input type="number" name="amount_eur" min="0.01" step="0.01" class="form-control form-control-sm" style="max-width: 7rem;" placeholder="{% translate 'Amount (EUR)' %}" required>
+                                <button class="btn btn-sm btn-success" type="submit">{% translate "Record payment" %}</button>
+                            </form>
+                        </td>
+                        {% endif %}
+                    </tr>
+                {% empty %}
+                    <tr><td colspan="{% if can_manage %}5{% else %}4{% endif %}" class="text-muted text-center py-3">{% translate "No active players." %}</td></tr>
+                {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <h3 class="h6 mt-4">{% translate "Players (inactive)" %}</h3>
+        <div class="table-responsive">
+            <table class="table table-striped align-middle">
+                <thead><tr>
+                    <th>{% translate "Player" %}</th>
+                    <th class="text-end">{% translate "Penalties total" %}</th>
+                    <th class="text-end">{% translate "Penalties settled" %}</th>
+                    <th class="text-end">{% translate "Penalties open" %}</th>
+                    {% if can_manage %}<th class="text-end">{% translate "Payment" %}</th>{% endif %}
+                </tr></thead>
+                <tbody>
+                {% for row in inactive_balances %}
+                    <tr>
+                        <td>{{ row.name }} <span class="badge text-bg-secondary">{% translate "inactive" %}</span></td>
+                        <td class="text-end text-danger">{{ row.total|floatformat:2 }} €</td>
+                        <td class="text-end text-success">{{ row.paid|floatformat:2 }} €</td>
+                        <td class="text-end text-danger">{{ row.balance|floatformat:2 }} €</td>
+                        {% if can_manage %}
+                        <td class="text-end text-nowrap">
+                            <form method="post" action="{% url 'penalties:payment_create' %}" class="d-flex gap-1 justify-content-end">
+                                {% csrf_token %}
+                                <input type="hidden" name="team" value="{{ selected_team.pk }}">
+                                <input type="hidden" name="player" value="{{ row.pk }}">
+                                <input type="hidden" name="next" value="{{ request.get_full_path }}">
+                                <input type="number" name="amount_eur" min="0.01" step="0.01" class="form-control form-control-sm" style="max-width: 7rem;" placeholder="{% translate 'Amount (EUR)' %}" required>
+                                <button class="btn btn-sm btn-success" type="submit">{% translate "Record payment" %}</button>
+                            </form>
+                        </td>
+                        {% endif %}
+                    </tr>
+                {% empty %}
+                    <tr><td colspan="{% if can_manage %}5{% else %}4{% endif %}" class="text-muted text-center py-3">{% translate "No inactive players with balances." %}</td></tr>
+                {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <h3 class="h6 mt-4">{% translate "Payments" %}</h3>
+        <div class="table-responsive">
+            <table class="table table-sm table-striped align-middle">
+                <thead><tr>
+                    <th>{% translate "Date" %}</th>
+                    <th>{% translate "Player" %}</th>
+                    <th class="text-end">{% translate "Amount" %}</th>
+                    {% if can_manage %}<th></th>{% endif %}
+                </tr></thead>
+                <tbody>
+                {% for payment in payments %}
+                    <tr>
+                        <td>{{ payment.created_at|date:"d.m.Y H:i" }}</td>
+                        <td>{{ payment.player.name }}</td>
+                        <td class="text-end text-success">{{ payment.amount_eur|floatformat:2 }} €</td>
+                        {% if can_manage %}
+                        <td class="text-end">
+                            <form method="post" action="{% url 'penalties:payment_delete' payment.pk %}" class="d-inline"
+                                  data-confirm="{% translate 'Revert this payment?' %}">
+                                {% csrf_token %}
+                                <input type="hidden" name="next" value="{{ request.get_full_path }}">
+                                <button class="btn btn-sm btn-outline-danger" type="submit">{% translate "Revert payment" %}</button>
+                            </form>
+                        </td>
+                        {% endif %}
+                    </tr>
+                {% empty %}
+                    <tr><td colspan="{% if can_manage %}4{% else %}3{% endif %}" class="text-muted text-center py-3">{% translate "No payments yet." %}</td></tr>
+                {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+
+        <h3 class="h6 mt-4">{% translate "Matchday totals" %}</h3>
+        <div class="table-responsive">
+            <table class="table table-striped align-middle">
+                <thead><tr><th>{% translate "Matchday" %}</th><th class="text-end">{% translate "Total" %}</th></tr></thead>
+                <tbody>
+                {% for matchday in matchday_totals %}
+                    <tr><td>{{ matchday.display_label }}</td><td class="text-end text-danger">{{ matchday.total|floatformat:2 }} €</td></tr>
+                {% empty %}
+                    <tr><td colspan="2" class="text-muted text-center py-3">{% translate "No matchdays." %}</td></tr>
+                {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <h3 class="h6 mt-4">{% translate "Most common penalties" %}</h3>
+        <div class="table-responsive">
+            <table class="table table-striped align-middle">
+                <thead><tr><th>{% translate "Description" %}</th><th class="text-end">{% translate "Count" %}</th><th class="text-end">{% translate "Total" %}</th></tr></thead>
+                <tbody>
+                {% for item in most_common %}
+                    <tr><td>{{ item.description_snapshot }}</td><td class="text-end">{{ item.count }}</td><td class="text-end text-danger">{{ item.total|floatformat:2 }} €</td></tr>
+                {% empty %}
+                    <tr><td colspan="3" class="text-muted text-center py-3">{% translate "No penalties yet." %}</td></tr>
+                {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <h3 class="h6 mt-4">{% translate "Assigned penalties" %}</h3>
+        <div class="table-responsive">
+            <table class="table table-sm table-striped align-middle">
+                <thead><tr><th>{% translate "Date" %}</th><th>{% translate "Player" %}</th><th>{% translate "Matchday" %}</th><th>{% translate "Description" %}</th><th class="text-end">{% translate "Amount" %}</th></tr></thead>
+                <tbody>
+                {% for penalty in assigned_penalties %}
+                    <tr>
+                        <td>{{ penalty.created_at|date:"d.m.Y H:i" }}</td>
+                        <td>{{ penalty.player.name }}</td>
+                        <td>{{ penalty.matchday.display_label }}</td>
+                        <td>{{ penalty.description_snapshot }}</td>
+                        <td class="text-end text-danger">{{ penalty.amount_eur|floatformat:2 }} €</td>
+                    </tr>
+                {% empty %}
+                    <tr><td colspan="5" class="text-muted text-center py-3">{% translate "No penalties assigned." %}</td></tr>
+                {% endfor %}
+                </tbody>
+            </table>
+        </div>
+{% elif not own_mode %}
+    <p class="text-muted">{% translate "No team selected." %}</p>
+{% endif %}
+{% endblock %}

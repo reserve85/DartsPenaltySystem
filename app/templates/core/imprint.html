@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+{% load i18n %}
+{% block title %}{% translate "Imprint" %} – {% translate "Darts Penalty Manager" %}{% endblock %}
+{% block content %}
+  <h1>{% translate "Imprint" %}</h1>
+  <div class="card">
+    <div class="card-body">
+      <h2 class="h5">{{ CONTACT_COMPANY|default:IMPRINT_NAME }}</h2>
+      <p>
+        {% if CONTACT_NAME %}{{ CONTACT_NAME }}<br>{% endif %}
+        {% if CONTACT_STREET %}{{ CONTACT_STREET }}<br>{% endif %}
+        {% if CONTACT_CITY %}{{ CONTACT_CITY }}{% endif %}
+      </p>
+      {% if IMPRINT_NAME and CONTACT_COMPANY and IMPRINT_NAME != CONTACT_COMPANY %}
+        <p>{{ IMPRINT_NAME }}</p>
+      {% endif %}
+      <h3 class="h6">{% translate "Contact" %}</h3>
+      <p>
+        {% if CONTACT_EMAIL %}
+          {% translate "E-mail" %}: <a href="mailto:{{ CONTACT_EMAIL }}">{{ CONTACT_EMAIL }}</a><br>
+        {% endif %}
+        {% if IMPRINT_URL %}
+          <a href="{{ IMPRINT_URL }}" target="_blank" rel="noopener">{{ IMPRINT_URL }}</a>
+        {% endif %}
+      </p>
+      {% if not CONTACT_COMPANY and not CONTACT_NAME and not IMPRINT_NAME and not IMPRINT_URL %}
+        <p class="text-muted">{% translate "No imprint configured." %}</p>
+      {% endif %}
+    </div>
+  </div>
+{% endblock %}

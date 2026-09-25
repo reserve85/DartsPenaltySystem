@@ -1,0 +1,67 @@
+{% extends "base.html" %}
+{% load i18n %}
+{% block title %}{% translate "Dashboard" %} – {% translate "Darts Penalty Manager" %}{% endblock %}
+{% block content %}
+<h1 class="h3 mb-3">{% translate "Dashboard" %}</h1>
+<p>{% translate "Logged in as" %} <strong>{{ request.user.email }}</strong>
+    – {% translate "Role" %}: {{ role|default:"–"|capfirst }}</p>
+
+{% if role == "admin" %}
+    <h2 class="h5 mt-4">{% translate "Teams" %}</h2>
+    <p class="text-muted small">{% translate "The team name opens its financial overview." %}</p>
+    <div class="table-responsive">
+        <table class="table table-striped align-middle">
+            <thead><tr><th>{% translate "Team" %}</th><th>{% translate "Players" %}</th><th>{% translate "Matchdays" %}</th></tr></thead>
+            <tbody>
+            {% for team in teams %}
+                <tr>
+                    <td><a href="{% url 'dashboard:financial_overview' %}?team={{ team.pk }}">{{ team.name }}</a></td>
+                    <td>{{ team.player_count }}</td><td>{{ team.matchday_count }}</td>
+                </tr>
+            {% empty %}
+                <tr><td colspan="3" class="text-center text-muted py-3">{% translate "No teams yet." %}</td></tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+{% elif role == "captain" %}
+    {% if team %}
+        <h2 class="h5 mt-4">{{ team.name }}</h2>
+        <div class="row g-3 mb-3">
+            <div class="col-6 col-md-2"><div class="card text-center"><div class="card-body"><div class="display-6">{{ player_count }}</div><div class="text-muted small">{% translate "Players" %}</div></div></div></div>
+            <div class="col-6 col-md-2"><div class="card text-center"><div class="card-body"><div class="display-6">{{ matchday_count }}</div><div class="text-muted small">{% translate "Matchdays" %}</div></div></div></div>
+            <div class="col-6 col-md-2"><div class="card text-center"><div class="card-body"><div class="display-6 text-danger">{{ team_penalties|floatformat:2 }} €</div><div class="text-muted small">{% translate "Penalties total" %}</div></div></div></div>
+            <div class="col-6 col-md-2"><div class="card text-center"><div class="card-body"><div class="display-6 text-success">{{ team_paid|floatformat:2 }} €</div><div class="text-muted small">{% translate "Penalties settled" %}</div></div></div></div>
+            <div class="col-6 col-md-2"><div class="card text-center"><div class="card-body"><div class="display-6 text-danger">{{ team_total|floatformat:2 }} €</div><div class="text-muted small">{% translate "Penalties open" %}</div></div></div></div>
+        </div>
+        <a class="btn btn-primary" href="{% url 'matchdays:matchday_create' %}">{% translate "New matchday" %}</a>
+    {% else %}
+        <p class="text-muted">{% translate "Your account has no team assigned." %}</p>
+    {% endif %}
+
+{% elif role == "player" %}
+    {% if player %}
+        <h2 class="h5 mt-4">{% translate "My penalties" %} — {{ player.name }}</h2>
+        <p>
+            <strong class="text-danger">{% translate "Penalties total" %}:</strong> <span class="text-danger">{{ own_total|floatformat:2 }} €</span>
+            &middot; <strong class="text-success">{% translate "Penalties settled" %}:</strong> <span class="text-success">{{ own_paid|floatformat:2 }} €</span>
+            &middot; <strong class="text-danger">{% translate "Penalties open" %}:</strong> <strong class="text-danger">{{ own_balance|floatformat:2 }} €</strong>
+        </p>
+        <table class="table table-sm table-striped">
+            <thead><tr><th>{% translate "Date" %}</th><th>{% translate "Description" %}</th><th class="text-end">{% translate "Amount" %}</th></tr></thead>
+            <tbody>
+            {% for penalty in own_penalties %}
+                <tr><td>{{ penalty.created_at|date:"d.m.Y H:i" }}</td><td>{{ penalty.description_snapshot }}</td>
+                    <td class="text-end text-danger">{{ penalty.amount_eur|floatformat:2 }} €</td></tr>
+            {% empty %}
+                <tr><td colspan="3" class="text-muted text-center py-3">{% translate "No penalties." %}</td></tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    {% else %}
+        <div class="alert alert-info">{% translate "Your account is not linked to a player yet. Ask an administrator to link your account." %}</div>
+    {% endif %}
+{% endif %}
+
+{% endblock %}

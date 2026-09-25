@@ -1,0 +1,17 @@
+{% load i18n %}
+<li class="nav-item dropdown">
+    <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown"
+       aria-expanded="false" title="{% translate 'Language' %}">🌐 {{ LANGUAGE_CODE|upper }}</a>
+    <ul class="dropdown-menu dropdown-menu-end">
+        {% for code, name in site_languages %}
+            <li>
+                <form method="post" action="{% url 'set_language' %}">
+                    {% csrf_token %}
+                    <input type="hidden" name="language" value="{{ code }}">
+                    <input type="hidden" name="next" value="{{ request.path|urlencode }}">
+                    <button type="submit" class="dropdown-item{% if code == LANGUAGE_CODE %} active{% endif %}">{{ name }}</button>
+                </form>
+            </li>
+        {% endfor %}
+    </ul>
+</li>

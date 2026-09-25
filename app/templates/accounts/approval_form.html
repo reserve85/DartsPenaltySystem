@@ -1,0 +1,69 @@
+{% extends "base.html" %}
+{% load i18n %}
+{% block title %}{% translate "Review registration" %} – {% translate "Darts Penalty Manager" %}{% endblock %}
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-8">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+            <h1 class="h3 mb-0">{% translate "Review registration" %}</h1>
+            <a class="btn btn-outline-secondary" href="{% url 'accounts:approval_list' %}">{% translate "Back" %}</a>
+        </div>
+
+        <div class="card mb-4">
+            <div class="card-body">
+                <h2 class="h5 card-title">{% translate "Registered user" %}</h2>
+                <dl class="row mb-0">
+                    <dt class="col-sm-4">{% translate "E-mail" %}</dt>
+                    <dd class="col-sm-8">{{ pending_user.email }}</dd>
+                    <dt class="col-sm-4">{% translate "Registered at" %}</dt>
+                    <dd class="col-sm-8">{{ pending_user.date_joined|date:"d.m.Y H:i" }}</dd>
+                    <dt class="col-sm-4">{% translate "Status" %}</dt>
+                    <dd class="col-sm-8">
+                        {% if pending_user.approval_status == "pending" %}
+                            <span class="badge text-bg-warning">{% translate "Pending" %}</span>
+                        {% elif pending_user.approval_status == "rejected" %}
+                            <span class="badge text-bg-danger">{% translate "Rejected" %}</span>
+                        {% else %}
+                            <span class="badge text-bg-success">{% translate "Approved" %}</span>
+                        {% endif %}
+                    </dd>
+                    <dt class="col-sm-4">{% translate "Linked player" %}</dt>
+                    <dd class="col-sm-8">{{ pending_user.player_link|default:"–" }}</dd>
+                </dl>
+            </div>
+        </div>
+
+        {% if pending_user.approval_status == "pending" %}
+            {# One form, one save: approve + optional player link in a single POST. #}
+            <form method="post" novalidate class="card card-body mb-3">
+                {% csrf_token %}
+                <h2 class="h5 card-title">{% translate "Approve and assign player" %}</h2>
+                {% include "includes/_form_errors.html" with form=form %}
+                <div class="mb-3">
+                    <label for="{{ form.player.id_for_label }}" class="form-label">{{ form.player.label }}</label>
+                    {{ form.player }}
+                    {% for error in form.player.errors %}<div class="text-danger small">{{ error }}</div>{% endfor %}
+                    <div class="form-text">{{ form.player.help_text }}</div>
+                </div>
+                <div class="mb-3">
+                    <label for="{{ form.new_player_name.id_for_label }}" class="form-label">{{ form.new_player_name.label }}</label>
+                    {{ form.new_player_name }}
+                    {% for error in form.new_player_name.errors %}<div class="text-danger small">{{ error }}</div>{% endfor %}
+                    <div class="form-text">{{ form.new_player_name.help_text }}</div>
+                </div>
+                <button type="submit" name="action" value="approve" class="btn btn-success">
+                    {% translate "Approve" %}
+                </button>
+            </form>
+
+            <form method="post" class="d-inline"
+                  data-confirm="{% translate 'Reject this registration?' %}">
+                {% csrf_token %}
+                <button type="submit" name="action" value="reject" class="btn btn-outline-danger">
+                    {% translate "Reject" %}
+                </button>
+            </form>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

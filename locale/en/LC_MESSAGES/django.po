@@ -1,0 +1,1091 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) YEAR THE PACKAGE'S COPYRIGHT HOLDER
+# This file is distributed under the same license as the PACKAGE package.
+# FIRST AUTHOR <EMAIL@ADDRESS>, YEAR.
+# 
+#, fuzzy
+msgid ""
+msgstr ""
+"Project-Id-Version: PACKAGE VERSION\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2026-09-24 20:22+0200\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language-Team: LANGUAGE <LL@li.org>\n"
+"Language: \n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+
+msgid "Admin"
+msgstr ""
+
+msgid "Captain"
+msgstr ""
+
+msgid "Player"
+msgstr ""
+
+msgid "Role"
+msgstr ""
+
+msgid "Password"
+msgstr ""
+
+msgid "Password confirmation"
+msgstr ""
+
+msgid "A user with this email address already exists."
+msgstr ""
+
+msgid "A Captain needs an assigned team."
+msgstr ""
+
+msgid "The two password fields didn't match."
+msgstr ""
+
+msgid "The email address must be set"
+msgstr ""
+
+msgid "Superuser must have is_staff=True."
+msgstr ""
+
+msgid "Superuser must have is_superuser=True."
+msgstr ""
+
+msgid "email address"
+msgstr ""
+
+msgid "team"
+msgstr ""
+
+msgid "Required for Captain role; ignored for Admin."
+msgstr ""
+
+msgid "linked player"
+msgstr ""
+
+msgid "Optional: lets a Player-role user see their own penalties."
+msgstr ""
+
+msgid "preferred language"
+msgstr ""
+
+msgid "preferred theme"
+msgstr ""
+
+msgid "user"
+msgstr ""
+
+msgid "users"
+msgstr ""
+
+msgid "User created."
+msgstr ""
+
+msgid "You cannot deactivate your own account."
+msgstr ""
+
+msgid "You are the only Admin. Give the Admin role to another user first."
+msgstr ""
+
+msgid "User updated."
+msgstr ""
+
+msgid "User deactivated."
+msgstr ""
+
+msgid "Password changed."
+msgstr ""
+
+msgid "Settings saved."
+msgstr ""
+
+msgid "Auto"
+msgstr ""
+
+msgid "Light"
+msgstr ""
+
+msgid "Dark"
+msgstr ""
+
+msgid "Login"
+msgstr ""
+
+msgid "Logout"
+msgstr ""
+
+msgid "Team created"
+msgstr ""
+
+msgid "Team updated"
+msgstr ""
+
+msgid "Team deleted"
+msgstr ""
+
+msgid "Player created"
+msgstr ""
+
+msgid "Player updated"
+msgstr ""
+
+msgid "Player deactivated"
+msgstr ""
+
+msgid "Matchday created"
+msgstr ""
+
+msgid "Matchday updated"
+msgstr ""
+
+msgid "Matchday deleted"
+msgstr ""
+
+msgid "Season created"
+msgstr ""
+
+msgid "Season deleted"
+msgstr ""
+
+msgid "Penalty assigned"
+msgstr ""
+
+msgid "Penalty edited"
+msgstr ""
+
+msgid "Penalty deleted"
+msgstr ""
+
+msgid "Penalty paid"
+msgstr ""
+
+msgid "Penalty payment reverted"
+msgstr ""
+
+msgid "Payment recorded"
+msgstr ""
+
+msgid "Payment reverted"
+msgstr ""
+
+msgid "User created"
+msgstr ""
+
+msgid "User updated"
+msgstr ""
+
+msgid "User deactivated"
+msgstr ""
+
+msgid "action"
+msgstr ""
+
+msgid "target type"
+msgstr ""
+
+msgid "target id"
+msgstr ""
+
+msgid "metadata"
+msgstr ""
+
+msgid "created at"
+msgstr ""
+
+msgid "audit log entry"
+msgstr ""
+
+msgid "audit log entries"
+msgstr ""
+
+msgid "Season created."
+msgstr ""
+
+msgid ""
+"This season cannot be deleted because it still has matchdays or payments."
+msgstr ""
+
+msgid "Season deleted."
+msgstr ""
+
+msgid "Season not found."
+msgstr ""
+
+msgid "Team"
+msgstr ""
+
+msgid "Season"
+msgstr ""
+
+msgid "Every matchday belongs to one season (a closed cash box)."
+msgstr ""
+
+msgid "Participants"
+msgstr ""
+
+msgid "Select at least one participant."
+msgstr ""
+
+msgid "All participants must belong to the selected team."
+msgstr ""
+
+msgid "Home"
+msgstr ""
+
+msgid "Away"
+msgstr ""
+
+msgid "name"
+msgstr ""
+
+msgid "Convention YYYY/YYYY, e.g. \"2026/2027\"."
+msgstr ""
+
+msgid "season"
+msgstr ""
+
+msgid "seasons"
+msgstr ""
+
+msgid "opponent"
+msgstr ""
+
+msgid "Free text, e.g. \"SV Eichenberg\"."
+msgstr ""
+
+msgid "venue"
+msgstr ""
+
+msgid "date"
+msgstr ""
+
+msgid "description"
+msgstr ""
+
+msgid "created by"
+msgstr ""
+
+msgid "matchday"
+msgstr ""
+
+msgid "matchdays"
+msgstr ""
+
+msgid "player"
+msgstr ""
+
+msgid "matchday player"
+msgstr ""
+
+msgid "matchday players"
+msgstr ""
+
+msgid "Matchday created."
+msgstr ""
+
+msgid "Matchday updated."
+msgstr ""
+
+msgid ""
+"This matchday cannot be deleted because it already has penalties (including "
+"deleted ones). Delete the penalties first."
+msgstr ""
+
+msgid "Matchday deleted."
+msgstr ""
+
+msgid "The amount must be a positive number."
+msgstr ""
+
+msgid "Penalty type"
+msgstr ""
+
+msgid "For group penalties this player is the trigger (e.g. the 180 thrower)."
+msgstr ""
+
+msgid "Amount (EUR)"
+msgstr ""
+
+msgid "Only for manual penalties — entered individually each time."
+msgstr ""
+
+msgid "Description"
+msgstr ""
+
+msgid "Only for normal penalties — leave empty to use the catalog description."
+msgstr ""
+
+msgid "A manual penalty needs an individual amount."
+msgstr ""
+
+msgid "A manual penalty needs a comment."
+msgstr ""
+
+msgid "Select a player."
+msgstr ""
+
+msgid "Partial payment — any positive amount up to the full debt."
+msgstr ""
+
+msgid "Normal"
+msgstr ""
+
+msgid "Per all other matchday players"
+msgstr ""
+
+msgid "Manual"
+msgstr ""
+
+msgid "amount (EUR)"
+msgstr ""
+
+msgid "type"
+msgstr ""
+
+msgid "active"
+msgstr ""
+
+msgid "penalty catalog item"
+msgstr ""
+
+msgid "penalty catalog items"
+msgstr ""
+
+msgid "catalog item"
+msgstr ""
+
+msgid "updated by"
+msgstr ""
+
+msgid "updated at"
+msgstr ""
+
+msgid "team catalog amount"
+msgstr ""
+
+msgid "team catalog amounts"
+msgstr ""
+
+msgid "Payments only reduce debt of the same season."
+msgstr ""
+
+msgid "recorded by"
+msgstr ""
+
+msgid "payment"
+msgstr ""
+
+msgid "payments"
+msgstr ""
+
+msgid "description (snapshot)"
+msgstr ""
+
+msgid "group id"
+msgstr ""
+
+msgid "Shared by all rows of one group penalty."
+msgstr ""
+
+msgid "deleted at"
+msgstr ""
+
+msgid "deleted by"
+msgstr ""
+
+msgid "penalty"
+msgstr ""
+
+msgid "penalties"
+msgstr ""
+
+msgid "Player is not a participant of this matchday."
+msgstr ""
+
+msgid "A normal penalty requires a NORMAL catalog item."
+msgstr ""
+
+msgid "A group penalty requires a group catalog item."
+msgstr ""
+
+msgid "A group penalty needs at least two participants."
+msgstr ""
+
+msgid "The penalty amount must be positive."
+msgstr ""
+
+#, python-format
+msgid "'%(value)s' is not a valid amount for team '%(team)s'."
+msgstr ""
+
+#, python-format
+msgid "The amount for team '%(team)s' must be a positive number or empty."
+msgstr ""
+
+msgid "Team fees saved."
+msgstr ""
+
+msgid "Catalog item created."
+msgstr ""
+
+msgid "Catalog item updated."
+msgstr ""
+
+msgid "activated"
+msgstr ""
+
+msgid "deactivated"
+msgstr ""
+
+#, python-format
+msgid "Catalog item '%(name)s' %(state)s."
+msgstr ""
+
+#, python-format
+msgid "%(count)s penalties assigned to the other participants."
+msgstr ""
+
+msgid "Penalty assigned."
+msgstr ""
+
+msgid "Penalty updated (all rows of the group, if any)."
+msgstr ""
+
+msgid "Penalty deleted."
+msgstr ""
+
+msgid "Payment recorded."
+msgstr ""
+
+msgid "Payment reverted."
+msgstr ""
+
+msgid "teams"
+msgstr ""
+
+msgid "A player can belong to multiple teams."
+msgstr ""
+
+msgid "A player can belong to multiple teams — per season."
+msgstr ""
+
+#, python-format
+msgid "Assignments are season-dependent — this saves the teams of season %(season)s; other seasons keep their own assignment."
+msgstr ""
+
+msgid "player team assignment"
+msgstr ""
+
+msgid "player team assignments"
+msgstr ""
+
+msgid "no season"
+msgstr ""
+
+msgid "The team assignment shown belongs to this season:"
+msgstr ""
+
+msgid "players"
+msgstr ""
+
+msgid "Player created."
+msgstr ""
+
+msgid "Player updated."
+msgstr ""
+
+#, python-format
+msgid "Player '%(name)s' deactivated."
+msgstr ""
+
+msgid "e.g. Wildboars 1"
+msgstr ""
+
+msgid "Team created."
+msgstr ""
+
+msgid "Team updated."
+msgstr ""
+
+msgid ""
+"This team cannot be deleted because it still contains players, matchdays or "
+"linked captain accounts."
+msgstr ""
+
+#, python-format
+msgid "Team '%(name)s' deleted."
+msgstr ""
+
+msgid "Change password"
+msgstr ""
+
+msgid "Darts Penalty Manager"
+msgstr ""
+
+msgid "Settings"
+msgstr ""
+
+msgid "Preferences"
+msgstr ""
+
+msgid "Save preferences"
+msgstr ""
+
+msgid "User"
+msgstr ""
+
+msgid "Edit user"
+msgstr ""
+
+msgid "New user"
+msgstr ""
+
+msgid "Save"
+msgstr ""
+
+msgid "Cancel"
+msgstr ""
+
+msgid "Users"
+msgstr ""
+
+msgid "Email"
+msgstr ""
+
+msgid "Active"
+msgstr ""
+
+msgid "Edit"
+msgstr ""
+
+msgid "Deactivate this user?"
+msgstr ""
+
+msgid "Deactivate"
+msgstr ""
+
+msgid "No users yet."
+msgstr ""
+
+msgid "Toggle navigation"
+msgstr ""
+
+msgid "Dashboard"
+msgstr ""
+
+msgid "Teams"
+msgstr ""
+
+msgid "Players"
+msgstr ""
+
+msgid "Matchdays"
+msgstr ""
+
+msgid "Catalog"
+msgstr ""
+
+msgid "Financial"
+msgstr ""
+
+msgid "Audit"
+msgstr ""
+
+msgid "Seasons"
+msgstr ""
+
+msgid "My Team"
+msgstr ""
+
+msgid "Imprint"
+msgstr ""
+
+msgid "Privacy Policy"
+msgstr ""
+
+msgid "Build"
+msgstr ""
+
+msgid "Audit log"
+msgstr ""
+
+msgid "All actions"
+msgstr ""
+
+msgid "Actor email"
+msgstr ""
+
+msgid "Filter"
+msgstr ""
+
+msgid "Reset"
+msgstr ""
+
+msgid "When"
+msgstr ""
+
+msgid "Action"
+msgstr ""
+
+msgid "Actor"
+msgstr ""
+
+msgid "Target"
+msgstr ""
+
+msgid "No audit entries."
+msgstr ""
+
+msgid "Contact"
+msgstr ""
+
+msgid "E-mail"
+msgstr ""
+
+msgid "No imprint configured."
+msgstr ""
+
+msgid "1. Responsible Party"
+msgstr ""
+
+msgid "2. Data We Collect"
+msgstr ""
+
+msgid "This application stores the following data to provide its services:"
+msgstr ""
+
+msgid ""
+"User accounts: e-mail address, password hash, role, team assignment and "
+"language/theme preferences."
+msgstr ""
+
+msgid "Player and team data: names, team memberships and active status."
+msgstr ""
+
+msgid ""
+"Matchday and penalty data: dates, participants, penalties, payments and "
+"balances."
+msgstr ""
+
+msgid "Audit logs: who changed which record and when."
+msgstr ""
+
+msgid ""
+"Authentication cookies: a secure HttpOnly session cookie is used to keep you "
+"logged in."
+msgstr ""
+
+msgid "3. Purpose of Data Processing"
+msgstr ""
+
+msgid ""
+"Data is processed exclusively to operate the club's penalty system, "
+"including matchday planning, balances and financial reporting."
+msgstr ""
+
+msgid "4. Cookies"
+msgstr ""
+
+msgid "This website uses the following cookies:"
+msgstr ""
+
+msgid "Session cookie (HttpOnly):"
+msgstr ""
+
+msgid ""
+"Required for login sessions. This cookie is essential and cannot be declined."
+msgstr ""
+
+msgid "CSRF and language cookies:"
+msgstr ""
+
+msgid ""
+"Required for secure forms and your language choice. These cookies are "
+"essential and cannot be declined."
+msgstr ""
+
+msgid "Cookie consent flag:"
+msgstr ""
+
+msgid ""
+"Stored in your browser's localStorage after you confirm the cookie notice. "
+"This cookie is essential and cannot be declined."
+msgstr ""
+
+msgid "No third-party tracking or analytics cookies are used."
+msgstr ""
+
+msgid "5. Data Retention"
+msgstr ""
+
+msgid ""
+"Data is retained as long as necessary for the operation of the penalty "
+"system. Matchday, penalty and audit records are preserved to maintain a "
+"complete financial history."
+msgstr ""
+
+msgid "6. Your Rights"
+msgstr ""
+
+msgid "Under the GDPR, you have the right to:"
+msgstr ""
+
+msgid "Access your personal data"
+msgstr ""
+
+msgid "Rectify inaccurate data"
+msgstr ""
+
+msgid "Request deletion of your data"
+msgstr ""
+
+msgid "Object to data processing"
+msgstr ""
+
+msgid "Data portability"
+msgstr ""
+
+msgid "To exercise these rights, please contact us at"
+msgstr ""
+
+msgid "7. Data Security"
+msgstr ""
+
+msgid ""
+"We implement appropriate technical and organizational measures to protect "
+"your data, including password hashing, CSRF protection, optional HTTPS "
+"enforcement and a full audit trail."
+msgstr ""
+
+msgid "8. Contact"
+msgstr ""
+
+msgid "For questions about this privacy policy, please contact:"
+msgstr ""
+
+msgid ""
+"Every season is a closed cash box — open amounts are never carried over to "
+"the next season."
+msgstr ""
+
+msgid "New season"
+msgstr ""
+
+msgid "Name"
+msgstr ""
+
+msgid "Payments"
+msgstr ""
+
+msgid "Delete this season?"
+msgstr ""
+
+msgid "Delete"
+msgstr ""
+
+msgid "No seasons yet."
+msgstr ""
+
+msgid "Logged in as"
+msgstr ""
+
+msgid "Open"
+msgstr ""
+
+msgid "No teams yet."
+msgstr ""
+
+msgid "Penalties total"
+msgstr ""
+
+msgid "Penalties settled"
+msgstr ""
+
+msgid "Penalties open"
+msgstr ""
+
+msgid "New matchday"
+msgstr ""
+
+msgid "Your account has no team assigned."
+msgstr ""
+
+msgid "My penalties"
+msgstr ""
+
+msgid "Date"
+msgstr ""
+
+msgid "Amount"
+msgstr ""
+
+msgid "No penalties."
+msgstr ""
+
+msgid ""
+"Your account is not linked to a player yet. Ask an administrator to link "
+"your account."
+msgstr ""
+
+msgid "Financial overview"
+msgstr ""
+
+msgid "Your account is not linked to a player yet."
+msgstr ""
+
+msgid "Players (active)"
+msgstr ""
+
+msgid "Payment"
+msgstr ""
+
+msgid "Record payment"
+msgstr ""
+
+msgid "No active players."
+msgstr ""
+
+msgid "Players (inactive)"
+msgstr ""
+
+msgid "inactive"
+msgstr ""
+
+msgid "No inactive players with balances."
+msgstr ""
+
+msgid "Revert this payment?"
+msgstr ""
+
+msgid "Revert payment"
+msgstr ""
+
+msgid "No payments yet."
+msgstr ""
+
+msgid "Matchday totals"
+msgstr ""
+
+msgid "Matchday"
+msgstr ""
+
+msgid "Total"
+msgstr ""
+
+msgid "No matchdays."
+msgstr ""
+
+msgid "Most common penalties"
+msgstr ""
+
+msgid "Count"
+msgstr ""
+
+msgid "No penalties yet."
+msgstr ""
+
+msgid "Assigned penalties"
+msgstr ""
+
+msgid "No penalties assigned."
+msgstr ""
+
+msgid "No team selected."
+msgstr ""
+
+msgid "Cookie notice"
+msgstr ""
+
+msgid ""
+"This site sets only essential cookies (session for login, your language "
+"choice); no tracking or third-party cookies are set."
+msgstr ""
+
+msgid "Understood"
+msgstr ""
+
+msgid "Language"
+msgstr ""
+
+msgid "Page navigation"
+msgstr ""
+
+msgid "1 participant selected"
+msgstr ""
+
+msgid "#count# participants selected"
+msgstr ""
+
+msgid "Theme"
+msgstr ""
+
+msgid "Delete matchday"
+msgstr ""
+
+#, python-format
+msgid ""
+"\n"
+"            Do you really want to delete the matchday \"%(label)s\"?\n"
+"        "
+msgstr ""
+
+msgid ""
+"Deletion is only possible if this matchday has no penalties (including "
+"deleted ones)."
+msgstr ""
+
+msgid "Delete permanently"
+msgstr ""
+
+msgid "Add penalty"
+msgstr ""
+
+msgid "No participants."
+msgstr ""
+
+msgid "Penalties"
+msgstr ""
+
+msgid "Group penalty"
+msgstr ""
+
+msgid "group"
+msgstr ""
+
+msgid "Manual penalty"
+msgstr ""
+
+msgid "manual"
+msgstr ""
+
+msgid "Delete this penalty? All rows of the group will be deleted."
+msgstr ""
+
+msgid "Edit matchday"
+msgstr ""
+
+msgid "Venue"
+msgstr ""
+
+msgid "Opponent"
+msgstr ""
+
+msgid "No matchdays yet."
+msgstr ""
+
+msgid "Catalog item"
+msgstr ""
+
+msgid "Edit catalog item"
+msgstr ""
+
+msgid "New catalog item"
+msgstr ""
+
+msgid "Penalty catalog"
+msgstr ""
+
+msgid "New item"
+msgstr ""
+
+msgid "Type"
+msgstr ""
+
+msgid "Team fees"
+msgstr ""
+
+msgid "Default for all teams"
+msgstr ""
+
+msgid "Activate"
+msgstr ""
+
+msgid "No catalog items yet."
+msgstr ""
+
+msgid "Default"
+msgstr ""
+
+msgid ""
+"Enter a team-specific fee, or leave the field empty to keep the default "
+"amount."
+msgstr ""
+
+msgid "Fee (EUR)"
+msgstr ""
+
+msgid "Penalty"
+msgstr ""
+
+#, python-format
+msgid ""
+"\n"
+"            Editing penalty (group %(group)s).\n"
+"        "
+msgstr ""
+
+msgid "Assign a penalty"
+msgstr ""
+
+msgid "Save changes"
+msgstr ""
+
+msgid "Assign penalty"
+msgstr ""
+
+msgid "No teams."
+msgstr ""
+
+msgid "Edit player"
+msgstr ""
+
+msgid "New player"
+msgstr ""
+
+msgid "1 team selected"
+msgstr ""
+
+msgid "#count# teams selected"
+msgstr ""
+
+msgid "Deactivate this player?"
+msgstr ""
+
+msgid "No players yet."
+msgstr ""
+
+msgid "Delete team"
+msgstr ""
+
+#, python-format
+msgid ""
+"\n"
+"            Do you really want to delete the team \"%(name)s\"?\n"
+"        "
+msgstr ""
+
+msgid ""
+"Deletion is only possible if the team has no players, no matchdays and no "
+"linked captain accounts."
+msgstr ""
+
+msgid "No players."
+msgstr ""
+
+msgid "Edit team"
+msgstr ""
+
+msgid "New team"
+msgstr ""
+
+msgid "Captains"
+msgstr ""
+
+msgid "Too many requests"
+msgstr ""
+
+msgid "You have sent too many requests. Please wait a moment and try again."
+msgstr ""
