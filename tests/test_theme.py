@@ -54,11 +54,22 @@ def test_rendered_theme_follows_preference(admin_user):
     assert f'data-theme-url="{reverse("accounts:settings_theme")}"' in html
 
 
-def test_theme_switcher_buttons_rendered(admin_client):
-    html = admin_client.get(reverse("dashboard:index")).content.decode()
+def test_theme_switcher_buttons_rendered_for_anonymous(db):
+    """The navbar switcher is kept for ANONYMOUS visitors (login, signup)."""
+    html = Client().get(reverse("account_login")).content.decode()
     assert 'data-theme-choice-btn="auto"' in html
     assert 'data-theme-choice-btn="light"' in html
     assert 'data-theme-choice-btn="dark"' in html
+
+
+def test_switchers_hidden_for_authenticated_users(admin_client):
+    """Signed-in users have NO language/theme switcher in the navbar.
+
+    Both preferences live on the Settings page only.
+    """
+    html = admin_client.get(reverse("dashboard:index")).content.decode()
+    assert "data-theme-choice-btn" not in html
+    assert reverse("set_language") not in html
 
 
 def test_anonymous_has_no_theme_url(db):
@@ -69,7 +80,7 @@ def test_anonymous_has_no_theme_url(db):
     assert 'data-theme-choice-btn="dark"' in html
 
 
-def test_language_switcher_renders_for_everyone(db):
+def test_language_switcher_renders_on_login_page(db):
     html = Client().get(reverse("account_login")).content.decode()
     assert reverse("set_language") in html
     assert 'name="language" value="de"' in html

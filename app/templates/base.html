@@ -129,8 +129,13 @@
                 </form>
             {% endif %}
             <ul class="navbar-nav ms-auto">
-                {% include "includes/_language_switcher.html" %}
-                {% include "includes/_theme_switcher.html" %}
+                {# Language/theme switchers only for ANONYMOUS visitors — signed-in
+                   users manage both preferences on the Settings page (the saved
+                   language is written as a cookie there, so it applies at once). #}
+                {% if not request.user.is_authenticated %}
+                    {% include "includes/_language_switcher.html" %}
+                    {% include "includes/_theme_switcher.html" %}
+                {% endif %}
                 {% if request.user.is_authenticated %}
                     <li class="nav-item"><a class="nav-link" href="{% url 'accounts:settings' %}">{% translate "Settings" %}</a></li>
                     <li class="nav-item">

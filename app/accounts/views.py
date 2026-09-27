@@ -7,6 +7,7 @@ notifications go through ``app.notifications.services.notification_service``.
 
 from typing import ClassVar
 
+from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.contrib.auth.models import Group
@@ -233,7 +234,18 @@ class SettingsView(LoginRequiredMixin, View):
             form.save()
             log_action(AuditAction.USER_UPDATED, user=request.user, target=request.user)
             messages.success(request, _("Settings saved."))
-            return redirect("accounts:settings")
+            response = redirect("accounts:settings")
+            # The navbar language switcher is gone for signed-in users, so the
+            # Settings page is the ONLY place to change the language. Without
+            # refreshing the cookie, a previously set one would keep beating the
+            # stored preference (UserLanguageMiddleware precedence).
+            response.set_cookie(
+                settings.LANGUAGE_COOKIE_NAME,
+                form.cleaned_data["preferred_language"],
+                max_age=settings.LANGUAGE_COOKIE_AGE,
+                samesite="Lax",
+            )
+            return response
         return render(request, self.template_name, {"form": form})
 
 

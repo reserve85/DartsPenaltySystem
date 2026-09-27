@@ -160,6 +160,19 @@ def test_explicit_cookie_overrides_user_preference(admin_user):
     assert "Logged in as" in content  # cookie beats stored preference
 
 
+def test_settings_language_change_writes_cookie(captain_client, captain_user):
+    """The Settings page is the ONLY language lever for signed-in users.
+
+    Saving must refresh the cookie, otherwise a previously set one would keep
+    overriding the new preference (navbar switcher is gone).
+    """
+    response = captain_client.post(
+        reverse("accounts:settings"), {"preferred_language": "en", "preferred_theme": "auto"}
+    )
+    assert response.status_code == 302
+    assert response.cookies[settings.LANGUAGE_COOKIE_NAME].value == "en"
+
+
 def test_anonymous_default_language_renders(admin_user):
     content = Client().get(reverse("account_login")).content.decode()
     assert "Darts Penalty Manager" in content
