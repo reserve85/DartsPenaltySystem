@@ -98,13 +98,13 @@
                             </a>
                             <ul class="dropdown-menu">
                                 <li>
+                                    <a class="dropdown-item" href="{% url 'season_list' %}">{% translate "Seasons" %}</a>
+                                </li>
+                                <li>
                                     <a class="dropdown-item" href="{% url 'accounts:user_list' %}">{% translate "Users" %}</a>
                                 </li>
                                 <li>
                                     <a class="dropdown-item" href="{% url 'audit_list' %}">{% translate "Audit" %}</a>
-                                </li>
-                                <li>
-                                    <a class="dropdown-item" href="{% url 'season_list' %}">{% translate "Seasons" %}</a>
                                 </li>
                             </ul>
                         </li>
@@ -129,9 +129,7 @@
                 </form>
             {% endif %}
             <ul class="navbar-nav ms-auto">
-                {# Language/theme switchers only for ANONYMOUS visitors — signed-in
-                   users manage both preferences on the Settings page (the saved
-                   language is written as a cookie there, so it applies at once). #}
+                {# Language/theme switchers only for ANONYMOUS visitors — signed-in users manage both on the Settings page. #}
                 {% if not request.user.is_authenticated %}
                     {% include "includes/_language_switcher.html" %}
                     {% include "includes/_theme_switcher.html" %}

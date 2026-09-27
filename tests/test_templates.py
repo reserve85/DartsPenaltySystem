@@ -114,6 +114,15 @@ def test_admin_sees_all_nav_groups(admin_client):
     assert reverse("season_list") in content
 
 
+def test_admin_menu_order_seasons_users_audit(admin_client):
+    """Administration dropdown: Seasons first, Users second, Audit last."""
+    content = admin_client.get(reverse("dashboard:index")).content.decode()
+    seasons = content.index(reverse("season_list"))
+    users = content.index(reverse("accounts:user_list"))
+    audit = content.index(reverse("audit_list"))
+    assert seasons < users < audit
+
+
 def test_captain_nav_has_team_area_without_admin_area(captain_client, team):
     content = captain_client.get(reverse("dashboard:index")).content.decode()
     assert "nav-sep" in content
