@@ -88,9 +88,7 @@ def clear_approval_notifications(user) -> None:
             unread=True,
         ).update(unread=False)
     except Exception:
-        logger.exception(
-            "In-app notifications for user pk=%s could not be marked read.", user.pk
-        )
+        logger.exception("In-app notifications for user pk=%s could not be marked read.", user.pk)
 
 
 def unread_count(user) -> int:
