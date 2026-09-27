@@ -25,7 +25,11 @@ $ErrorActionPreference = "Stop"
 
 # Keep in sync with "ports" in docker-compose.yml (left side) and the health
 # path from the Dockerfile/urls.py.
-$AppPort = 8200
+# Note: the host port must NOT fall into a Windows excluded port range
+# (Hyper-V/WinNAT), otherwise "docker compose up" fails with
+# "bind: An attempt was made to access a socket in a way forbidden...".
+# Check with:  netsh int ipv4 show excludedportrange protocol=tcp
+$AppPort = 8900
 $AppUrl = "http://localhost:$AppPort"
 
 # Navigate to script directory (in case run from elsewhere)

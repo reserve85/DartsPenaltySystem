@@ -25,9 +25,10 @@ services:
     container_name: darts-penalty-livesystem-test
     restart: unless-stopped
     ports:
-      # "<HOST port>:<container port>" - change the LEFT side if 8200 is
+      # "<HOST port>:<container port>" - change the LEFT side if 8900 is
       # already taken or excluded on this machine (Hyper-V/Docker ranges).
-      - "8200:8000"
+      # Check free ports with:  netsh int ipv4 show excludedportrange protocol=tcp
+      - "8900:8000"
     volumes:
       # Live system DB copy lives here (bind mount -> survives down -v).
       # The root .dockerignore excludes tests/ from the build context, so
@@ -74,5 +75,5 @@ services:
       - EMAIL_USE_TLS=True                            # STARTTLS | true, false
       - DEFAULT_FROM_EMAIL=                           # Sender address | e.g. noreply@example.com
       - SUPPORT_EMAIL=                                # Support/admin recipient | e.g. support@example.com
-      - PUBLIC_SITE_URL=127.0.0.1:8200                # Public base URL for e-mail links | e.g. https://darts.example.com
+      - PUBLIC_SITE_URL=127.0.0.1:8900                # Public base URL for e-mail links | e.g. https://darts.example.com
       - ACCOUNT_EMAIL_VERIFICATION=mandatory          # E-mail verification | mandatory, optional, none
