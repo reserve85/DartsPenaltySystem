@@ -2277,6 +2277,49 @@ msgstr ""
 msgid "Captains"
 msgstr "Kapitäne"
 
+#: .\app\templates\base.html
+#: .\app\templates\teams\team_list.html
+msgid "Teams & Players"
+msgstr "Mannschaften & Spieler"
+
+#: .\app\templates\teams\team_list.html
+msgid "Tick a box to assign a player to a team — the assignment belongs to the season shown above."
+msgstr "Häkchen setzen, um einen Spieler einer Mannschaft zuzuweisen — die Zuordnung gilt für die oben angezeigte Saison."
+
+#: .\app\templates\teams\team_list.html
+msgid "Save the player/team assignments?"
+msgstr "Spieler-/Mannschafts-Zuordnungen speichern?"
+
+#: .\app\templates\teams\team_list.html
+msgid "Save assignments"
+msgstr "Zuordnungen speichern"
+
+#: .\app\teams\views.py
+#, python-format
+msgid "Assignments saved for %(count)d player(s)."
+msgstr "%(count)d Spieler-Zuordnung(en) gespeichert."
+
+#: .\app\teams\views.py
+msgid "No assignment changes."
+msgstr "Keine Änderungen an den Zuordnungen."
+
+#: .\app\templates\matchdays\matchday_detail.html
+msgid "Add players"
+msgstr "Spieler hinzufügen"
+
+#: .\app\templates\matchdays\matchday_detail.html
+msgid "Save participants"
+msgstr "Teilnehmer speichern"
+
+#: .\app\templates\matchdays\matchday_detail.html
+msgid "Save the selected participants?"
+msgstr "Ausgewählte Teilnehmer speichern?"
+
+#: .\app\matchdays\views.py
+msgid "Participants saved."
+msgstr "Teilnehmer gespeichert."
+
+
 #~ msgid "Open"
 #~ msgstr "Öffnen"
 

@@ -95,6 +95,20 @@ def test_german_financial_overview(admin_client):
 
 
 @needs_catalog
+def test_german_new_ui_strings(admin_client, matchday):
+    """Combined Teams & Players page + participants editor must be German."""
+    _switch_language(admin_client, "de")
+    content = admin_client.get(reverse("teams:team_list")).content.decode()
+    assert "Mannschaften & Spieler" in content
+    assert "Zuordnungen speichern" in content
+    content = admin_client.get(
+        reverse("matchdays:matchday_detail", args=[matchday.pk])
+    ).content.decode()
+    assert "Spieler hinzufügen" in content
+    assert "Teilnehmer speichern" in content
+
+
+@needs_catalog
 def test_german_cookie_banner_copy(admin_client):
     _switch_language(admin_client, "de")
     content = admin_client.get(reverse("dashboard:index")).content.decode()
