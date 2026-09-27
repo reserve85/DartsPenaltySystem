@@ -15,7 +15,7 @@
     <form method="post">
         {% csrf_token %}
         <button type="submit" class="btn btn-danger">{% translate "Delete permanently" %}</button>
-        <a class="btn btn-outline-secondary" href="{% url 'teams:team_detail' team.pk %}">{% translate "Cancel" %}</a>
+        <a class="btn btn-outline-secondary" href="{% url 'teams:team_list' %}">{% translate "Cancel" %}</a>
     </form>
 </div>
 {% endblock %}

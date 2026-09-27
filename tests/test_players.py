@@ -59,13 +59,15 @@ def test_captain_create_page_team_locked(captain_client, team, other_team):
     assert form.fields["teams"].disabled is True
 
 
-def test_captain_list_only_own_team(captain_client, team, other_team):
+def test_captain_list_shows_all_players_with_own_column_only(captain_client, team, other_team):
+    """Captains see EVERY player — but may only edit their own team's column."""
     Player.objects.create(name="Mine", team=team)
     Player.objects.create(name="Theirs", team=other_team)
-    response = captain_client.get(reverse("players:player_list"))
+    response = captain_client.get(reverse("teams:team_list"))
     assert response.status_code == 200
     names = {p.name for p in response.context["page_obj"]}
-    assert names == {"Mine"}
+    assert names == {"Mine", "Theirs"}
+    assert response.context["editable_team_pks"] == {team.pk}
 
 
 def test_captain_cannot_edit_other_team_player(captain_client, team, other_team):
@@ -89,7 +91,7 @@ def test_multi_team_player_visible_and_editable_by_both_captains(
     both.teams.add(team, other_team)
 
     for client in (captain_client, other_captain_client):
-        listing = client.get(reverse("players:player_list"))
+        listing = client.get(reverse("teams:team_list"))
         assert {p.name for p in listing.context["page_obj"]} == {"Shared"}
         assert client.get(reverse("players:player_update", args=[both.pk])).status_code == 200
 
@@ -226,4 +228,5 @@ def test_player_detail_shows_per_team_balance(
     assert team_rows[md.team.pk] == 5
     content = response.content.decode()
     assert players[0].name in content
-    assert reverse("teams:team_detail", args=[md.team.pk]) in content
+    # team link now points at the financial overview (team page removed)
+    assert f"{reverse('dashboard:financial_overview')}?team={md.team.pk}" in content

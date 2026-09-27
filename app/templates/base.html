@@ -61,17 +61,8 @@
                                 {% translate "Team area" %}
                             </a>
                             <ul class="dropdown-menu">
-                                {% if request.user.is_admin %}
-                                    <li>
-                                        <a class="dropdown-item" href="{% url 'teams:team_list' %}">{% translate "Teams" %}</a>
-                                    </li>
-                                {% elif request.user.team %}
-                                    <li>
-                                        <a class="dropdown-item" href="{% url 'teams:team_detail' request.user.team.pk %}">{% translate "My Team" %}</a>
-                                    </li>
-                                {% endif %}
                                 <li>
-                                    <a class="dropdown-item" href="{% url 'players:player_list' %}">{% translate "Players" %}</a>
+                                    <a class="dropdown-item" href="{% url 'teams:team_list' %}">{% translate "Teams & Players" %}</a>
                                 </li>
                                 <li>
                                     <a class="dropdown-item" href="{% url 'matchdays:matchday_list' %}">{% translate "Matchdays" %}</a>

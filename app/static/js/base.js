@@ -12,6 +12,15 @@
             });
         });
 
+        // Confirm dialogs on single BUTTONS (save/submit inside a larger form).
+        document.querySelectorAll("button[data-confirm]").forEach(function (btn) {
+            btn.addEventListener("click", function (event) {
+                if (!window.confirm(btn.dataset.confirm)) {
+                    event.preventDefault();
+                }
+            });
+        });
+
         // Chip-list live count summary
         var countEl = document.querySelector("[data-chip-count]");
         if (countEl) {

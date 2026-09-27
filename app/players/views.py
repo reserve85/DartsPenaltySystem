@@ -1,17 +1,21 @@
 """Player views — admin manages all teams, captains only their own team."""
 
+from typing import ClassVar
+
 from django.contrib import messages
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.core.exceptions import PermissionDenied
-from django.core.paginator import Paginator
-from django.shortcuts import get_object_or_404, redirect, render
+from django.shortcuts import get_object_or_404, redirect
 from django.urls import reverse_lazy
 from django.utils.translation import gettext_lazy as _
 from django.views import View
-from django.views.generic import CreateView, DetailView, UpdateView
+from django.views.generic import CreateView, DetailView, RedirectView, UpdateView
 
 from app.core.models import AuditAction
 from app.core.permissions import (
+    GROUP_ADMIN,
+    GROUP_CAPTAIN,
+    GroupRequiredMixin,
     assert_admin_or_captain,
     user_can_view_player,
     user_is_admin,
@@ -31,7 +35,7 @@ from app.penalties.services import (
 )
 from app.players.forms import PlayerForm
 from app.players.models import Player
-from app.players.services import prefetch_season_assignments, teams_for
+from app.players.services import teams_for
 
 
 class PlayerDetailView(LoginRequiredMixin, DetailView):
@@ -72,39 +76,19 @@ class PlayerDetailView(LoginRequiredMixin, DetailView):
         return context
 
 
-class PlayerListView(LoginRequiredMixin, View):
-    """Admin: all players. Captain: own team only. Player role: 403."""
+class PlayerListRedirectView(GroupRequiredMixin, LoginRequiredMixin, RedirectView):
+    """The standalone players list was merged into the Teams & Players page."""
 
-    template_name = "players/player_list.html"
-    paginate_by = 25
-
-    def get_queryset(self, season):
-        # Roster listing is season-dependent: captains see their team's
-        # players OF THE ACTIVE SEASON, admins see every player (they assign
-        # the teams per season) with that season's assignment rendered.
-        # Precedence admin > captain: hybrid accounts see EVERY player.
-        assignments = prefetch_season_assignments(season)
-        if user_is_captain(self.request.user) and not user_is_admin(self.request.user):
-            return (
-                Player.objects.in_team(self.request.user.team_id, season)
-                .prefetch_related(assignments)
-                .order_by("name", "pk")
-            )
-        return Player.objects.prefetch_related(assignments).order_by("name", "pk")
-
-    def get(self, request):
-        assert_admin_or_captain(request.user)
-        season = season_for_request(request)
-        queryset = self.get_queryset(season)
-        page = Paginator(queryset, self.paginate_by).get_page(request.GET.get("page"))
-        return render(request, self.template_name, {"page_obj": page, "season": season})
+    groups: ClassVar[list] = [GROUP_ADMIN, GROUP_CAPTAIN]
+    permanent = False
+    url = reverse_lazy("teams:team_list")
 
 
 class PlayerCreateView(LoginRequiredMixin, CreateView):
     model = Player
     form_class = PlayerForm
     template_name = "players/player_form.html"
-    success_url = reverse_lazy("players:player_list")
+    success_url = reverse_lazy("teams:team_list")
 
     def dispatch(self, request, *args, **kwargs):
         assert_admin_or_captain(request.user)
@@ -138,7 +122,7 @@ class PlayerUpdateView(LoginRequiredMixin, UpdateView):
     model = Player
     form_class = PlayerForm
     template_name = "players/player_form.html"
-    success_url = reverse_lazy("players:player_list")
+    success_url = reverse_lazy("teams:team_list")
 
     def dispatch(self, request, *args, **kwargs):
         assert_admin_or_captain(request.user)
@@ -180,4 +164,4 @@ class PlayerDeactivateView(LoginRequiredMixin, View):
         player.save(update_fields=["active"])
         log_action(AuditAction.PLAYER_DEACTIVATED, user=request.user, target=player)
         messages.success(request, _("Player '%(name)s' deactivated.") % {"name": player.name})
-        return redirect("players:player_list")
+        return redirect("teams:team_list")

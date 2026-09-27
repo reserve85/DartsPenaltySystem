@@ -70,7 +70,7 @@
                 <tbody>
                 {% for row in team_balances %}
                     <tr>
-                        <td>{{ row.name }}</td>
+                        <td><a href="{% url 'players:player_detail' row.pk %}">{{ row.name }}</a></td>
                         <td class="text-end text-danger">{{ row.total|floatformat:2 }} €</td>
                         <td class="text-end text-success">{{ row.paid|floatformat:2 }} €</td>
                         <td class="text-end text-danger">{{ row.balance|floatformat:2 }} €</td>
@@ -171,7 +171,10 @@
                 <thead><tr><th>{% translate "Matchday" %}</th><th class="text-end">{% translate "Total" %}</th></tr></thead>
                 <tbody>
                 {% for matchday in matchday_totals %}
-                    <tr><td>{{ matchday.display_label }}</td><td class="text-end text-danger">{{ matchday.total|floatformat:2 }} €</td></tr>
+                    <tr>
+                        <td><a href="{% url 'matchdays:matchday_detail' matchday.pk %}">{{ matchday.display_label }}</a></td>
+                        <td class="text-end text-danger">{{ matchday.total|floatformat:2 }} €</td>
+                    </tr>
                 {% empty %}
                     <tr><td colspan="2" class="text-muted text-center py-3">{% translate "No matchdays." %}</td></tr>
                 {% endfor %}

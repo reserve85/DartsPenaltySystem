@@ -29,7 +29,7 @@
         <tbody>
         {% for row in team_rows %}
             <tr>
-                <td><a href="{% url 'teams:team_detail' row.team.pk %}">{{ row.team.name }}</a></td>
+                <td><a href="{% url 'dashboard:financial_overview' %}?team={{ row.team.pk }}">{{ row.team.name }}</a></td>
                 <td class="text-end text-danger">{{ row.total|floatformat:2 }} €</td>
                 <td class="text-end text-success">{{ row.paid|floatformat:2 }} €</td>
                 <td class="text-end text-danger">{{ row.balance|floatformat:2 }} €</td>

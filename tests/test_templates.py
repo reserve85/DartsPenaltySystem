@@ -14,7 +14,6 @@ ADMIN_URLS = [
     "dashboard:financial_overview",
     "teams:team_list",
     "teams:team_create",
-    "players:player_list",
     "players:player_create",
     "matchdays:matchday_list",
     "matchdays:matchday_create",
@@ -30,7 +29,7 @@ ADMIN_URLS = [
 CAPTAIN_URLS = [
     "dashboard:index",
     "dashboard:financial_overview",
-    "players:player_list",
+    "teams:team_list",
     "matchdays:matchday_list",
     "matchdays:matchday_create",
     "penalties:catalog_list",
@@ -65,7 +64,6 @@ def test_player_urls_200(player_client, url_name):
 
 
 def test_detail_pages_200(admin_client, team, matchday, catalog_normal, player):
-    assert admin_client.get(reverse("teams:team_detail", args=[team.pk])).status_code == 200
     assert (
         admin_client.get(reverse("matchdays:matchday_detail", args=[matchday.pk])).status_code
         == 200
@@ -76,8 +74,20 @@ def test_detail_pages_200(admin_client, team, matchday, catalog_normal, player):
     )
 
 
-def test_captain_detail_pages_200(captain_client, team, matchday):
-    assert captain_client.get(reverse("teams:team_detail", args=[team.pk])).status_code == 200
+def test_old_team_detail_redirects_to_financial_overview(admin_client, team):
+    response = admin_client.get(reverse("teams:team_detail", args=[team.pk]))
+    assert response.status_code == 302
+    assert response.url == f"{reverse('dashboard:financial_overview')}?team={team.pk}"
+
+
+def test_old_player_list_redirects_to_combined_page(admin_client, captain_client):
+    for client in (admin_client, captain_client):
+        response = client.get(reverse("players:player_list"))
+        assert response.status_code == 302
+        assert response.url == reverse("teams:team_list")
+
+
+def test_captain_detail_pages_200(captain_client, matchday):
     assert (
         captain_client.get(reverse("matchdays:matchday_detail", args=[matchday.pk])).status_code
         == 200
@@ -111,7 +121,7 @@ def test_admin_sees_all_nav_groups(admin_client):
     # One single entry: the start page IS the financial overview now.
     assert f'href="{reverse("dashboard:index")}"' in content
     assert reverse("dashboard:financial_overview") not in content
-    assert reverse("players:player_list") in content  # team area
+    assert reverse("teams:team_list") in content  # team area (combined page)
     assert reverse("accounts:user_list") in content  # admin area
     assert reverse("season_list") in content
 
@@ -128,7 +138,7 @@ def test_admin_menu_order_seasons_users_audit(admin_client):
 def test_captain_nav_has_team_area_without_admin_area(captain_client, team):
     content = captain_client.get(reverse("dashboard:index")).content.decode()
     assert "nav-sep" in content
-    assert reverse("teams:team_detail", args=[team.pk]) in content
+    assert reverse("teams:team_list") in content  # combined Teams & Players page
     assert reverse("accounts:user_list") not in content
     assert reverse("season_list") not in content
 

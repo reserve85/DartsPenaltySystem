@@ -1,36 +1,46 @@
 {% extends "base.html" %}
 {% load i18n %}
-{% block title %}{% translate "Teams" %} – {% translate "Darts Penalty Manager" %}{% endblock %}
+{% block title %}{% translate "Teams & Players" %} – {% translate "Darts Penalty Manager" %}{% endblock %}
 {% block content %}
-<div class="d-flex justify-content-between align-items-center mb-3">
-    <h1 class="h3 mb-0">{% translate "Teams" %}</h1>
-    <a class="btn btn-primary" href="{% url 'teams:team_create' %}">{% translate "New team" %}</a>
+<h1 class="h3 mb-3">{% translate "Teams & Players" %}</h1>
+{% if season %}
+    <p class="text-muted small">{% translate "The team assignment shown belongs to this season:" %} <strong>{{ season.name }}</strong></p>
+{% endif %}
+
+{# ------------------------------------------------------------------ Teams #}
+<div class="d-flex justify-content-between align-items-center mb-2">
+    <h2 class="h5 mb-0">{% translate "Teams" %}</h2>
+    {% if request.user.is_admin %}
+        <a class="btn btn-primary btn-sm" href="{% url 'teams:team_create' %}">{% translate "New team" %}</a>
+    {% endif %}
 </div>
 {% if season_teams_scoped %}
     <p class="text-muted small">
         {% blocktranslate with name=season.name %}Only the teams active in season {{ name }} are shown. Manage them on the seasons page.{% endblocktranslate %}
     </p>
 {% endif %}
-<div class="table-responsive">
+<div class="table-responsive mb-4">
     <table class="table table-striped align-middle">
         <thead>
         <tr>
             <th>{% translate "Name" %}</th>
             <th>{% translate "Players" %}</th>
             <th>{% translate "Captains" %}</th>
-            <th></th>
+            {% if request.user.is_admin %}<th></th>{% endif %}
         </tr>
         </thead>
         <tbody>
         {% for team in teams %}
             <tr>
-                <td><a href="{% url 'teams:team_detail' team.pk %}">{{ team.name }}</a></td>
+                <td><a href="{% url 'dashboard:financial_overview' %}?team={{ team.pk }}">{{ team.name }}</a></td>
                 <td>{{ team.player_count }}</td>
                 <td>{{ team.captain_count }}</td>
-                <td class="text-end text-nowrap">
-                    <a class="btn btn-sm btn-outline-secondary" href="{% url 'teams:team_update' team.pk %}">{% translate "Edit" %}</a>
-                    <a class="btn btn-sm btn-outline-danger" href="{% url 'teams:team_delete' team.pk %}">{% translate "Delete" %}</a>
-                </td>
+                {% if request.user.is_admin %}
+                    <td class="text-end text-nowrap">
+                        <a class="btn btn-sm btn-outline-secondary" href="{% url 'teams:team_update' team.pk %}">{% translate "Edit" %}</a>
+                        <a class="btn btn-sm btn-outline-danger" href="{% url 'teams:team_delete' team.pk %}">{% translate "Delete" %}</a>
+                    </td>
+                {% endif %}
             </tr>
         {% empty %}
             <tr><td colspan="4" class="text-center text-muted py-4">{% translate "No teams yet." %}</td></tr>
@@ -38,4 +48,60 @@
         </tbody>
     </table>
 </div>
+
+{# ------------------------------------------------- Players + assignment matrix #}
+<div class="d-flex justify-content-between align-items-center mb-2">
+    <h2 class="h5 mb-0">{% translate "Players" %}</h2>
+    <a class="btn btn-primary btn-sm" href="{% url 'players:player_create' %}">{% translate "New player" %}</a>
+</div>
+<p class="text-muted small">{% translate "Tick a box to assign a player to a team — the assignment belongs to the season shown above." %}</p>
+<form method="post">
+    {% csrf_token %}
+    <div class="table-responsive">
+        <table class="table table-striped table-bordered align-middle">
+            <thead>
+            <tr>
+                <th>{% translate "Player" %}</th>
+                {% for team in teams %}<th class="text-center">{{ team.name }}</th>{% endfor %}
+                <th class="text-center">{% translate "Active" %}</th>
+                <th></th>
+            </tr>
+            </thead>
+            <tbody>
+            {% for player in page_obj %}
+                <tr>
+                    <td>
+                        <input type="hidden" name="players" value="{{ player.pk }}">
+                        <a href="{% url 'players:player_detail' player.pk %}">{{ player.name }}</a>
+                    </td>
+                    {% for team in teams %}
+                        <td class="text-center">
+                            <input type="checkbox" class="form-check-input" name="assign"
+                                   value="{{ player.pk }}:{{ team.pk }}"
+                                   {% if team.pk in player.assigned_team_pks %}checked{% endif %}
+                                   {% if team.pk not in editable_team_pks %}disabled{% endif %}
+                                   aria-label="{{ player.name }} – {{ team.name }}">
+                        </td>
+                    {% endfor %}
+                    <td class="text-center">{% if player.active %}<span class="text-success">✓</span>{% else %}<span class="text-danger">✗</span>{% endif %}</td>
+                    <td class="text-end text-nowrap">
+                        <a class="btn btn-sm btn-outline-secondary" href="{% url 'players:player_update' player.pk %}">{% translate "Edit" %}</a>
+                        {% if player.active %}
+                            {# Posts to the deactivate endpoint via formaction — a nested <form> is not valid HTML inside the matrix form. #}
+                            <button class="btn btn-sm btn-outline-danger" type="submit"
+                                    formaction="{% url 'players:player_deactivate' player.pk %}"
+                                    data-confirm="{% translate 'Deactivate this player?' %}">{% translate "Deactivate" %}</button>
+                        {% endif %}
+                    </td>
+                </tr>
+            {% empty %}
+                <tr><td colspan="{{ teams|length|add:3 }}" class="text-center text-muted py-4">{% translate "No players yet." %}</td></tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    <button type="submit" class="btn btn-primary"
+            data-confirm="{% translate 'Save the player/team assignments?' %}">{% translate "Save assignments" %}</button>
+</form>
+{% include "includes/_pagination.html" with page_obj=page_obj %}
 {% endblock %}

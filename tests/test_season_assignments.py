@@ -118,45 +118,53 @@ def test_player_form_shows_active_season_assignment(admin_client, team, other_te
     assert response.context["form"].initial["teams"] == [other_team.pk]
 
 
-def test_player_list_shows_active_season_teams(admin_client, team, season):
+def test_player_matrix_shows_active_season_teams(admin_client, team, season):
     Season.objects.create(name="2026/2027")  # becomes the active season
     player = Player.objects.create(name="P", team=team, season=season)
 
-    response = admin_client.get(reverse("players:player_list"))
+    response = admin_client.get(reverse("teams:team_list"))
     row = next(p for p in response.context["page_obj"] if p.pk == player.pk)
     assert list(row.season_assignments) == []  # newest (empty) season active
 
     _set_active_season(admin_client, season)
-    response = admin_client.get(reverse("players:player_list"))
+    response = admin_client.get(reverse("teams:team_list"))
     row = next(p for p in response.context["page_obj"] if p.pk == player.pk)
     assert [a.team for a in row.season_assignments] == [team]
 
 
-def test_captain_player_list_is_season_scoped(captain_client, team, season):
+def test_captain_matrix_lists_all_players_but_season_scoped_assignments(
+    captain_client, team, season
+):
     newer = Season.objects.create(name="2026/2027")
     Player.objects.create(name="Alt", team=team, season=season)
     Player.objects.create(name="Neu", team=team, season=newer)
 
-    response = captain_client.get(reverse("players:player_list"))
-    assert {p.name for p in response.context["page_obj"]} == {"Neu"}
+    # Captains see EVERY player now — only the ticked cells follow the season.
+    response = captain_client.get(reverse("teams:team_list"))
+    rows = {p.name: p for p in response.context["page_obj"]}
+    assert set(rows) == {"Alt", "Neu"}
+    assert rows["Alt"].assigned_team_pks == []  # newer (active) season has no assignment
+    assert rows["Neu"].assigned_team_pks == [team.pk]
 
     _set_active_season(captain_client, season)
-    response = captain_client.get(reverse("players:player_list"))
-    assert {p.name for p in response.context["page_obj"]} == {"Alt"}
+    response = captain_client.get(reverse("teams:team_list"))
+    rows = {p.name: p for p in response.context["page_obj"]}
+    assert rows["Alt"].assigned_team_pks == [team.pk]
+    assert rows["Neu"].assigned_team_pks == []
 
 
-def test_team_detail_roster_is_season_scoped(admin_client, team, season):
+def test_financial_roster_is_season_scoped(admin_client, team, season):
     newer = Season.objects.create(name="2026/2027")
     Player.objects.create(name="Alt", team=team, season=season)
     Player.objects.create(name="Neu", team=team, season=newer)
 
-    response = admin_client.get(reverse("teams:team_detail", args=[team.pk]))
-    names = {row["player"].name for row in response.context["player_rows"]}
+    response = admin_client.get(reverse("dashboard:financial_overview"), {"team": team.pk})
+    names = {row.name for row in response.context["team_balances"]}
     assert names == {"Neu"}
 
     _set_active_season(admin_client, season)
-    response = admin_client.get(reverse("teams:team_detail", args=[team.pk]))
-    names = {row["player"].name for row in response.context["player_rows"]}
+    response = admin_client.get(reverse("dashboard:financial_overview"), {"team": team.pk})
+    names = {row.name for row in response.context["team_balances"]}
     assert names == {"Alt"}
 
 
