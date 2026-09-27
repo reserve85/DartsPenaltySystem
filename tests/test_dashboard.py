@@ -25,20 +25,19 @@ def test_dashboard_requires_login(db):
     assert "login" in response.url
 
 
-def test_dashboard_admin_shows_all_teams(admin_client, team, other_team, matchday_with_players):
-    matchday_with_players(2)  # players on ``team``
+def test_start_page_is_financial_overview_for_admin(admin_client, team, other_team):
+    """The old Dashboard/Übersicht is gone — the start page is the financial
+    overview, defaulting to the first team of the active season."""
     response = admin_client.get(reverse("dashboard:index"))
     assert response.status_code == 200
-    assert response.context["role"] == "admin"
-    teams = {t.name: t for t in response.context["teams"]}
-    assert set(teams) == {team.name, other_team.name}
-    # join-safe counts: 2 players created by the factory
-    assert teams[team.name].player_count == 2
-    assert teams[team.name].matchday_count == 1
-    assert teams[other_team.name].player_count == 0
+    context = response.context
+    assert {t.name for t in context["teams"]} == {team.name, other_team.name}
+    assert context["selected_team"] == min(context["teams"], key=lambda t: t.name)
+    content = response.content.decode()
+    assert "Financial overview" in content or "Finanzübersicht" in content
 
 
-def test_dashboard_captain_shows_own_team_totals(
+def test_start_page_is_financial_overview_for_captain(
     captain_client, team, matchday_with_players, catalog_normal, admin_user
 ):
     md, players = matchday_with_players(2)
@@ -52,18 +51,14 @@ def test_dashboard_captain_shows_own_team_totals(
     )
     response = captain_client.get(reverse("dashboard:index"))
     assert response.status_code == 200
-    assert response.context["role"] == "captain"
-    assert response.context["team"] == team
-    assert response.context["player_count"] == 2
-    assert response.context["matchday_count"] == 1
+    assert response.context["selected_team"] == team
     assert response.context["team_total"] == Decimal(5)
 
 
-def test_dashboard_player_without_link_shows_info(player_client):
+def test_start_page_is_financial_overview_for_player_without_link(player_client):
     response = player_client.get(reverse("dashboard:index"))
     assert response.status_code == 200
-    assert response.context["role"] == "player"
-    assert response.context["player"] is None
+    assert response.context["own_mode"] is True
     assert response.context["no_player_link"] is True
 
 

@@ -45,8 +45,8 @@ def test_english_ui_renders_source_strings(admin_client):
     _switch_language(admin_client, "en")
     # Switching redirects to the translated URL (/en/...) — follow like a browser.
     content = admin_client.get(reverse("dashboard:index"), follow=True).content.decode()
-    assert "Logged in as" in content
-    assert "Angemeldet als" not in content
+    assert "Financial overview" in content
+    assert "Finanzübersicht" not in content
 
 
 def test_default_language_is_german_with_catalog(admin_client):
@@ -54,8 +54,8 @@ def test_default_language_is_german_with_catalog(admin_client):
     if not MO_DE.exists():
         pytest.skip("compiled German catalog missing (run: python manage.py compilemessages)")
     content = admin_client.get(reverse("dashboard:index")).content.decode()
-    assert "Angemeldet als" in content
-    assert "Logged in as" not in content
+    assert "Finanzübersicht" in content
+    assert "Financial overview" not in content
 
 
 @needs_catalog
@@ -147,7 +147,7 @@ def test_preferred_language_applies_without_cookie(admin_user):
     client.force_login(admin_user)
     # Unprefixed default URL -> redirected to the /en/ equivalent, then English.
     content = client.get(reverse("dashboard:index"), follow=True).content.decode()
-    assert "Logged in as" in content
+    assert "Financial overview" in content
 
 
 def test_explicit_cookie_overrides_user_preference(admin_user):
@@ -157,7 +157,7 @@ def test_explicit_cookie_overrides_user_preference(admin_user):
     client.force_login(admin_user)
     client.cookies[settings.LANGUAGE_COOKIE_NAME] = "en"
     content = client.get(reverse("dashboard:index"), follow=True).content.decode()
-    assert "Logged in as" in content  # cookie beats stored preference
+    assert "Financial overview" in content  # cookie beats stored preference
 
 
 def test_settings_language_change_writes_cookie(captain_client, captain_user):

@@ -46,14 +46,10 @@
         <div class="collapse navbar-collapse" id="mainNav">
             {% if request.user.is_authenticated %}
                 <ul class="navbar-nav me-auto">
-                    {# --- visible for EVERY signed-in user --- #}
-                    <li class="nav-item">
-                        <a class="nav-link{% if nav_section == 'overview' %} active{% endif %}"
-                           href="{% url 'dashboard:index' %}">{% translate "Dashboard" %}</a>
-                    </li>
+                    {# --- visible for EVERY signed-in user — the start page IS the financial overview --- #}
                     <li class="nav-item">
                         <a class="nav-link{% if nav_section == 'financial' %} active{% endif %}"
-                           href="{% url 'dashboard:financial_overview' %}">{% translate "Financial" %}</a>
+                           href="{% url 'dashboard:index' %}">{% translate "Financial" %}</a>
                     </li>
 
                     {# --- team area: captains and admins --- #}

@@ -1,8 +1,7 @@
-"""Role-aware dashboard and financial overview (season-scoped money data)."""
+"""Role-aware financial overview (season-scoped money data) — the start page."""
 
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.core.exceptions import PermissionDenied
-from django.db.models import Count
 from django.shortcuts import get_object_or_404, render
 from django.views import View
 
@@ -13,7 +12,6 @@ from app.core.permissions import (
     user_is_player,
 )
 from app.core.utils import numeric_pk
-from app.matchdays.models import Matchday
 from app.matchdays.services import season_for_request
 from app.penalties.models import Payment
 from app.penalties.services import (
@@ -28,56 +26,9 @@ from app.penalties.services import (
     team_paid_total,
     team_penalties_total,
 )
-from app.players.models import Player
-from app.players.services import player_count_annotation, teams_for
+from app.players.services import teams_for
 from app.teams.models import Team
 from app.teams.services import teams_for_season
-
-
-class DashboardView(LoginRequiredMixin, View):
-    template_name = "dashboard/dashboard.html"
-
-    def get(self, request):
-        season = season_for_request(request)
-        context = {"role": request.user.role}
-        if user_is_admin(request.user):
-            context["teams"] = (
-                teams_for_season(season)
-                .annotate(
-                    player_count=player_count_annotation(season),
-                    matchday_count=Count("matchdays", distinct=True),
-                )
-                .order_by("name")
-            )
-        elif user_is_captain(request.user):
-            team = request.user.team
-            context["team"] = team
-            if team is not None:
-                balances = team_balances(team, season=season) + inactive_player_balances(
-                    team, season=season
-                )
-                context["team_total"] = sum(row.balance for row in balances)
-                context["team_penalties"] = team_penalties_total(team, season=season)
-                context["team_paid"] = team_paid_total(team, season=season)
-                matchday_qs = Matchday.objects.filter(team=team)
-                if season is not None:
-                    matchday_qs = matchday_qs.filter(season=season)
-                # Season-dependent roster of the active season.
-                context["player_count"] = Player.objects.in_team(team, season).count()
-                context["matchday_count"] = matchday_qs.count()
-        elif user_is_player(request.user):
-            player = request.user.player_link
-            context["player"] = player
-            if player is not None:
-                context["own_penalties"] = list(
-                    assigned_penalties_qs(season=season).filter(player=player)[:10]
-                )
-                context["own_balance"] = player_balance(player, season=season)
-                context["own_total"] = player_total(player, season=season)
-                context["own_paid"] = player_total_paid(player, season=season)
-            else:
-                context["no_player_link"] = True
-        return render(request, self.template_name, context)
 
 
 class FinancialOverviewView(LoginRequiredMixin, View):

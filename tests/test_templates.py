@@ -108,7 +108,9 @@ def test_anonymous_redirected_to_login(db):
 def test_admin_sees_all_nav_groups(admin_client):
     content = admin_client.get(reverse("dashboard:index")).content.decode()
     assert "nav-sep" in content  # group separators
-    assert reverse("dashboard:financial_overview") in content
+    # One single entry: the start page IS the financial overview now.
+    assert f'href="{reverse("dashboard:index")}"' in content
+    assert reverse("dashboard:financial_overview") not in content
     assert reverse("players:player_list") in content  # team area
     assert reverse("accounts:user_list") in content  # admin area
     assert reverse("season_list") in content
@@ -133,7 +135,7 @@ def test_captain_nav_has_team_area_without_admin_area(captain_client, team):
 
 def test_player_nav_only_shows_user_pages(player_client):
     content = player_client.get(reverse("dashboard:index")).content.decode()
-    assert reverse("dashboard:financial_overview") in content
+    assert f'href="{reverse("dashboard:index")}"' in content  # financial = start page
     assert reverse("players:player_list") not in content
     assert reverse("accounts:user_list") not in content
     assert "nav-sep" not in content
@@ -148,10 +150,3 @@ def test_navbar_follows_color_mode(db):
     # Django strips only SINGLE-line {# ... #} comments — a multi-line one would
     # leak into the page as visible text.
     assert "{#" not in content
-
-
-def test_dashboard_links_team_name_to_financial_overview(admin_client, team):
-    """No 'Open' button — the team name itself opens the financial overview."""
-    content = admin_client.get(reverse("dashboard:index")).content.decode()
-    assert f"{reverse('dashboard:financial_overview')}?team={team.pk}" in content
-    assert "Öffnen" not in content and ">Open<" not in content
