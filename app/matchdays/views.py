@@ -6,6 +6,7 @@ from django.contrib import messages
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.core.exceptions import PermissionDenied
 from django.core.paginator import Paginator
+from django.db import transaction
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse_lazy
 from django.utils.translation import gettext_lazy as _
@@ -22,10 +23,23 @@ from app.core.permissions import (
 from app.core.services import log_action
 from app.core.utils import numeric_pk
 from app.matchdays.forms import MatchdayForm
-from app.matchdays.models import Matchday
+from app.matchdays.models import Matchday, MatchdayPlayer
 from app.matchdays.services import season_for_request
 from app.penalties.models import Penalty
+from app.players.models import Player
 from app.teams.services import teams_for_season
+
+
+def _eligible_participants(matchday, season):
+    """Active roster a matchday's participants may be picked from.
+
+    Eligibility follows the MATCHDAY's season (or the active season when the
+    matchday has none) — the very same rule as ``MatchdayForm``.
+    """
+    roster_season = matchday.season or season
+    return (
+        Player.objects.in_team(matchday.team_id, roster_season).filter(active=True).order_by("name")
+    )
 
 
 class MatchdayListView(LoginRequiredMixin, View):
@@ -172,13 +186,61 @@ class MatchdayDetailView(LoginRequiredMixin, DetailView):
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        context["participants"] = self.object.participants.select_related("player").order_by(
-            "player__name"
+        participants = list(
+            self.object.participants.select_related("player").order_by("player__name")
         )
+        context["participants"] = participants
+        # Roster for the inline "Add players" editor on this page.
+        context["eligible_players"] = _eligible_participants(
+            self.object, season_for_request(self.request)
+        )
+        context["participant_ids"] = [p.player_id for p in participants]
         context["penalties"] = self.object.penalties.select_related(
             "player", "catalog_item"
         ).order_by("-created_at")
         return context
+
+
+class MatchdayParticipantsView(LoginRequiredMixin, View):
+    """POST-only: replace the participants of ONE matchday from the detail page.
+
+    Same guards as every other matchday write action (admin or captain of the
+    matchday's team) and the same eligibility rule as the create/edit form:
+    only ACTIVE players of the matchday's team/season, at least one selected.
+    """
+
+    def post(self, request, pk):
+        assert_admin_or_captain(request.user)
+        matchday = get_object_or_404(Matchday, pk=pk)
+        if not user_can_manage_team(request.user, matchday.team):
+            raise PermissionDenied
+
+        season = season_for_request(request)
+        eligible = _eligible_participants(matchday, season)
+        valid_pks = set(eligible.values_list("pk", flat=True))
+        try:
+            requested_pks = {int(value) for value in request.POST.getlist("participants")}
+        except (TypeError, ValueError):
+            requested_pks = set()
+
+        if not requested_pks or not requested_pks <= valid_pks:
+            # Empty selection OR a forged foreign/season-mismatched player.
+            messages.error(request, _("Select at least one participant."))
+            return redirect("matchdays:matchday_detail", pk=matchday.pk)
+
+        with transaction.atomic():
+            matchday.participants.all().delete()
+            matchday.participants.bulk_create(
+                [MatchdayPlayer(matchday=matchday, player_id=pk) for pk in requested_pks]
+            )
+        log_action(
+            AuditAction.MATCHDAY_UPDATED,
+            user=request.user,
+            target=matchday,
+            metadata={"participants": len(requested_pks)},
+        )
+        messages.success(request, _("Participants saved."))
+        return redirect("matchdays:matchday_detail", pk=matchday.pk)
 
 
 class MatchdayDeleteView(LoginRequiredMixin, View):

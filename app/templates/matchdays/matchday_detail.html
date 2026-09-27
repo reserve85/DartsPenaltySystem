@@ -14,13 +14,53 @@
 </div>
 {% if matchday.description %}<p>{{ matchday.description }}</p>{% endif %}
 
-<h2 class="h5">{% translate "Participants" %} ({{ participants|length }})</h2>
-<div class="d-flex flex-wrap gap-2 mb-4">
+<h2 class="h5 d-flex justify-content-between align-items-center mb-2">
+    <span>{% translate "Participants" %} ({{ participants|length }})</span>
+    <button class="btn btn-sm btn-outline-primary" type="button" data-bs-toggle="collapse"
+            data-bs-target="#participantEditor" aria-expanded="false" aria-controls="participantEditor">
+        {% translate "Add players" %}
+    </button>
+</h2>
+<div class="d-flex flex-wrap gap-2 mb-2">
     {% for participation in participants %}
         <span class="badge rounded-pill text-bg-light border">{{ participation.player.name }}</span>
     {% empty %}
         <span class="text-muted">{% translate "No participants." %}</span>
     {% endfor %}
+</div>
+<div class="collapse" id="participantEditor">
+    <form method="post" action="{% url 'matchdays:matchday_participants' matchday.pk %}" class="card card-body mb-4">
+        {% csrf_token %}
+        <div class="table-responsive">
+            <table class="table table-sm table-striped align-middle">
+                <thead>
+                <tr>
+                    <th style="width: 2rem;"></th>
+                    <th>{% translate "Player" %}</th>
+                </tr>
+                </thead>
+                <tbody>
+                {% for candidate in eligible_players %}
+                    <tr>
+                        <td>
+                            <input type="checkbox" class="form-check-input" name="participants"
+                                   value="{{ candidate.pk }}"
+                                   {% if candidate.pk in participant_ids %}checked{% endif %}
+                                   aria-label="{{ candidate.name }}">
+                        </td>
+                        <td>{{ candidate.name }}</td>
+                    </tr>
+                {% empty %}
+                    <tr><td colspan="2" class="text-center text-muted py-3">{% translate "No players yet." %}</td></tr>
+                {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        <div>
+            <button type="submit" class="btn btn-primary btn-sm"
+                    data-confirm="{% translate 'Save the selected participants?' %}">{% translate "Save participants" %}</button>
+        </div>
+    </form>
 </div>
 
 <h2 class="h5">{% translate "Penalties" %}</h2>

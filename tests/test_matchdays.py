@@ -271,3 +271,77 @@ def test_matchday_update_reflects_in_audit(admin_client, team, matchday):
         AuditLog.objects.filter(action=AuditAction.MATCHDAY_UPDATED, target_id=matchday.pk).count()
         == 1
     )
+
+
+# ---------------------------------------------------------------------------
+# Inline participant editor on the matchday detail page
+# ---------------------------------------------------------------------------
+def _participants_url(matchday):
+    return reverse("matchdays:matchday_participants", args=[matchday.pk])
+
+
+def test_detail_page_offers_inline_participant_editor(admin_client, matchday_with_players):
+    md, players = matchday_with_players(2)
+    response = admin_client.get(reverse("matchdays:matchday_detail", args=[md.pk]))
+    assert response.status_code == 200
+    # editor form + full eligible roster (active players of THIS team)
+    assert _participants_url(md) in response.content.decode()
+    assert {p.pk for p in response.context["eligible_players"]} == {p.pk for p in players}
+    # current participants are pre-checked
+    assert set(response.context["participant_ids"]) == {p.pk for p in players}
+
+
+def test_admin_saves_participants_from_detail_page(admin_client, matchday_with_players):
+    md, players = matchday_with_players(3)
+    response = admin_client.post(_participants_url(md), {"participants": [str(players[0].pk)]})
+    assert response.status_code == 302
+    assert {row.player_id for row in md.participants.all()} == {players[0].pk}
+    assert (
+        AuditLog.objects.filter(action=AuditAction.MATCHDAY_UPDATED, target_id=md.pk).count() == 1
+    )
+
+
+def test_participant_editor_rejects_empty_selection(admin_client, matchday_with_players):
+    md, _players = matchday_with_players(2)
+    response = admin_client.post(_participants_url(md), {})
+    assert response.status_code == 302  # back to the detail page with an error
+    assert md.participants.count() == 2  # unchanged
+
+
+def test_participant_editor_rejects_foreign_player(admin_client, other_team, matchday_with_players):
+    md, players = matchday_with_players(1)
+    foreign = Player.objects.create(name="Foreign", team=other_team)
+    response = admin_client.post(
+        _participants_url(md),
+        {"participants": [str(players[0].pk), str(foreign.pk)]},
+    )
+    assert response.status_code == 302
+    assert {row.player_id for row in md.participants.all()} == {players[0].pk}  # unchanged
+    assert foreign.pk not in {row.player_id for row in md.participants.all()}
+
+
+def test_participant_editor_get_not_allowed(admin_client, matchday_with_players):
+    md, _ = matchday_with_players(1)
+    assert admin_client.get(_participants_url(md)).status_code == 405
+
+
+def test_captain_edits_only_own_teams_participants(
+    captain_client, team, other_team, matchday_with_players
+):
+    md, players = matchday_with_players(2)
+    foreign_md = Matchday.objects.create(
+        team=other_team, opponent="Away", venue="away", date=date(2026, 2, 1)
+    )
+
+    response = captain_client.post(_participants_url(md), {"participants": [str(players[0].pk)]})
+    assert response.status_code == 302
+    assert {row.player_id for row in md.participants.all()} == {players[0].pk}
+
+    assert captain_client.post(_participants_url(foreign_md), {}).status_code == 403
+
+
+def test_player_role_cannot_edit_participants(player_client, matchday_with_players):
+    md, players = matchday_with_players(1)
+    response = player_client.post(_participants_url(md), {"participants": [str(players[0].pk)]})
+    assert response.status_code == 403
+    assert md.participants.count() == 1
