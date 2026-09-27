@@ -26,6 +26,7 @@ from app.core.choices import ThemeChoice
 from app.core.models import AuditAction
 from app.core.permissions import GROUP_ADMIN, GROUP_PLAYER, GroupRequiredMixin
 from app.core.services import log_action
+from app.notifications.inapp import clear_approval_notifications
 from app.notifications.services import notification_service
 from app.players.models import Player
 
@@ -98,6 +99,7 @@ class UserApprovalView(GroupRequiredMixin, LoginRequiredMixin, View):
                     metadata={"email": user.email},
                 )
             notification_service.send_account_rejected(user=user, request=request)
+            clear_approval_notifications(user)
             messages.success(request, _("User rejected."))
             return redirect("accounts:approval_list")
 
@@ -146,6 +148,7 @@ class UserApprovalView(GroupRequiredMixin, LoginRequiredMixin, View):
                 },
             )
         notification_service.send_account_approved(user=user, request=request)
+        clear_approval_notifications(user)
         messages.success(request, _("User approved."))
         return redirect("accounts:approval_list")
 

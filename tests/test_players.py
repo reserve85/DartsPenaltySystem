@@ -5,58 +5,81 @@ from django.urls import reverse
 
 from app.core.models import AuditAction, AuditLog
 from app.players.models import Player
+from app.players.services import assign_teams, teams_for
 
 pytestmark = pytest.mark.django_db
 
 
-def test_admin_creates_player_any_team(admin_client, team, other_team):
+def test_admin_creates_player_without_assignment(admin_client, team, other_team, season):
+    """Creating a player never assigns a team — posted ``teams`` data is ignored.
+
+    The assignment is made exclusively in the matrix on Teams & Players.
+    """
     response = admin_client.post(
         reverse("players:player_create"),
-        {"name": "Neuer", "teams": [other_team.pk], "active": "on"},
+        {"name": "Neuer", "teams": [other_team.pk], "active": "on"},  # no such field anymore
     )
     assert response.status_code == 302
     player = Player.objects.get(name="Neuer")
-    assert list(player.teams.all()) == [other_team]
+    assert list(player.teams.all()) == []
     assert (
         AuditLog.objects.filter(action=AuditAction.PLAYER_CREATED, target_id=player.pk).count() == 1
     )
 
-
-def test_admin_creates_multi_team_player(admin_client, team, other_team):
+    # …and the matrix does the assignment for the active season:
     response = admin_client.post(
-        reverse("players:player_create"),
-        {"name": "Both", "teams": [team.pk, other_team.pk], "active": "on"},
+        reverse("teams:team_list"),
+        {"players": [str(player.pk)], "assign": [f"{player.pk}:{other_team.pk}"]},
     )
     assert response.status_code == 302
+    assert teams_for(player, season) == [other_team]
+
+
+def test_admin_creates_multi_team_player(admin_client, team, other_team, season):
+    """Both memberships are ticked cell by cell in the matrix."""
+    response = admin_client.post(reverse("players:player_create"), {"name": "Both", "active": "on"})
+    assert response.status_code == 302
     player = Player.objects.get(name="Both")
-    assert set(player.teams.all()) == {team, other_team}
+    assert list(player.teams.all()) == []
+
+    response = admin_client.post(
+        reverse("teams:team_list"),
+        {
+            "players": [str(player.pk)],
+            "assign": [f"{player.pk}:{team.pk}", f"{player.pk}:{other_team.pk}"],
+        },
+    )
+    assert response.status_code == 302
+    assert set(teams_for(player, season)) == {team, other_team}
 
 
-def test_admin_requires_at_least_one_team(admin_client, team):
+def test_admin_creates_player_without_any_team(admin_client, team):
+    """No team selection is needed anymore — the form must accept a bare name."""
     response = admin_client.post(
         reverse("players:player_create"), {"name": "NoTeam", "active": "on"}
     )
-    assert response.status_code == 200  # form validation error
-    assert not Player.objects.filter(name="NoTeam").exists()
+    assert response.status_code == 302  # no validation error anymore
+    player = Player.objects.get(name="NoTeam")
+    assert list(player.teams.all()) == []
 
 
-def test_captain_creates_player_in_own_team(captain_client, team, other_team):
+def test_create_form_has_no_team_assignment(admin_client):
+    """The team assignment is not offered on the create page at all."""
+    response = admin_client.get(reverse("players:player_create"))
+    assert response.status_code == 200
+    assert "teams" not in response.context["form"].fields
+    assert "participant-chips" not in response.content.decode()
+
+
+def test_captain_creates_player_without_assignment(captain_client, team, other_team):
+    """Captains create the player too — they tick their own column in the matrix."""
     response = captain_client.post(
         reverse("players:player_create"),
         {"name": "Own", "teams": [other_team.pk], "active": "on"},
     )
-    # teams field is disabled for captains -> posted value is ignored
     assert response.status_code == 302
     player = Player.objects.get(name="Own")
-    assert list(player.teams.all()) == [team]
-
-
-def test_captain_create_page_team_locked(captain_client, team, other_team):
-    response = captain_client.get(reverse("players:player_create"))
-    assert response.status_code == 200
-    form = response.context["form"]
-    assert list(form.fields["teams"].queryset) == [team]
-    assert form.fields["teams"].disabled is True
+    assert list(player.teams.all()) == []
 
 
 def test_captain_list_shows_all_players_with_own_column_only(captain_client, team, other_team):
@@ -111,16 +134,26 @@ def test_captain_edit_preserves_other_team_memberships(captain_client, team, oth
     assert set(both.teams.all()) == {team, other_team}  # neither lost nor added
 
 
-def test_admin_can_remove_a_membership(admin_client, team, other_team):
+def test_admin_membership_is_edited_in_the_matrix(admin_client, team, other_team, season):
+    """Removing a membership happens on the combined page, not in the edit form."""
     both = Player.objects.create(name="Shared")
-    both.teams.add(team, other_team)
+    assign_teams(both, [team, other_team], season=season)
+
+    # the edit form no longer carries the assignment …
     response = admin_client.post(
         reverse("players:player_update", args=[both.pk]),
         {"name": "Shared", "teams": [team.pk], "active": "on"},
     )
     assert response.status_code == 302
-    both.refresh_from_db()
-    assert list(both.teams.all()) == [team]
+    assert set(teams_for(both, season)) == {team, other_team}
+
+    # … the matrix does
+    response = admin_client.post(
+        reverse("teams:team_list"),
+        {"players": [str(both.pk)], "assign": [f"{both.pk}:{team.pk}"]},
+    )
+    assert response.status_code == 302
+    assert teams_for(both, season) == [team]
 
 
 def test_player_role_forbidden(captain_client, player_client):

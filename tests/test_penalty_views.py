@@ -56,6 +56,13 @@ def test_catalog_admin_crud_and_toggle(admin_client):
     assert item.amount_eur == Decimal(3)
 
 
+def test_catalog_list_has_no_toggle_button(admin_client, catalog_normal):
+    """No 'Deactivate' button in the list — the edit form's 'Active' checkbox owns it."""
+    content = admin_client.get(reverse("penalties:catalog_list")).content.decode()
+    assert reverse("penalties:catalog_toggle_active", args=[catalog_normal.pk]) not in content
+    assert reverse("penalties:catalog_update", args=[catalog_normal.pk]) in content
+
+
 def test_catalog_form_rejects_non_positive(admin_client):
     response = admin_client.post(
         reverse("penalties:catalog_create"),

@@ -46,37 +46,19 @@
         <div class="collapse navbar-collapse" id="mainNav">
             {% if request.user.is_authenticated %}
                 <ul class="navbar-nav me-auto">
-                    {# --- visible for EVERY signed-in user — the start page IS the financial overview --- #}
+                    {# --- header order: Finanzübersicht – Spieltage – Verwaltung --- #}
                     <li class="nav-item">
                         <a class="nav-link{% if nav_section == 'financial' %} active{% endif %}"
-                           href="{% url 'dashboard:index' %}">{% translate "Financial" %}</a>
+                           href="{% url 'dashboard:index' %}">{% translate "Financial overview" %}</a>
                     </li>
 
-                    {# --- team area: captains and admins --- #}
+                    {# --- Spieltage + Verwaltung: captains and admins --- #}
                     {% if request.user.is_admin or request.user.is_captain %}
-                        <li class="nav-item nav-sep" aria-hidden="true"></li>
-                        <li class="nav-item dropdown">
-                            <a class="nav-link dropdown-toggle{% if nav_section == 'team' %} active{% endif %}"
-                               href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-                                {% translate "Team area" %}
-                            </a>
-                            <ul class="dropdown-menu">
-                                <li>
-                                    <a class="dropdown-item" href="{% url 'teams:team_list' %}">{% translate "Teams & Players" %}</a>
-                                </li>
-                                <li>
-                                    <a class="dropdown-item" href="{% url 'matchdays:matchday_list' %}">{% translate "Matchdays" %}</a>
-                                </li>
-                            </ul>
-                        </li>
                         <li class="nav-item">
-                            <a class="nav-link{% if nav_section == 'catalog' %} active{% endif %}"
-                               href="{% url 'penalties:catalog_list' %}">{% translate "Catalog" %}</a>
+                            <a class="nav-link{% if nav_section == 'matchdays' %} active{% endif %}"
+                               href="{% url 'matchdays:matchday_list' %}">{% translate "Matchdays" %}</a>
                         </li>
-                    {% endif %}
 
-                    {# --- admin area --- #}
-                    {% if request.user.is_admin %}
                         <li class="nav-item nav-sep" aria-hidden="true"></li>
                         <li class="nav-item dropdown">
                             <a class="nav-link dropdown-toggle{% if nav_section == 'admin' %} active{% endif %}"
@@ -84,15 +66,25 @@
                                 {% translate "Administration" %}
                             </a>
                             <ul class="dropdown-menu">
+                                {# teams, players and the penalty catalog live here now #}
                                 <li>
-                                    <a class="dropdown-item" href="{% url 'season_list' %}">{% translate "Seasons" %}</a>
+                                    <a class="dropdown-item" href="{% url 'teams:team_list' %}">{% translate "Teams & Players" %}</a>
                                 </li>
                                 <li>
-                                    <a class="dropdown-item" href="{% url 'accounts:user_list' %}">{% translate "Users" %}</a>
+                                    <a class="dropdown-item" href="{% url 'penalties:catalog_list' %}">{% translate "Penalty catalog" %}</a>
                                 </li>
-                                <li>
-                                    <a class="dropdown-item" href="{% url 'audit_list' %}">{% translate "Audit" %}</a>
-                                </li>
+                                {% if request.user.is_admin %}
+                                    <li><hr class="dropdown-divider"></li>
+                                    <li>
+                                        <a class="dropdown-item" href="{% url 'season_list' %}">{% translate "Seasons" %}</a>
+                                    </li>
+                                    <li>
+                                        <a class="dropdown-item" href="{% url 'accounts:user_list' %}">{% translate "Users" %}</a>
+                                    </li>
+                                    <li>
+                                        <a class="dropdown-item" href="{% url 'audit_list' %}">{% translate "Audit" %}</a>
+                                    </li>
+                                {% endif %}
                             </ul>
                         </li>
                     {% endif %}
@@ -122,11 +114,22 @@
                     {% include "includes/_theme_switcher.html" %}
                 {% endif %}
                 {% if request.user.is_authenticated %}
+                    {% if request.user.is_admin %}
+                        {# Admin bell: in-app notifications (django-notifications-hq) — new approval requests. #}
+                        <li class="nav-item">
+                            <a class="nav-link" href="{% url 'notifications:unread' %}"
+                               title="{% translate 'Notifications' %}">
+                                🔔 {% translate "Notifications" %}
+                                {% if unread_notification_count %}<span class="badge text-bg-warning">{{ unread_notification_count }}</span>{% endif %}
+                            </a>
+                        </li>
+                    {% endif %}
                     <li class="nav-item"><a class="nav-link" href="{% url 'accounts:settings' %}">{% translate "Settings" %}</a></li>
                     <li class="nav-item">
-                        <form method="post" action="{% url 'account_logout' %}" class="d-inline">
+                        {# Logout must stay a PLAIN nav-link: .btn brings the 2.75rem touch-target min-height from style.css, which is taller than the .nav-link anchors next to it. #}
+                        <form method="post" action="{% url 'account_logout' %}" class="m-0">
                             {% csrf_token %}
-                            <button type="submit" class="btn btn-link nav-link">{% translate "Logout" %}</button>
+                            <button type="submit" class="nav-link text-start">{% translate "Logout" %}</button>
                         </form>
                     </li>
                 {% else %}

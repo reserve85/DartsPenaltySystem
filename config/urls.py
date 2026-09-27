@@ -32,6 +32,8 @@ urlpatterns += i18n_patterns(
     # Path overlaps with app.accounts are avoided by design (settings/, users/).
     path("accounts/", include("allauth.urls")),
     path("accounts/", include("app.accounts.urls")),
+    # django-notifications-hq: list/unread/mark-as-read of in-app notifications
+    path("notifications/", include("notifications.urls")),
     path("", include("app.dashboard.urls")),
     path("teams/", include("app.teams.urls")),
     path("players/", include("app.players.urls")),

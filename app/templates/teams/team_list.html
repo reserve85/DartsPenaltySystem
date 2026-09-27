@@ -11,7 +11,7 @@
 <div class="d-flex justify-content-between align-items-center mb-2">
     <h2 class="h5 mb-0">{% translate "Teams" %}</h2>
     {% if request.user.is_admin %}
-        <a class="btn btn-primary btn-sm" href="{% url 'teams:team_create' %}">{% translate "New team" %}</a>
+        <a class="btn btn-primary" href="{% url 'teams:team_create' %}">{% translate "New team" %}</a>
     {% endif %}
 </div>
 {% if season_teams_scoped %}
@@ -37,8 +37,8 @@
                 <td>{{ team.captain_count }}</td>
                 {% if request.user.is_admin %}
                     <td class="text-end text-nowrap">
+                        {# Deleting a team lives on its edit page (Bearbeiten). #}
                         <a class="btn btn-sm btn-outline-secondary" href="{% url 'teams:team_update' team.pk %}">{% translate "Edit" %}</a>
-                        <a class="btn btn-sm btn-outline-danger" href="{% url 'teams:team_delete' team.pk %}">{% translate "Delete" %}</a>
                     </td>
                 {% endif %}
             </tr>
@@ -52,17 +52,17 @@
 {# ------------------------------------------------- Players + assignment matrix #}
 <div class="d-flex justify-content-between align-items-center mb-2">
     <h2 class="h5 mb-0">{% translate "Players" %}</h2>
-    <a class="btn btn-primary btn-sm" href="{% url 'players:player_create' %}">{% translate "New player" %}</a>
+    <a class="btn btn-primary" href="{% url 'players:player_create' %}">{% translate "New player" %}</a>
 </div>
 <p class="text-muted small">{% translate "Tick a box to assign a player to a team — the assignment belongs to the season shown above." %}</p>
 <form method="post">
     {% csrf_token %}
     <div class="table-responsive">
-        <table class="table table-striped table-bordered align-middle">
+        <table class="table table-striped table-bordered align-middle matrix-table">
             <thead>
             <tr>
                 <th>{% translate "Player" %}</th>
-                {% for team in teams %}<th class="text-center">{{ team.name }}</th>{% endfor %}
+                {% for team in teams %}<th class="text-center matrix-col">{{ team.name }}</th>{% endfor %}
                 <th class="text-center">{% translate "Active" %}</th>
                 <th></th>
             </tr>
@@ -75,23 +75,22 @@
                         <a href="{% url 'players:player_detail' player.pk %}">{{ player.name }}</a>
                     </td>
                     {% for team in teams %}
-                        <td class="text-center">
-                            <input type="checkbox" class="form-check-input" name="assign"
-                                   value="{{ player.pk }}:{{ team.pk }}"
-                                   {% if team.pk in player.assigned_team_pks %}checked{% endif %}
-                                   {% if team.pk not in editable_team_pks %}disabled{% endif %}
-                                   aria-label="{{ player.name }} – {{ team.name }}">
+                        {# The whole cell is the control: selected = green, otherwise the normal background. #}
+                        <td class="matrix-cell">
+                            <label class="matrix-toggle{% if team.pk not in editable_team_pks %} is-locked{% endif %}">
+                                <input type="checkbox" class="matrix-input" name="assign"
+                                       value="{{ player.pk }}:{{ team.pk }}"
+                                       {% if team.pk in player.assigned_team_pks %}checked{% endif %}
+                                       {% if team.pk not in editable_team_pks %}disabled{% endif %}
+                                       aria-label="{{ player.name }} – {{ team.name }}">
+                                <span class="matrix-mark" aria-hidden="true">✓</span>
+                            </label>
                         </td>
                     {% endfor %}
                     <td class="text-center">{% if player.active %}<span class="text-success">✓</span>{% else %}<span class="text-danger">✗</span>{% endif %}</td>
                     <td class="text-end text-nowrap">
+                        {# Deactivation lives on the edit page (Bearbeiten). #}
                         <a class="btn btn-sm btn-outline-secondary" href="{% url 'players:player_update' player.pk %}">{% translate "Edit" %}</a>
-                        {% if player.active %}
-                            {# Posts to the deactivate endpoint via formaction — a nested <form> is not valid HTML inside the matrix form. #}
-                            <button class="btn btn-sm btn-outline-danger" type="submit"
-                                    formaction="{% url 'players:player_deactivate' player.pk %}"
-                                    data-confirm="{% translate 'Deactivate this player?' %}">{% translate "Deactivate" %}</button>
-                        {% endif %}
                     </td>
                 </tr>
             {% empty %}

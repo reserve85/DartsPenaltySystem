@@ -2286,6 +2286,10 @@ msgstr "Mannschaften & Spieler"
 msgid "Tick a box to assign a player to a team — the assignment belongs to the season shown above."
 msgstr "Häkchen setzen, um einen Spieler einer Mannschaft zuzuweisen — die Zuordnung gilt für die oben angezeigte Saison."
 
+#: .\app\templates\players\player_form.html
+msgid "Team assignments are managed on the Teams & Players page."
+msgstr "Team-Zuordnungen werden auf der Seite „Mannschaften & Spieler“ verwaltet."
+
 #: .\app\templates\teams\team_list.html
 msgid "Save the player/team assignments?"
 msgstr "Spieler-/Mannschafts-Zuordnungen speichern?"
@@ -2319,6 +2323,10 @@ msgstr "Ausgewählte Teilnehmer speichern?"
 msgid "Participants saved."
 msgstr "Teilnehmer gespeichert."
 
+#: .\app\templates\matchdays\matchday_list.html:39
+#: .\app\templates\dashboard\financial_overview.html:177
+msgid "Today"
+msgstr "Heute"
 
 #~ msgid "Open"
 #~ msgstr "Öffnen"
@@ -2363,3 +2371,32 @@ msgstr "Teilnehmer gespeichert."
 #~ msgid "Manual penalty — flexible amount with a required comment."
 #~ msgstr "Manuelle Strafe — flexibler Betrag mit Pflichtkommentar."
 
+
+#: app\templates\dashboard\financial_overview.html
+msgid "Close"
+msgstr "Schließen"
+
+#: app\templates\dashboard\financial_overview.html
+msgid "Full amount"
+msgstr "Gesamtbetrag"
+
+#: app\notifications\inapp.py
+msgid "New approval request"
+msgstr "Neue Freigabe-Anfrage"
+
+#: app\templates\base.html
+#: app\templates\notifications\list.html
+msgid "Notifications"
+msgstr "Benachrichtigungen"
+
+#: app\templates\notifications\list.html
+msgid "Mark all as read"
+msgstr "Alle als gelesen markieren"
+
+#: app\templates\notifications\list.html
+msgid "Unread"
+msgstr "Ungelesen"
+
+#: app\templates\notifications\list.html
+msgid "No notifications yet."
+msgstr "Noch keine Benachrichtigungen."

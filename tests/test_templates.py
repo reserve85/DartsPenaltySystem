@@ -135,6 +135,87 @@ def test_admin_menu_order_seasons_users_audit(admin_client):
     assert seasons < users < audit
 
 
+def test_header_order_financial_matchdays_administration(admin_client):
+    """Header: Finanzübersicht – Spieltage – Verwaltung (no team folder anymore)."""
+    content = admin_client.get(reverse("dashboard:index")).content.decode()
+    financial = content.index(f'href="{reverse("dashboard:index")}"')
+    matchdays = content.index(f'href="{reverse("matchdays:matchday_list")}"')
+    administration = content.index(f'href="{reverse("season_list")}"')
+    assert financial < matchdays < administration
+    # Mannschaften & Spieler + Strafkatalog moved INTO the Verwaltung dropdown …
+    assert reverse("teams:team_list") in content
+    assert reverse("penalties:catalog_list") in content
+    # … and the old "Mannschaft" folder (team area dropdown) is gone:
+    # only ONE group separator remains (financial | Spieltage + Verwaltung).
+    assert content.count("nav-sep") == 1
+    assert 'href="#" role="button" data-bs-toggle="dropdown"' in content  # Verwaltung
+
+
+def test_delete_lives_on_the_edit_page_deactivation_is_the_checkbox(admin_client, team, player):
+    """The list only shows 'Bearbeiten' — Löschen sits on the edit page.
+
+    Deactivation has no button anymore: the 'Active' checkbox of the edit form
+    is the single switch (a separate 'Deactivate' button was redundant).
+    """
+    content = admin_client.get(reverse("teams:team_list")).content.decode()
+    assert reverse("teams:team_delete", args=[team.pk]) not in content
+    assert reverse("players:player_deactivate", args=[player.pk]) not in content
+
+    content = admin_client.get(reverse("teams:team_update", args=[team.pk])).content.decode()
+    assert reverse("teams:team_delete", args=[team.pk]) in content
+
+    response = admin_client.get(reverse("players:player_update", args=[player.pk]))
+    assert reverse("players:player_deactivate", args=[player.pk]) not in response.content.decode()
+    assert "active" in response.context["form"].fields  # …the checkbox does the job
+    # …and the assignment is NOT edited here anymore (the matrix owns it).
+    assert "teams" not in response.context["form"].fields
+
+
+def test_delete_lives_on_the_edit_page_app_wide(
+    admin_client, player_user, season, matchday_with_players, catalog_normal, admin_user
+):
+    """Detail/list pages only offer "Edit" — every delete sits on the edit page.
+
+    Applies to matchdays, penalties and seasons; deactivating a user has no
+    button either (the edit form's "Active" checkbox owns it, like players).
+    """
+    from app.penalties.services import assign_penalty
+
+    md, players = matchday_with_players(1)
+    penalty = assign_penalty(
+        matchday=md,
+        player=players[0],
+        catalog_item=catalog_normal,
+        description_snapshot="Late arrival",
+        actor=admin_user,
+    )
+
+    # --- detail / list pages: no delete affordance at all -------------------
+    detail = admin_client.get(reverse("matchdays:matchday_detail", args=[md.pk])).content.decode()
+    assert reverse("matchdays:matchday_delete", args=[md.pk]) not in detail
+    assert reverse("penalties:penalty_delete", args=[penalty.pk]) not in detail
+
+    seasons = admin_client.get(reverse("season_list")).content.decode()
+    assert reverse("season_delete", args=[season.pk]) not in seasons
+    assert reverse("season_update", args=[season.pk]) in seasons  # …but "Edit"
+
+    users = admin_client.get(reverse("accounts:user_list")).content.decode()
+    assert reverse("accounts:user_deactivate", args=[player_user.pk]) not in users
+    assert reverse("accounts:user_update", args=[player_user.pk]) in users
+
+    # --- edit pages: that is where the delete action lives ------------------
+    edit = admin_client.get(reverse("matchdays:matchday_update", args=[md.pk])).content.decode()
+    assert reverse("matchdays:matchday_delete", args=[md.pk]) in edit
+
+    season_edit = admin_client.get(reverse("season_update", args=[season.pk])).content.decode()
+    assert reverse("season_delete", args=[season.pk]) in season_edit
+
+    penalty_edit = admin_client.get(
+        reverse("penalties:penalty_update", args=[penalty.pk])
+    ).content.decode()
+    assert reverse("penalties:penalty_delete", args=[penalty.pk]) in penalty_edit
+
+
 def test_captain_nav_has_team_area_without_admin_area(captain_client, team):
     content = captain_client.get(reverse("dashboard:index")).content.decode()
     assert "nav-sep" in content
@@ -160,3 +241,21 @@ def test_navbar_follows_color_mode(db):
     # Django strips only SINGLE-line {# ... #} comments — a multi-line one would
     # leak into the page as visible text.
     assert "{#" not in content
+
+
+def test_logout_is_a_plain_nav_link_like_settings(admin_client):
+    """Abmelden must have the SAME height as Einstellungen in the navbar.
+
+    The logout posts via a form, but its button must not carry ``.btn``:
+    ``style.css`` gives every ``.btn`` the 2.75rem touch-target min-height
+    while plain ``.nav-link`` anchors are 2.5rem tall — the two header items
+    would sit at different heights. The form must not be ``d-inline``
+    either (an inline wrapper around a block button adds stray line-box
+    space in the navbar).
+    """
+    content = admin_client.get(reverse("dashboard:index")).content.decode()
+    logout_action = f'action="{reverse("account_logout")}"'
+    assert logout_action in content
+    assert f'{logout_action} class="m-0"' in content  # block form, no inline strut
+    assert '<button type="submit" class="nav-link text-start">' in content
+    assert 'class="btn btn-link nav-link"' not in content  # .btn min-height = height mismatch

@@ -49,16 +49,10 @@
                     {% if not default_season or season.pk != default_season.pk %}
                         <form method="post" action="{% url 'season_set_default' season.pk %}" class="d-inline">
                             {% csrf_token %}
-                            <button class="btn btn-sm btn-outline-primary" type="submit">{% translate "Set as default" %}</button>
+                            <button class="btn btn-sm btn-outline-secondary" type="submit">{% translate "Set as default" %}</button>
                         </form>
                     {% endif %}
-                    {% if season.matchday_count == 0 and season.payment_count == 0 %}
-                        <form method="post" action="{% url 'season_delete' season.pk %}" class="d-inline"
-                              data-confirm="{% translate 'Delete this season?' %}">
-                            {% csrf_token %}
-                            <button class="btn btn-sm btn-outline-danger" type="submit">{% translate "Delete" %}</button>
-                        </form>
-                    {% endif %}
+                    {# "Delete" is NOT here — it lives on the edit page (see season_form.html). #}
                 </td>
             </tr>
         {% empty %}

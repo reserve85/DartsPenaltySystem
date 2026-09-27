@@ -1089,3 +1089,16 @@ msgstr ""
 
 msgid "You have sent too many requests. Please wait a moment and try again."
 msgstr ""
+
+#: .\app\templates\matchdays\matchday_list.html:39
+#: .\app\templates\dashboard\financial_overview.html:177
+msgid "Today"
+msgstr ""
+
+#: app\templates\dashboard\financial_overview.html
+msgid "Close"
+msgstr ""
+
+#: app\templates\dashboard\financial_overview.html
+msgid "Full amount"
+msgstr ""

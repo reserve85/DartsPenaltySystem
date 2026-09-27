@@ -35,13 +35,8 @@
                 <td class="text-end text-nowrap">
                     <a class="btn btn-sm btn-outline-secondary" href="{% url 'penalties:catalog_team_amounts' item.pk %}">{% translate "Team fees" %}</a>
                     {% if can_manage %}
+                        {# Activation is toggled with the "Active" checkbox on the edit page. #}
                         <a class="btn btn-sm btn-outline-secondary" href="{% url 'penalties:catalog_update' item.pk %}">{% translate "Edit" %}</a>
-                        <form method="post" action="{% url 'penalties:catalog_toggle_active' item.pk %}" class="d-inline">
-                            {% csrf_token %}
-                            <button class="btn btn-sm {% if item.active %}btn-outline-danger{% else %}btn-outline-secondary{% endif %}" type="submit">
-                                {% if item.active %}{% translate "Deactivate" %}{% else %}{% translate "Activate" %}{% endif %}
-                            </button>
-                        </form>
                     {% endif %}
                 </td>
             </tr>

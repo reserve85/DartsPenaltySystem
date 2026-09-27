@@ -1,5 +1,7 @@
 """Dashboard + financial overview — role matrix and ``player_link`` handling."""
 
+import re
+from datetime import timedelta
 from decimal import Decimal
 
 import pytest
@@ -7,8 +9,10 @@ from django.contrib.auth import get_user_model
 from django.contrib.auth.models import Group
 from django.test import Client
 from django.urls import reverse
+from django.utils import timezone
 
 from app.core.permissions import GROUP_CAPTAIN
+from app.matchdays.models import Matchday
 from app.penalties.services import assign_penalty
 
 pytestmark = pytest.mark.django_db
@@ -257,3 +261,28 @@ def test_financial_overview_shows_inactive_player_names(
     )
     content = admin_client.get(reverse("dashboard:financial_overview")).content.decode()
     assert players[0].name in content
+
+
+def test_matchday_totals_marks_today_and_mutes_past(admin_client, team):
+    """The 'Matchday totals' (Spieltagssummen) table marks rows like the list.
+
+    Today's Spieltag gets the green row + badge, an already played one is
+    muted — same visual language in both tables that list Spieltage.
+    """
+    today = timezone.localdate()
+    Matchday.objects.create(team=team, opponent="Today FC", venue="home", date=today)
+    Matchday.objects.create(
+        team=team, opponent="Past FC", venue="home", date=today - timedelta(days=14)
+    )
+
+    content = admin_client.get(reverse("dashboard:financial_overview")).content.decode()
+    rows = re.findall(r"<tr.*?</tr>", content, flags=re.DOTALL)
+
+    def row_for(opponent):
+        return next(row for row in rows if opponent in row)
+
+    assert 'class="matchday-today"' in row_for("Today FC")
+    assert "badge text-bg-success" in row_for("Today FC")
+    assert 'class="matchday-past"' in row_for("Past FC")
+    assert "text-bg-success" not in row_for("Past FC")
+    assert "matchday-past" not in row_for("Today FC")

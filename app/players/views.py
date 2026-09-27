@@ -18,8 +18,6 @@ from app.core.permissions import (
     GroupRequiredMixin,
     assert_admin_or_captain,
     user_can_view_player,
-    user_is_admin,
-    user_is_captain,
     user_is_player,
 )
 from app.core.services import log_action
@@ -96,15 +94,8 @@ class PlayerCreateView(LoginRequiredMixin, CreateView):
 
     def get_form_kwargs(self):
         kwargs = super().get_form_kwargs()
-        kwargs["user"] = self.request.user
         kwargs["season"] = season_for_request(self.request)
         return kwargs
-
-    def get_initial(self):
-        initial = super().get_initial()
-        if user_is_captain(self.request.user) and not user_is_admin(self.request.user):
-            initial["teams"] = [self.request.user.team_id]
-        return initial
 
     def form_valid(self, form):
         response = super().form_valid(form)
@@ -130,7 +121,6 @@ class PlayerUpdateView(LoginRequiredMixin, UpdateView):
 
     def get_form_kwargs(self):
         kwargs = super().get_form_kwargs()
-        kwargs["user"] = self.request.user
         kwargs["season"] = season_for_request(self.request)
         return kwargs
 

@@ -18,8 +18,10 @@
                placeholder="{% translate 'Actor email' %}">
     </div>
     <div class="col-md-4">
-        <button type="submit" class="btn btn-primary me-1">{% translate "Filter" %}</button>
-        <a class="btn btn-outline-secondary" href="{% url 'audit_list' %}">{% translate "Reset" %}</a>
+        <div class="d-flex gap-2">
+            <button type="submit" class="btn btn-primary">{% translate "Filter" %}</button>
+            <a class="btn btn-outline-secondary" href="{% url 'audit_list' %}">{% translate "Reset" %}</a>
+        </div>
     </div>
 </form>
 

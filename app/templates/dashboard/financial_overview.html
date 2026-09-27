@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% load i18n %}
+{% load static i18n matchday_tags %}
 {% block title %}{% translate "Financial overview" %} – {% translate "Darts Penalty Manager" %}{% endblock %}
 {% block content %}
 <h1 class="h3 mb-3">{% translate "Financial overview" %}</h1>
@@ -76,14 +76,13 @@
                         <td class="text-end text-danger">{{ row.balance|floatformat:2 }} €</td>
                         {% if can_manage %}
                         <td class="text-end text-nowrap">
-                            <form method="post" action="{% url 'penalties:payment_create' %}" class="d-flex gap-1 justify-content-end">
-                                {% csrf_token %}
-                                <input type="hidden" name="team" value="{{ selected_team.pk }}">
-                                <input type="hidden" name="player" value="{{ row.pk }}">
-                                <input type="hidden" name="next" value="{{ request.get_full_path }}">
-                                <input type="number" name="amount_eur" min="0.01" step="0.01" class="form-control form-control-sm" style="max-width: 7rem;" placeholder="{% translate 'Amount (EUR)' %}" required>
-                                <button class="btn btn-sm btn-success" type="submit">{% translate "Record payment" %}</button>
-                            </form>
+                            {# Opens the shared payment modal — the amount is entered there (big field, mobile-friendly). #}
+                            <button type="button" class="btn btn-sm btn-success"
+                                    data-bs-toggle="modal" data-bs-target="#paymentModal"
+                                    data-player="{{ row.pk }}" data-player-name="{{ row.name }}"
+                                    data-balance="{{ row.balance }}">
+                                {% translate "Record payment" %}
+                            </button>
                         </td>
                         {% endif %}
                     </tr>
@@ -113,14 +112,13 @@
                         <td class="text-end text-danger">{{ row.balance|floatformat:2 }} €</td>
                         {% if can_manage %}
                         <td class="text-end text-nowrap">
-                            <form method="post" action="{% url 'penalties:payment_create' %}" class="d-flex gap-1 justify-content-end">
-                                {% csrf_token %}
-                                <input type="hidden" name="team" value="{{ selected_team.pk }}">
-                                <input type="hidden" name="player" value="{{ row.pk }}">
-                                <input type="hidden" name="next" value="{{ request.get_full_path }}">
-                                <input type="number" name="amount_eur" min="0.01" step="0.01" class="form-control form-control-sm" style="max-width: 7rem;" placeholder="{% translate 'Amount (EUR)' %}" required>
-                                <button class="btn btn-sm btn-success" type="submit">{% translate "Record payment" %}</button>
-                            </form>
+                            {# Same shared modal as in the active table (see payment-modal.js). #}
+                            <button type="button" class="btn btn-sm btn-success"
+                                    data-bs-toggle="modal" data-bs-target="#paymentModal"
+                                    data-player="{{ row.pk }}" data-player-name="{{ row.name }}"
+                                    data-balance="{{ row.balance }}">
+                                {% translate "Record payment" %}
+                            </button>
                         </td>
                         {% endif %}
                     </tr>
@@ -171,8 +169,10 @@
                 <thead><tr><th>{% translate "Matchday" %}</th><th class="text-end">{% translate "Total" %}</th></tr></thead>
                 <tbody>
                 {% for matchday in matchday_totals %}
-                    <tr>
-                        <td><a href="{% url 'matchdays:matchday_detail' matchday.pk %}">{{ matchday.display_label }}</a></td>
+                    {# today = green row + "Today" badge, past = muted row (see style.css) #}
+                    {% matchday_state matchday as state %}
+                    <tr{% if state == "today" %} class="matchday-today"{% elif state == "past" %} class="matchday-past"{% endif %}>
+                        <td><a href="{% url 'matchdays:matchday_detail' matchday.pk %}">{{ matchday.display_label }}</a>{% if state == "today" %} <span class="badge text-bg-success">{% translate "Today" %}</span>{% endif %}</td>
                         <td class="text-end text-danger">{{ matchday.total|floatformat:2 }} €</td>
                     </tr>
                 {% empty %}
@@ -215,7 +215,68 @@
                 </tbody>
             </table>
         </div>
+
+        {% if can_manage %}
+        {# ------------------------------------------------------------------ #}
+        {# "Record payment" — ONE modal shared by all player rows.            #}
+        {# js/payment-modal.js copies the clicked row's player + open balance #}
+        {# into it before it opens (large field + quick amounts = mobile).    #}
+        {# ------------------------------------------------------------------ #}
+        <div class="modal fade" id="paymentModal" tabindex="-1"
+             aria-labelledby="paymentModalTitle" aria-hidden="true">
+            <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
+                <form method="post" action="{% url 'penalties:payment_create' %}">
+                    {% csrf_token %}
+                    <input type="hidden" name="team" value="{{ selected_team.pk }}">
+                    <input type="hidden" name="player" id="paymentPlayerId">
+                    <input type="hidden" name="next" value="{{ request.get_full_path }}">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h2 class="modal-title h5" id="paymentModalTitle">{% translate "Record payment" %}</h2>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal"
+                                    aria-label="{% translate 'Close' %}"></button>
+                        </div>
+                        <div class="modal-body">
+                            <p class="mb-1 small text-muted">{% translate "Player" %}</p>
+                            <p class="fs-5 fw-semibold mb-2" id="paymentPlayerName"></p>
+                            <p class="mb-3">
+                                <span class="text-muted">{% translate "Penalties open" %}:</span>
+                                <strong class="text-danger" id="paymentOpenBalance"></strong>
+                            </p>
+
+                            <label class="form-label" for="paymentAmount">{% translate "Amount (EUR)" %}</label>
+                            <div class="input-group input-group-lg">
+                                <input type="number" class="form-control" id="paymentAmount"
+                                       name="amount_eur" min="0.01" step="0.01" inputmode="decimal"
+                                       autocomplete="off" required>
+                                <span class="input-group-text">€</span>
+                            </div>
+                            <div class="form-text">{% translate "Partial payment — any positive amount up to the full debt." %}</div>
+
+                            <div class="d-flex flex-wrap gap-2 mt-3">
+                                <button type="button" class="btn btn-outline-secondary payment-quick-amount" data-amount="5">5 €</button>
+                                <button type="button" class="btn btn-outline-secondary payment-quick-amount" data-amount="10">10 €</button>
+                                <button type="button" class="btn btn-outline-secondary payment-quick-amount" data-amount="20">20 €</button>
+                                <button type="button" class="btn btn-outline-secondary payment-quick-amount"
+                                        id="paymentFullAmount" data-full
+                                        data-label="{% translate 'Full amount' %}"
+                                        hidden>{% translate "Full amount" %}</button>
+                            </div>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">{% translate "Cancel" %}</button>
+                            <button type="submit" class="btn btn-success">{% translate "Record payment" %}</button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+        {% endif %}
 {% elif not own_mode %}
     <p class="text-muted">{% translate "No team selected." %}</p>
 {% endif %}
+{% endblock %}
+
+{% block extra_js %}
+    {% if can_manage %}<script src="{% static 'js/payment-modal.js' %}"></script>{% endif %}
 {% endblock %}

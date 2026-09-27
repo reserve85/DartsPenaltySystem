@@ -6,7 +6,8 @@
   outside the custom forms (e.g. the Django Admin group editor) cannot leave
   ``is_staff`` stale (H1). Superusers stay staff regardless of groups.
 - ``user_signed_up`` (django-allauth): audit the self-registration and notify
-  the admins that a new account is waiting for approval.
+  the admins that a new account is waiting for approval — by e-mail AND as an
+  in-app notification (navbar bell, django-notifications-hq).
 """
 
 from allauth.account.signals import user_signed_up
@@ -77,12 +78,14 @@ def audit_logout(sender, request, user, **kwargs):
 
 
 def _on_user_signed_up(sender, request, user, **kwargs):
-    """Self-registration (django-allauth): audit + admin notification e-mail.
+    """Self-registration (django-allauth): audit + admin notifications.
 
     The account is created with ``approval_status="pending"`` (model default)
     and cannot log in until an admin approves it — the admins learn about the
-    new registration via e-mail (central NotificationService, never inline).
+    new registration via e-mail (central NotificationService, never inline)
+    and via an in-app notification (navbar bell, never raising).
     """
+    from app.notifications.inapp import notify_new_approval_request
     from app.notifications.services import notification_service
 
     log_action(
@@ -92,6 +95,7 @@ def _on_user_signed_up(sender, request, user, **kwargs):
         metadata={"email": user.email},
     )
     notification_service.send_registration_received(user=user, request=request)
+    notify_new_approval_request(user)
 
 
 user_signed_up.connect(_on_user_signed_up, dispatch_uid="accounts.user_signed_up")

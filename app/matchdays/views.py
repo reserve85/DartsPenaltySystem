@@ -14,6 +14,7 @@ from django.views import View
 from django.views.generic import CreateView, DetailView, UpdateView
 
 from app.core.models import AuditAction
+from app.core.pagination import PAGE_SIZE
 from app.core.permissions import (
     assert_admin_or_captain,
     user_can_manage_team,
@@ -34,7 +35,8 @@ def _eligible_participants(matchday, season):
     """Active roster a matchday's participants may be picked from.
 
     Eligibility follows the MATCHDAY's season (or the active season when the
-    matchday has none) — the very same rule as ``MatchdayForm``.
+    matchday has none): only ACTIVE players assigned to the matchday's team in
+    that season — the roster the "Add players" editor offers.
     """
     roster_season = matchday.season or season
     return (
@@ -51,7 +53,7 @@ class MatchdayListView(LoginRequiredMixin, View):
     """
 
     template_name = "matchdays/matchday_list.html"
-    paginate_by = 25
+    paginate_by = PAGE_SIZE
     sort_fields: ClassVar[dict[str, str]] = {
         "date": "date",
         "venue": "venue",
@@ -204,9 +206,10 @@ class MatchdayDetailView(LoginRequiredMixin, DetailView):
 class MatchdayParticipantsView(LoginRequiredMixin, View):
     """POST-only: replace the participants of ONE matchday from the detail page.
 
-    Same guards as every other matchday write action (admin or captain of the
-    matchday's team) and the same eligibility rule as the create/edit form:
-    only ACTIVE players of the matchday's team/season, at least one selected.
+    This is the ONLY place where participants are assigned (the create/edit
+    form has no participant picker anymore). Same guards as every other
+    matchday write action (admin or captain of the matchday's team): only
+    ACTIVE players of the matchday's team/season, at least one selected.
     """
 
     def post(self, request, pk):

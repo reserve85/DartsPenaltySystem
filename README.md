@@ -11,8 +11,8 @@ mobile-first responsive design and one-club/multi-team support.
   **several teams at once** (e.g. Wildboars 1 + Wildboars 2); admins manage
   the membership, captains only see/toggle their own team's roster.
 - **Matchdays** belong to one team + free-text opponent + home/away label
-  (`24.09.2026 - Wildboars 1 - SV Eichenberg`), participants as touch-friendly
-  checkbox chips.
+  (`24.09.2026 - Wildboars 1 - SV Eichenberg`); the participants are assigned
+  **only** on the matchday page via *Add players* (green row = selected).
 - **Penalties**
   - catalog-driven *normal* penalties — the amount ALWAYS comes from the
     catalog (optionally team-specific); no amount is asked when assigning,
@@ -49,7 +49,10 @@ mobile-first responsive design and one-club/multi-team support.
   see below), password reset/change — and a central `NotificationService` that
   sends HTML + plain-text e-mails for registrations, approvals, new penalties
   and repayments (players **without** a user account stay fully manageable and
-  simply receive no e-mails).
+  simply receive no e-mails). Every new registration also raises an **in-app
+  notification** for all admins ([django-notifications-hq](https://github.com/django-notifications/django-notifications):
+  🔔 badge in the navbar → notification list with a *Review* shortcut;
+  approve/reject marks it read).
 - **Legal pages**: Imprint (`/imprint/`) and Privacy Policy (`/privacy/`)
   driven by `CONTACT_*` env vars (same pattern as EloRankingSystem); footer
   links + version info (`v1.0.38 (a718e32) · Build …`) linking to the matching

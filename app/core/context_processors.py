@@ -7,19 +7,20 @@ from app.core.choices import THEME_COOKIE_NAME, ThemeChoice
 from app.core.version import get_version_info
 from app.matchdays.models import Season
 from app.matchdays.services import season_for_request
+from app.notifications.inapp import unread_count
 
 # URL namespaces/names that belong to one navigation group (base.html).
 _FINANCIAL = "financial"
-_TEAM_AREA = "team"
-_CATALOG = "catalog"
+_MATCHDAYS = "matchdays"
 _ADMIN_AREA = "admin"
 
 
 def _nav_section(request) -> str:
     """Navigation group of the current URL — drives the active highlight.
 
-    Groups, in order: every user (``financial``) | team area (``team``/
-    ``catalog`` for captains and admins) | admin area (``admin``).
+    Groups, in order: every user (``financial``) | matchdays (``matchdays``
+    for captains and admins) | administration dropdown (``admin``: teams,
+    players, penalty catalog, seasons, users, audit).
     """
     match = getattr(request, "resolver_match", None)
     if match is None:
@@ -31,15 +32,17 @@ def _nav_section(request) -> str:
         # The dashboard namespace serves ONLY the financial overview now
         # (index + financial_overview) — the Dashboard/Übersicht is gone.
         return _FINANCIAL
-    if namespace in ("teams", "players", "matchdays"):
-        return _TEAM_AREA
+    if namespace == "matchdays":
+        return _MATCHDAYS
+    if namespace in ("teams", "players"):
+        return _ADMIN_AREA
     if namespace == "penalties":
         if name.startswith("catalog"):
-            return _CATALOG
+            return _ADMIN_AREA
         if name.startswith("payment"):
             return _FINANCIAL
         # penalty assign/edit belongs to the matchday it was opened from
-        return _TEAM_AREA
+        return _MATCHDAYS
     if namespace == "accounts" and name.startswith("user"):
         return _ADMIN_AREA
     if name in {
@@ -52,6 +55,18 @@ def _nav_section(request) -> str:
     }:
         return _ADMIN_AREA
     return ""
+
+
+def _unread_notifications(request) -> int:
+    """Unread in-app notifications for the navbar bell (django-notifications-hq).
+
+    Only admins receive in-app notifications today (the bell is admin-only),
+    so only their badge spends the one COUNT query per page.
+    """
+    user = getattr(request, "user", None)
+    if user is None or not user.is_authenticated or not user.is_admin:
+        return 0
+    return unread_count(user)
 
 
 def _theme_choice(request) -> str:
@@ -89,6 +104,7 @@ def site_context(request):
         "seasons": seasons,
         "active_season": active_season,
         "nav_section": _nav_section(request),
+        "unread_notification_count": _unread_notifications(request),
         "cookie_consent_enabled": True,
         "IMPRINT_NAME": settings.IMPRINT_NAME,
         "IMPRINT_URL": settings.IMPRINT_URL,

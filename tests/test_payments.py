@@ -1,5 +1,6 @@
 """Payments — partial payments against a player's team debt (service, views, UI)."""
 
+import re
 from decimal import Decimal
 
 import pytest
@@ -235,6 +236,34 @@ def test_financial_overview_renders_payment_form_and_list(
     content = admin_client.get(reverse("dashboard:financial_overview")).content.decode()
     payment = Payment.objects.get()
     assert reverse("penalties:payment_delete", args=[payment.pk]) in content
+
+
+def test_financial_overview_uses_one_payment_modal(
+    admin_client, matchday_with_players, catalog_normal, admin_user
+):
+    """The amount is entered in ONE shared modal — no tiny per-row inputs."""
+    md, players = matchday_with_players(2)
+    _make_penalty(md, players[0], catalog_normal, admin_user)
+    _make_penalty(md, players[1], catalog_normal, admin_user)
+
+    content = admin_client.get(reverse("dashboard:financial_overview")).content.decode()
+
+    assert 'id="paymentModal"' in content
+    assert 'data-bs-target="#paymentModal"' in content
+    # exactly ONE amount field for all rows (the row forms are gone)
+    assert content.count('name="amount_eur"') == 1
+    # every row opens the modal for ITS player, carrying the open balance
+    for player in players:
+        assert f'data-player="{player.pk}"' in content
+    assert f'data-player-name="{players[0].name}"' in content
+    balance = re.search(
+        rf'data-player="{players[0].pk}"\s+data-player-name="[^"]*"\s+data-balance="([^"]+)"',
+        content,
+    )
+    assert balance is not None
+    assert Decimal(balance.group(1)) == Decimal(5)  # 5 € penalty, nothing paid
+    # no-JS fallback: the modal form still posts to the payment endpoint
+    assert reverse("penalties:payment_create") in content
 
 
 def test_matchday_detail_has_no_per_row_payment_actions(

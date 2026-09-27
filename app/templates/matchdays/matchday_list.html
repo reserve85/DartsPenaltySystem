@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% load i18n %}
+{% load i18n matchday_tags %}
 {% block title %}{% translate "Matchdays" %} – {% translate "Darts Penalty Manager" %}{% endblock %}
 {% block content %}
 <div class="d-flex justify-content-between align-items-center mb-3">
@@ -33,8 +33,10 @@
         </thead>
         <tbody>
         {% for matchday in page_obj %}
-            <tr>
-                <td><a href="{% url 'matchdays:matchday_detail' matchday.pk %}">{{ matchday.date|date:"d.m.Y" }}</a></td>
+            {# today = green row + "Today" badge, past = muted row (see style.css) #}
+            {% matchday_state matchday as state %}
+            <tr{% if state == "today" %} class="matchday-today"{% elif state == "past" %} class="matchday-past"{% endif %}>
+                <td class="text-nowrap"><a href="{% url 'matchdays:matchday_detail' matchday.pk %}">{{ matchday.date|date:"d.m.Y" }}</a>{% if state == "today" %} <span class="badge text-bg-success">{% translate "Today" %}</span>{% endif %}</td>
                 <td>{% if matchday.venue == "home" %}{% translate "Home" %}{% else %}{% translate "Away" %}{% endif %}</td>
                 <td>{{ matchday.opponent }}</td>
                 <td>{{ matchday.team.name }}</td>

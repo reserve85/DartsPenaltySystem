@@ -1,14 +1,16 @@
-"""Matchday form — opponent required, participants as checkbox chips (M5)."""
+"""Matchday form — opponent, team, season, venue, date. NO participants.
+
+Participants are not part of this form anymore: they are assigned
+exclusively with the "Add players" editor on the matchday detail page.
+"""
 
 from typing import ClassVar
 
 from django import forms
-from django.db import transaction
 from django.utils.translation import gettext_lazy as _
 
 from app.core.permissions import user_is_admin, user_is_captain
-from app.matchdays.models import Matchday, MatchdayPlayer, Season
-from app.players.models import Player
+from app.matchdays.models import Matchday, Season
 from app.teams.models import Team
 from app.teams.services import teams_for_season
 
@@ -51,7 +53,11 @@ class SeasonForm(forms.ModelForm):
 
 
 class MatchdayForm(forms.ModelForm):
-    """Only ACTIVE players of the matchday's team are selectable (M7)."""
+    """Team, season, opponent, venue, date, description — no participant picker.
+
+    Who played is decided on the detail page ("Add players"): this form only
+    edits the matchday itself and never touches the participant list.
+    """
 
     team = forms.ModelChoiceField(queryset=Team.objects.all(), label=_("Team"))
     season = forms.ModelChoiceField(
@@ -59,13 +65,6 @@ class MatchdayForm(forms.ModelForm):
         required=False,
         label=_("Season"),
         help_text=_("Every matchday belongs to one season (a closed cash box)."),
-    )
-    participants = forms.ModelMultipleChoiceField(
-        queryset=Player.objects.none(),
-        widget=forms.CheckboxSelectMultiple,
-        required=True,
-        label=_("Participants"),
-        help_text=_("Select at least one participant."),
     )
 
     class Meta:
@@ -77,7 +76,6 @@ class MatchdayForm(forms.ModelForm):
             "venue",
             "date",
             "description",
-            "participants",
         ]
         widgets: ClassVar[dict] = {
             # type="date" strictly requires ISO (YYYY-MM-DD). Without an explicit
@@ -110,30 +108,8 @@ class MatchdayForm(forms.ModelForm):
                 selectable = selectable | Team.objects.filter(pk=self.instance.team_id)
             self.fields["team"].queryset = selectable
 
-        team_id = None
-        if self.instance.pk:
-            team_id = self.instance.team_id
-        elif self.is_bound and self.data.get("team"):
-            team_id = self.data.get("team")
-        elif self.fields["team"].initial:
-            team_id = self.fields["team"].initial
-        self.participant_team_id = team_id
-
-        roster_season = self._roster_season()
-        if team_id:
-            # Roster is season-dependent: only players assigned to THIS team
-            # in the matchday's season are eligible (multi-team players for
-            # each of their teams of that season).
-            self.fields["participants"].queryset = (
-                Player.objects.in_team(team_id, roster_season).filter(active=True).order_by("name")
-            )
-        if self.instance.pk:
-            self.fields["participants"].initial = self.instance.participants.values_list(
-                "player_id", flat=True
-            )
-
     def _roster_season(self):
-        """Season the participant roster is built for (same rules as ``clean``)."""
+        """Season whose active teams may be picked (same fallback as ``clean``)."""
         season = None
         if self.is_bound:
             season_pk = self.data.get("season")
@@ -157,20 +133,6 @@ class MatchdayForm(forms.ModelForm):
             else:
                 # New matchdays fall back to the newest season (if any exist).
                 cleaned["season"] = Season.objects.order_by("-name").first()
-        participants = cleaned.get("participants")
-        if participants is not None and len(participants) < 1:
-            self.add_error("participants", _("Select at least one participant."))
-        team = cleaned.get("team")
-        if team is None and (self.instance and self.instance.pk):
-            team = self.instance.team
-        if team is not None and participants:
-            # Season-dependent membership: a player must be assigned to the
-            # team in the matchday's season to participate.
-            allowed = set(
-                Player.objects.in_team(team, cleaned.get("season")).values_list("pk", flat=True)
-            )
-            if any(player.pk not in allowed for player in participants):
-                raise forms.ValidationError(_("All participants must belong to the selected team."))
         return cleaned
 
     def save(self, commit=True):
@@ -179,13 +141,7 @@ class MatchdayForm(forms.ModelForm):
             # Disabled field never posts for captains; restore from initial.
             instance.team = Team.objects.get(pk=self.fields["team"].initial)
         if commit:
-            # Matchday + its participant list change together — one unit of work.
-            with transaction.atomic():
-                instance.save()
-                self._save_participants(instance)
+            # Participants are NEVER written here — they belong exclusively to
+            # the "Add players" editor on the matchday detail page.
+            instance.save()
         return instance
-
-    def _save_participants(self, instance):
-        instance.participants.all().delete()
-        for player in self.cleaned_data["participants"]:
-            MatchdayPlayer.objects.create(matchday=instance, player=player)

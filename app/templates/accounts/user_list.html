@@ -51,16 +51,10 @@
                 <td>{% if user.is_active %}<span class="text-success">✓</span>{% else %}<span class="text-danger">✗</span>{% endif %}</td>
                 <td class="text-end text-nowrap">
                     {% if user.approval_status == "pending" %}
-                        <a class="btn btn-sm btn-warning" href="{% url 'accounts:approval' user.pk %}">{% translate "Review" %}</a>
+                        <a class="btn btn-sm btn-outline-warning" href="{% url 'accounts:approval' user.pk %}">{% translate "Review" %}</a>
                     {% endif %}
+                    {# No "Deactivate" button anymore — the edit form's "Active" checkbox owns activation (same rule as players). #}
                     <a class="btn btn-sm btn-outline-secondary" href="{% url 'accounts:user_update' user.pk %}">{% translate "Edit" %}</a>
-                    {% if user != request.user and user.is_active %}
-                        <form method="post" action="{% url 'accounts:user_deactivate' user.pk %}" class="d-inline"
-                              data-confirm="{% translate 'Deactivate this user?' %}">
-                            {% csrf_token %}
-                            <button class="btn btn-sm btn-outline-danger" type="submit">{% translate "Deactivate" %}</button>
-                        </form>
-                    {% endif %}
                 </td>
             </tr>
         {% empty %}

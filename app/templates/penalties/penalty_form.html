@@ -31,6 +31,16 @@
         <a class="btn btn-outline-secondary" href="{% url 'matchdays:matchday_detail' matchday.pk %}">{% translate "Cancel" %}</a>
     </div>
 </form>
+{% if editing %}
+    {# Deleting a penalty lives here (the matchday overview only shows "Edit"). #}
+    <div class="mt-3">
+        <form method="post" action="{% url 'penalties:penalty_delete' editing.pk %}" class="d-inline"
+              data-confirm="{% translate 'Delete this penalty? All rows of the group will be deleted.' %}">
+            {% csrf_token %}
+            <button type="submit" class="btn btn-outline-danger">{% translate "Delete" %}</button>
+        </form>
+    </div>
+{% endif %}
 {% if form.catalog_item %}
 <script>
 (function () {

@@ -13,6 +13,7 @@ from django.views import View
 from django.views.generic import CreateView, ListView, RedirectView, UpdateView
 
 from app.core.models import AuditAction
+from app.core.pagination import PAGE_SIZE
 from app.core.permissions import (
     GROUP_ADMIN,
     GROUP_CAPTAIN,
@@ -80,7 +81,7 @@ class TeamListView(GroupRequiredMixin, LoginRequiredMixin, ListView):
         players = Player.objects.prefetch_related(prefetch_season_assignments(season)).order_by(
             "name", "pk"
         )
-        page = Paginator(players, 25).get_page(request.GET.get("page"))
+        page = Paginator(players, PAGE_SIZE).get_page(request.GET.get("page"))
         for player in page:
             # Flat pk list — the template checks membership per column cell.
             player.assigned_team_pks = [a.team_id for a in player.season_assignments]

@@ -95,27 +95,38 @@ def test_first_created_season_binds_seasonless_assignments(admin_client, team):
 # ---------------------------------------------------------------------------
 # Views — the active season decides what is shown and edited
 # ---------------------------------------------------------------------------
-def test_player_form_saves_only_the_active_season(admin_client, team, other_team, season):
+def test_matrix_saves_only_the_active_season(admin_client, team, other_team, season):
+    """The assignment is edited on the combined page — for the ACTIVE season."""
     newer = Season.objects.create(name="2026/2027")  # active by default (newest)
     player = Player.objects.create(name="Wechsler", team=team, season=season)
 
     response = admin_client.post(
-        reverse("players:player_update", args=[player.pk]),
-        {"name": "Wechsler", "teams": [other_team.pk], "active": "on"},
+        reverse("teams:team_list"),
+        {"players": [str(player.pk)], "assign": [f"{player.pk}:{other_team.pk}"]},
     )
     assert response.status_code == 302
     assert teams_for(player, newer) == [other_team]  # saved for the ACTIVE season
     assert teams_for(player, season) == [team]  # old season keeps its team
 
 
-def test_player_form_shows_active_season_assignment(admin_client, team, other_team, season):
-    newer = Season.objects.create(name="2026/2027")
+def test_player_edit_form_has_no_team_assignment(admin_client, team, other_team, season):
+    """Teams are gone from the player edit page — the matrix owns assignments."""
+    newer = Season.objects.create(name="2026/2027")  # active by default (newest)
     player = Player.objects.create(name="P", team=team, season=season)
     assign_teams(player, [other_team], season=newer)
 
     response = admin_client.get(reverse("players:player_update", args=[player.pk]))
     assert response.status_code == 200
-    assert response.context["form"].initial["teams"] == [other_team.pk]
+    assert "teams" not in response.context["form"].fields
+
+    # …and a forged POST cannot change the assignment either.
+    response = admin_client.post(
+        reverse("players:player_update", args=[player.pk]),
+        {"name": "P", "teams": [team.pk], "active": "on"},
+    )
+    assert response.status_code == 302
+    assert teams_for(player, newer) == [other_team]  # untouched
+    assert teams_for(player, season) == [team]
 
 
 def test_player_matrix_shows_active_season_teams(admin_client, team, season):
@@ -194,44 +205,41 @@ def test_team_balances_roster_is_season_scoped(team, season):
 # ---------------------------------------------------------------------------
 # Matchday participants — eligibility follows the matchday's season
 # ---------------------------------------------------------------------------
-def test_matchday_form_offers_only_the_matchdays_season_roster(captain_client, team, season):
+def test_add_players_editor_offers_only_the_matchdays_season_roster(admin_client, team, season):
+    """The roster comes from the detail page's editor, not from the form."""
+    from datetime import date
+
     newer = Season.objects.create(name="2026/2027")
-    Player.objects.create(name="Alt", team=team, season=season)
-    new_player = Player.objects.create(name="Neu", team=team, season=newer)
+    old_player = Player.objects.create(name="Alt", team=team, season=season)
+    Player.objects.create(name="Neu", team=team, season=newer)
 
-    # Captains get their team preselected -> the roster is rendered directly;
-    # new matchdays default to the active (newest) season.
-    response = captain_client.get(reverse("matchdays:matchday_create"))
+    md = Matchday.objects.create(
+        team=team, opponent="SV X", venue="home", date=date(2026, 10, 1), season=season
+    )
+    response = admin_client.get(reverse("matchdays:matchday_detail", args=[md.pk]))
     assert response.status_code == 200
-    offered = set(response.context["form"].fields["participants"].queryset)
-    assert offered == {new_player}
+    assert set(response.context["eligible_players"]) == {old_player}
 
 
-def test_matchday_rejects_player_of_another_season(admin_client, team, season):
+def test_participant_editor_rejects_player_of_another_season(admin_client, team, season):
+    from datetime import date
+
     newer = Season.objects.create(name="2026/2027")
     old_player = Player.objects.create(name="Alt", team=team, season=season)
     new_player = Player.objects.create(name="Neu", team=team, season=newer)
 
-    payload = {
-        "team": team.pk,
-        "season": season.pk,  # matchday belongs to the OLD season
-        "opponent": "SV X",
-        "venue": "home",
-        "date": "2026-10-01",
-    }
-    # player only assigned in the OTHER season -> rejected
-    response = admin_client.post(
-        reverse("matchdays:matchday_create"), {**payload, "participants": [new_player.pk]}
+    md = Matchday.objects.create(
+        team=team, opponent="SV X", venue="home", date=date(2026, 10, 1), season=season
     )
-    assert response.status_code == 200  # form validation error
-    assert not Matchday.objects.filter(opponent="SV X").exists()
+    url = reverse("matchdays:matchday_participants", args=[md.pk])
+
+    # player only assigned in the OTHER season -> rejected, list unchanged
+    admin_client.post(url, {"participants": [str(new_player.pk)]})
+    assert md.participants.count() == 0
 
     # the player of THAT season -> accepted
-    response = admin_client.post(
-        reverse("matchdays:matchday_create"), {**payload, "participants": [old_player.pk]}
-    )
-    assert response.status_code == 302
-    assert Matchday.objects.filter(opponent="SV X", season=season).exists()
+    admin_client.post(url, {"participants": [str(old_player.pk)]})
+    assert {row.player_id for row in md.participants.all()} == {old_player.pk}
 
 
 # ---------------------------------------------------------------------------

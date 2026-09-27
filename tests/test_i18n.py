@@ -109,6 +109,21 @@ def test_german_new_ui_strings(admin_client, matchday):
 
 
 @needs_catalog
+def test_german_today_badge(admin_client, team):
+    """The badge of TODAY's matchday must read 'Heute' (source: 'Today')."""
+    from django.utils import timezone
+
+    from app.matchdays.models import Matchday
+
+    Matchday.objects.create(
+        team=team, opponent="SV Punctual", venue="home", date=timezone.localdate()
+    )
+    _switch_language(admin_client, "de")
+    content = admin_client.get(reverse("matchdays:matchday_list")).content.decode()
+    assert 'badge text-bg-success">Heute</span>' in content
+
+
+@needs_catalog
 def test_german_cookie_banner_copy(admin_client):
     _switch_language(admin_client, "de")
     content = admin_client.get(reverse("dashboard:index")).content.decode()

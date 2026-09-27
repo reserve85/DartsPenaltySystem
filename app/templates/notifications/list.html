@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+{% load i18n %}
+{% block title %}{% translate "Notifications" %} – {% translate "Darts Penalty Manager" %}{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h1 class="h3 mb-0">{% translate "Notifications" %}</h1>
+    <div class="d-flex gap-2">
+        <a class="btn btn-sm btn-outline-secondary" href="{% url 'notifications:mark_all_as_read' %}">
+            {% translate "Mark all as read" %}
+        </a>
+    </div>
+</div>
+{# Override of django-notifications-hq's bare <ul>: Bootstrap list with a "Review" shortcut for approval requests that are still pending. #}
+<ul class="list-group mb-3">
+    {% for notice in notifications %}
+        <li class="list-group-item d-flex justify-content-between align-items-center">
+            <div>
+                {% if notice.unread %}<span class="badge text-bg-warning">{% translate "Unread" %}</span>{% endif %}
+                <strong>{{ notice.verb }}</strong>
+                {% if notice.actor %} – {{ notice.actor }}{% endif %}
+                <div class="text-muted small">{{ notice.timestamp|date:"SHORT_DATETIME_FORMAT" }}</div>
+            </div>
+            {% if notice.actor.approval_status == "pending" %}
+                <a class="btn btn-sm btn-outline-warning"
+                   href="{% url 'accounts:approval' notice.actor.pk %}">{% translate "Review" %}</a>
+            {% endif %}
+        </li>
+    {% empty %}
+        <li class="list-group-item text-center text-muted py-4">{% translate "No notifications yet." %}</li>
+    {% endfor %}
+</ul>
+{% include "includes/_pagination.html" with page_obj=page_obj %}
+{% endblock %}

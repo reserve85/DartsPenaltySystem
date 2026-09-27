@@ -175,6 +175,10 @@ DJANGO_APPS = [
 THIRD_PARTY_APPS = [
     "allauth",
     "allauth.account",
+    # django-notifications-hq: in-app notifications (admin bell). Its app
+    # label "notifications" is claimed by the package, so the model-less
+    # local app "app.notifications" uses the label "app_notifications".
+    "notifications",
 ]
 
 LOCAL_APPS = [

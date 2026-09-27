@@ -2,3 +2,8 @@ Django>=5.2,<5.3          # 5.2 LTS
 django-allauth>=65.19,<66 # signup/login/logout/password reset & change, email verification
 gunicorn>=21.2,<24        # prod server; EXACTLY ONE worker (SQLite concurrency)
 whitenoise>=6.6           # static files serving; wired via MIDDLEWARE + STORAGES
+# django-notifications-hq: in-app notifications (navbar bell: new approval requests).
+# NOTE: the PyPI release (1.8.3) still ships Meta.index_together which Django >= 5.1
+# removed; Django 5.x support is merged upstream but unreleased (issue #414), so we pin
+# the official repo by commit. Switch back to "django-notifications-hq>=1.9" once published.
+django-notifications-hq @ https://github.com/django-notifications/django-notifications/archive/4c44bcea2504d9a3fcd26366b232a13732a08f2a.tar.gz

@@ -24,7 +24,7 @@
                 <td>{{ pending_user.date_joined|date:"d.m.Y H:i" }}</td>
                 <td>{{ pending_user.get_preferred_language_display|default:"–" }}</td>
                 <td class="text-end">
-                    <a class="btn btn-sm btn-primary" href="{% url 'accounts:approval' pending_user.pk %}">
+                    <a class="btn btn-sm btn-outline-warning" href="{% url 'accounts:approval' pending_user.pk %}">
                         {% translate "Review" %}
                     </a>
                 </td>
