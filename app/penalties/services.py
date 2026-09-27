@@ -431,11 +431,15 @@ def season_open_balance(season) -> Decimal:
 
 
 def matchday_totals(team, *, season=None) -> list:
-    """Per-matchday totals for a team (gross), ordered by date desc."""
+    """Per-matchday totals for a team (gross), ordered by date ascending.
+
+    The FIRST matchday (oldest date) is listed on top, the last one at the
+    bottom — matching the chronological flow of a season.
+    """
     matchday_qs = Matchday.objects.filter(team=team)
     if season is not None:
         matchday_qs = matchday_qs.filter(season=season)
-    matchdays = list(matchday_qs.order_by("-date", "-created_at"))
+    matchdays = list(matchday_qs.order_by("date", "created_at"))
     rows = (
         _season_penalty_qs(Penalty.objects.filter(matchday__team=team), season)
         .values("matchday_id")

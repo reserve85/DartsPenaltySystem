@@ -133,6 +133,15 @@ def test_matchday_totals_and_most_common_grouping(
     assert len(most_common_penalties(md.team, limit=1)) == 1
 
 
+def test_matchday_totals_sorted_ascending(team, matchday_with_players):
+    """Chronological order: the FIRST (oldest) matchday is listed on top."""
+    matchday_with_players(1, date_value=date(2026, 10, 1), opponent="Später")
+    matchday_with_players(1, date_value=date(2026, 9, 1), opponent="Früher")
+
+    ordered = matchday_totals(team)
+    assert [m.date for m in ordered] == [date(2026, 9, 1), date(2026, 10, 1)]
+
+
 def test_most_common_and_totals_scoped_per_team(team, other_team, catalog_normal, admin_user):
     player_a = Player.objects.create(name="PA", team=team)
     player_b = Player.objects.create(name="PB", team=other_team)
