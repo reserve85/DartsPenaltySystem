@@ -6,7 +6,7 @@
     <h1 class="h3 mb-0">{{ player.name }}
         {% if not player.active %}<span class="badge text-bg-secondary">{% translate "inactive" %}</span>{% endif %}
     </h1>
-    {% if request.user.is_admin or request.user.is_captain %}
+    {% if can_edit %}
         <a class="btn btn-outline-secondary" href="{% url 'players:player_update' player.pk %}">{% translate "Edit" %}</a>
     {% endif %}
 </div>

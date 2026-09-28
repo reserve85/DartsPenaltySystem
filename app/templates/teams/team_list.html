@@ -16,7 +16,7 @@
 </div>
 {% if season_teams_scoped %}
     <p class="text-muted small">
-        {% blocktranslate with name=season.name %}Only the teams active in season {{ name }} are shown. Manage them on the seasons page.{% endblocktranslate %}
+        {% blocktranslate with name=season.name %}The table below lists every team — the ✓/✗ shows who is active in season {{ name }}. The assignment matrix only shows the teams active in this season; manage them on the seasons page.{% endblocktranslate %}
     </p>
 {% endif %}
 <div class="table-responsive mb-4">
@@ -26,15 +26,18 @@
             <th>{% translate "Name" %}</th>
             <th>{% translate "Players" %}</th>
             <th>{% translate "Captains" %}</th>
+            <th class="text-center">{% translate "Active in season" %}</th>
             {% if request.user.is_admin %}<th></th>{% endif %}
         </tr>
         </thead>
         <tbody>
         {% for team in teams %}
+            {# Plain striped row like every other table — the ✓/✗ column carries the state. #}
             <tr>
                 <td><a href="{% url 'dashboard:financial_overview' %}?team={{ team.pk }}">{{ team.name }}</a></td>
                 <td>{{ team.player_count }}</td>
                 <td>{{ team.captain_count }}</td>
+                <td class="text-center">{% if team.active_in_season %}<span class="text-success">✓</span>{% else %}<span class="text-danger">✗</span>{% endif %}</td>
                 {% if request.user.is_admin %}
                     <td class="text-end text-nowrap">
                         {# Deleting a team lives on its edit page (Bearbeiten). #}
@@ -43,7 +46,7 @@
                 {% endif %}
             </tr>
         {% empty %}
-            <tr><td colspan="4" class="text-center text-muted py-4">{% translate "No teams yet." %}</td></tr>
+            <tr><td colspan="{% if request.user.is_admin %}5{% else %}4{% endif %}" class="text-center text-muted py-4">{% translate "No teams yet." %}</td></tr>
         {% endfor %}
         </tbody>
     </table>
@@ -62,7 +65,7 @@
             <thead>
             <tr>
                 <th>{% translate "Player" %}</th>
-                {% for team in teams %}<th class="text-center matrix-col">{{ team.name }}</th>{% endfor %}
+                {% for team in matrix_teams %}<th class="text-center matrix-col">{{ team.name }}</th>{% endfor %}
                 <th class="text-center">{% translate "Active" %}</th>
                 <th></th>
             </tr>
@@ -74,7 +77,7 @@
                         <input type="hidden" name="players" value="{{ player.pk }}">
                         <a href="{% url 'players:player_detail' player.pk %}">{{ player.name }}</a>
                     </td>
-                    {% for team in teams %}
+                    {% for team in matrix_teams %}
                         {# The whole cell is the control: selected = green, otherwise the normal background. #}
                         <td class="matrix-cell">
                             <label class="matrix-toggle{% if team.pk not in editable_team_pks %} is-locked{% endif %}">
@@ -89,12 +92,14 @@
                     {% endfor %}
                     <td class="text-center">{% if player.active %}<span class="text-success">✓</span>{% else %}<span class="text-danger">✗</span>{% endif %}</td>
                     <td class="text-end text-nowrap">
-                        {# Deactivation lives on the edit page (Bearbeiten). #}
-                        <a class="btn btn-sm btn-outline-secondary" href="{% url 'players:player_update' player.pk %}">{% translate "Edit" %}</a>
+                        {# Deactivation lives on the edit page (Bearbeiten); only editors get the button (no dead links). #}
+                        {% if player.can_edit %}
+                            <a class="btn btn-sm btn-outline-secondary" href="{% url 'players:player_update' player.pk %}">{% translate "Edit" %}</a>
+                        {% endif %}
                     </td>
                 </tr>
             {% empty %}
-                <tr><td colspan="{{ teams|length|add:3 }}" class="text-center text-muted py-4">{% translate "No players yet." %}</td></tr>
+                <tr><td colspan="{{ matrix_teams|length|add:3 }}" class="text-center text-muted py-4">{% translate "No players yet." %}</td></tr>
             {% endfor %}
             </tbody>
         </table>

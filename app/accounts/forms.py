@@ -1,7 +1,9 @@
 """Account forms — admin user management + per-user settings.
 
 ``is_staff`` is derived server-side from the chosen role (H1): Admin -> True,
-Captain/Player -> False. Role ``Captain`` requires ``team``.
+Captain/Player -> False. ``team`` is an OPTIONAL captaincy assignment: a
+Captain may have none yet, an Admin may additionally captain a team, a Player
+never gets one (decoupled from the role — see ``clean`` below).
 
 Also home of the allauth login gate (``ACCOUNT_FORMS = {"login": …}``):
 ``ApprovalLoginForm`` blocks pending/rejected accounts with a clear message.
@@ -29,6 +31,10 @@ ROLE_CHOICES = [
     (GROUP_CAPTAIN, _("Captain")),
     (GROUP_PLAYER, _("Player")),
 ]
+
+# Roles that may hold the optional captaincy (``User.team``) — the edit form
+# renders the team dropdown disabled for every other role (see UserUpdateForm).
+CAPTAINCY_ROLES = (GROUP_ADMIN, GROUP_CAPTAIN)
 
 
 class ApprovalLoginForm(AllauthLoginForm):
@@ -100,8 +106,10 @@ class UserCreateForm(forms.ModelForm):
 
     def clean(self):
         cleaned = super().clean()
-        if cleaned.get("role") == GROUP_CAPTAIN and not cleaned.get("team"):
-            self.add_error("team", _("A Captain needs an assigned team."))
+        # The team field is a captaincy assignment, NOT a role requirement:
+        # optional for Captain, allowed for Admin, never valid for Player.
+        if cleaned.get("role") == GROUP_PLAYER and cleaned.get("team"):
+            self.add_error("team", _("A team can only be assigned to Admin or Captain accounts."))
         return cleaned
 
     def clean_password2(self):
@@ -189,6 +197,8 @@ class UserUpdateForm(forms.ModelForm):
         super().__init__(*args, **kwargs)
         # Only NOT-yet-linked players — plus this user's own current link.
         self.fields["player_link"].queryset = unlinked_players_queryset(self.instance)
+        # The team field IS a captaincy — label it accordingly on the edit form.
+        self.fields["team"].label = _("Captain in this team")
         if self.instance.pk:
             role = None
             if self.instance.is_admin:
@@ -198,6 +208,16 @@ class UserUpdateForm(forms.ModelForm):
             elif self.instance.is_player:
                 role = GROUP_PLAYER
             self.fields["role"].initial = role
+        # The dropdown is only usable for Captain/Admin accounts (a Player never
+        # holds a team). The state is set on the WIDGET only — ``field.disabled``
+        # stays False so a crafted POST is still validated against the team/role
+        # rule in ``clean()``. ``data-team-roles`` lets user_form.html toggle the
+        # dropdown live when the role select changes.
+        effective_role = self.data.get("role") if self.is_bound else self.fields["role"].initial
+        attrs = self.fields["team"].widget.attrs
+        attrs["data-team-roles"] = ",".join(CAPTAINCY_ROLES)
+        if effective_role not in CAPTAINCY_ROLES:
+            attrs["disabled"] = True
 
     def clean_email(self):
         email = (self.cleaned_data.get("email") or "").strip().lower()
@@ -208,8 +228,10 @@ class UserUpdateForm(forms.ModelForm):
 
     def clean(self):
         cleaned = super().clean()
-        if cleaned.get("role") == GROUP_CAPTAIN and not cleaned.get("team"):
-            self.add_error("team", _("A Captain needs an assigned team."))
+        # Same rule as UserCreateForm: the team is an optional captaincy for
+        # Captain/Admin accounts and invalid for the Player role.
+        if cleaned.get("role") == GROUP_PLAYER and cleaned.get("team"):
+            self.add_error("team", _("A team can only be assigned to Admin or Captain accounts."))
         return cleaned
 
     def save(self, commit=True):

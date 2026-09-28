@@ -55,8 +55,52 @@ def test_start_page_is_financial_overview_for_captain(
     )
     response = captain_client.get(reverse("dashboard:index"))
     assert response.status_code == 200
-    assert response.context["selected_team"] == team
+    assert response.context["selected_team"] == team  # default: the OWN team
     assert response.context["team_total"] == Decimal(5)
+
+
+def test_financial_overview_defaults_to_own_team_not_first(other_captain_client, team, other_team):
+    """The default is the account's OWN team — even when another team would
+    come first alphabetically (the old default)."""
+    response = other_captain_client.get(reverse("dashboard:index"))
+    assert response.status_code == 200
+    assert response.context["teams"][0] == team  # proof: not the alphabetical pick
+    assert response.context["selected_team"] == other_team
+
+
+def test_financial_player_defaults_to_own_roster_team(
+    player_client, player_user, team, other_team, season
+):
+    """A Player-role account has NO captaincy field — its assignment to a team
+    lives in the ROSTER of the linked player, so the default selection must
+    come from there instead of falling back to the first team alphabetically."""
+    from app.players.models import Player
+
+    mine = Player.objects.create(name="Roster One", team=other_team, season=season)
+    player_user.player_link = mine
+    player_user.save(update_fields=["player_link"])
+
+    response = player_client.get(reverse("dashboard:financial_overview"))
+    assert response.context["teams"][0] == team  # proof: not the alphabetical pick
+    assert response.context["selected_team"] == other_team
+
+
+def test_financial_default_prefers_active_season_roster(
+    player_client, player_user, team, other_team, season
+):
+    """The roster lookup is season-scoped: the ACTIVE season beats an older one."""
+    from app.matchdays.models import Season
+    from app.players.models import Player, PlayerTeam
+
+    old_season = Season.objects.create(name="2024/2025")
+    mine = Player.objects.create(name="Roster One")
+    PlayerTeam.objects.create(player=mine, team=team, season=old_season)
+    PlayerTeam.objects.create(player=mine, team=other_team, season=season)
+    player_user.player_link = mine
+    player_user.save(update_fields=["player_link"])
+
+    response = player_client.get(reverse("dashboard:financial_overview"))
+    assert response.context["selected_team"] == other_team
 
 
 def test_start_page_is_financial_overview_for_player_without_link(player_client):
@@ -107,7 +151,7 @@ def test_financial_admin_can_select_any_team(admin_client, team, other_team):
     assert response.context["selected_team"] == other_team
 
 
-def test_financial_captain_only_sees_own_team(
+def test_financial_captain_reads_all_teams_manages_own(
     captain_client, team, other_team, matchday_with_players, catalog_normal, admin_user
 ):
     md, players = matchday_with_players(2)
@@ -121,17 +165,22 @@ def test_financial_captain_only_sees_own_team(
     )
     response = captain_client.get(reverse("dashboard:financial_overview"))
     assert response.status_code == 200
-    assert response.context["selected_team"] == team
-    assert response.context["teams"] is None  # no selector for captains
+    assert response.context["selected_team"] == team  # default: the OWN team
+    # READ is universal: the selector offers EVERY team of the season …
+    assert {t.pk for t in response.context["teams"]} == {team.pk, other_team.pk}
     assert response.context["team_total"] == Decimal(5)
-    assert other_team.name not in response.content.decode()
+    assert response.context["can_manage"] is True  # … while WRITE stays own-team
 
-    # The ?team= parameter is ignored for captains (own team only)
+    # … and a foreign team can be opened read-only (no payment affordances).
     response = captain_client.get(reverse("dashboard:financial_overview"), {"team": other_team.pk})
-    assert response.context["selected_team"] == team
+    assert response.status_code == 200
+    assert response.context["selected_team"] == other_team
+    assert response.context["can_manage"] is False
+    assert reverse("penalties:payment_create") not in response.content.decode()
 
 
-def test_financial_captain_without_team_gets_403(db, role_groups):
+def test_financial_captain_without_team_can_read(db, role_groups):
+    """A teamless captain has no team to manage but may still read."""
     user = User.objects.create_user(
         email="noteam@example.com", password="pw", approval_status="approved"
     )
@@ -139,10 +188,25 @@ def test_financial_captain_without_team_gets_403(db, role_groups):
     client = Client()
     client.force_login(user)
     response = client.get(reverse("dashboard:financial_overview"))
-    assert response.status_code == 403
+    assert response.status_code == 200
+    assert response.context["can_manage"] is False
 
 
-def test_financial_player_sees_own_penalties_and_own_team_overview(
+def test_financial_roleless_user_can_read(db, role_groups, team):
+    """Accounts without any role used to get 403 — read access is universal now."""
+    user = User.objects.create_user(
+        email="plain@example.com", password="pw", approval_status="approved"
+    )
+    client = Client()
+    client.force_login(user)
+    response = client.get(reverse("dashboard:financial_overview"))
+    assert response.status_code == 200
+    assert response.context["can_manage"] is False
+    # never write affordances
+    assert reverse("penalties:payment_create") not in response.content.decode()
+
+
+def test_financial_player_sees_own_penalties_and_all_teams_read_only(
     player_client, player_user, team, other_team, matchday_with_players, catalog_normal, admin_user
 ):
     md, players = matchday_with_players(3)
@@ -170,16 +234,17 @@ def test_financial_player_sees_own_penalties_and_own_team_overview(
     assert response.context["own_mode"] is True
     assert response.context["own_balance"] == Decimal(5)
     assert list(response.context["own_penalties"]) == list(md.penalties.filter(player=players[0]))
-    # Team section: read-only overview of the OWN team (teammates visible now).
+    # Team section: read-only, first team by default.
     assert response.context["selected_team"] == team
     assert response.context["can_manage"] is False  # no payment forms/buttons
     content = response.content.decode()
     assert "Keks" in content
     assert reverse("penalties:payment_create") not in content
-    # A foreign team stays invisible — ?team= of another team is a 404.
-    assert other_team.name not in content
+    # READ is universal: foreign teams are selectable (read-only).
     response = player_client.get(reverse("dashboard:financial_overview"), {"team": other_team.pk})
-    assert response.status_code == 404
+    assert response.status_code == 200
+    assert response.context["selected_team"] == other_team
+    assert response.context["can_manage"] is False
 
 
 def test_financial_player_team_param_must_be_numeric(player_client, player_user, team):
@@ -261,6 +326,66 @@ def test_financial_overview_shows_inactive_player_names(
     )
     content = admin_client.get(reverse("dashboard:financial_overview")).content.decode()
     assert players[0].name in content
+
+
+# ---------------------------------------------------------------------------
+# Captain marking (👑) in the financial overview
+# ---------------------------------------------------------------------------
+def test_financial_overview_marks_captains_in_heading_without_selector_marker(
+    admin_client, team, other_team, captain_user
+):
+    """The selector lists plain team names (no captain marker); the selected
+    team lists its captain account(s) with a 👑 crown under the heading."""
+    response = admin_client.get(reverse("dashboard:financial_overview"), {"team": team.pk})
+    assert response.status_code == 200
+    assert response.context["team_captains"] == [captain_user]
+    content = response.content.decode()
+    assert f"{team.name}</option>" in content  # plain option — no marker …
+    assert f"{other_team.name} ©" not in content  # never a © in the dropdown
+    assert "©</option>" not in content
+    assert f"{captain_user.email} 👑" in content  # crown next to the captain name
+
+
+def test_financial_overview_marks_captain_player_row(admin_client, team, captain_user, player):
+    """A captain account linked to a player shows a 👑 crown in that row."""
+    captain_user.player_link = player
+    captain_user.save(update_fields=["player_link"])
+
+    response = admin_client.get(reverse("dashboard:financial_overview"), {"team": team.pk})
+    content = response.content.decode()
+    row = next(r for r in re.findall(r"<tr.*?</tr>", content, flags=re.DOTALL) if player.name in r)
+    assert "👑" in row
+    assert "badge text-bg-info" not in row  # no blue badge background
+    # the captains line prefers the linked player's name over the login email
+    assert f"{player.name} 👑" in content
+
+
+def test_financial_overview_marks_admin_assigned_as_captain(
+    admin_client, admin_user, team, other_team
+):
+    """Role decoupling: an Admin with a team counts as that team's captain."""
+    admin_user.team = team
+    admin_user.save(update_fields=["team"])
+
+    response = admin_client.get(reverse("dashboard:financial_overview"), {"team": team.pk})
+    assert response.context["team_captains"] == [admin_user]
+    content = response.content.decode()
+    assert f"{admin_user.email} 👑" in content
+    assert other_team.name in content  # still listed in the selector
+
+    # … and the admin's own team becomes the default selection
+    response = admin_client.get(reverse("dashboard:financial_overview"))
+    assert response.context["selected_team"] == team
+
+
+def test_financial_overview_hides_inactive_captain(admin_client, team, captain_user):
+    """Deactivated accounts are never marked as captains."""
+    captain_user.is_active = False
+    captain_user.save(update_fields=["is_active"])
+
+    response = admin_client.get(reverse("dashboard:financial_overview"), {"team": team.pk})
+    assert response.context["team_captains"] == []
+    assert "👑" not in response.content.decode()  # no crown without a captain
 
 
 def test_matchday_totals_marks_today_and_mutes_past(admin_client, team):

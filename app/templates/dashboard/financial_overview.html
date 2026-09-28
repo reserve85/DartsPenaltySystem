@@ -51,6 +51,18 @@
 {% if selected_team %}
         <h2 class="h5">{{ selected_team.name }}
             {% if active_season %}<span class="badge text-bg-secondary">{{ active_season.name }}</span>{% endif %}</h2>
+        {% if team_captains %}
+        {# Captain marking (👑): the accounts assigned to THIS team — a Captain #}
+        {# role is not required, Admins may captain a team too (decoupled).     #}
+        <div class="mb-2">
+            <span class="text-muted">{% translate "Captains" %}:</span>
+            <ul class="mb-0">
+                {% for captain in team_captains %}
+                    <li title="{% translate 'Captain' %}">{{ captain.player_link.name|default:captain.email }} 👑</li>
+                {% endfor %}
+            </ul>
+        </div>
+        {% endif %}
         <p class="mb-2">
             <strong class="text-danger">{% translate "Penalties total" %}:</strong> <span class="text-danger">{{ team_penalties|floatformat:2 }} €</span>
             &middot; <strong class="text-success">{% translate "Penalties settled" %}:</strong> <span class="text-success">{{ team_paid|floatformat:2 }} €</span>
@@ -70,7 +82,7 @@
                 <tbody>
                 {% for row in team_balances %}
                     <tr>
-                        <td><a href="{% url 'players:player_detail' row.pk %}">{{ row.name }}</a></td>
+                        <td><a href="{% url 'players:player_detail' row.pk %}">{{ row.name }}</a>{% if row.pk in captain_player_ids %} <span title="{% translate 'Captain' %}">👑</span>{% endif %}</td>
                         <td class="text-end text-danger">{{ row.total|floatformat:2 }} €</td>
                         <td class="text-end text-success">{{ row.paid|floatformat:2 }} €</td>
                         <td class="text-end text-danger">{{ row.balance|floatformat:2 }} €</td>
@@ -172,7 +184,8 @@
                     {# today = green row + "Today" badge, past = muted row (see style.css) #}
                     {% matchday_state matchday as state %}
                     <tr{% if state == "today" %} class="matchday-today"{% elif state == "past" %} class="matchday-past"{% endif %}>
-                        <td><a href="{% url 'matchdays:matchday_detail' matchday.pk %}">{{ matchday.display_label }}</a>{% if state == "today" %} <span class="badge text-bg-success">{% translate "Today" %}</span>{% endif %}</td>
+                        {# Link only where the viewer may open the matchday page (own team); plain text otherwise — no dead links. #}
+                        <td>{% if can_manage %}<a href="{% url 'matchdays:matchday_detail' matchday.pk %}">{{ matchday.display_label }}</a>{% else %}{{ matchday.display_label }}{% endif %}{% if state == "today" %} <span class="badge text-bg-success">{% translate "Today" %}</span>{% endif %}</td>
                         <td class="text-end text-danger">{{ matchday.total|floatformat:2 }} €</td>
                     </tr>
                 {% empty %}

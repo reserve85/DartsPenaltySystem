@@ -11,14 +11,9 @@ urlpatterns = [
         "penalties/catalog/<int:pk>/edit/", views.CatalogUpdateView.as_view(), name="catalog_update"
     ),
     path(
-        "penalties/catalog/<int:pk>/toggle-active/",
-        views.CatalogToggleActiveView.as_view(),
-        name="catalog_toggle_active",
-    ),
-    path(
-        "penalties/catalog/<int:pk>/team-amounts/",
-        views.CatalogTeamAmountsView.as_view(),
-        name="catalog_team_amounts",
+        "penalties/catalog/<int:pk>/delete/",
+        views.CatalogDeleteView.as_view(),
+        name="catalog_delete",
     ),
     path(
         "matchdays/<int:matchday_pk>/penalties/add/",

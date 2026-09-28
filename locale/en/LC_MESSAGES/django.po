@@ -39,7 +39,10 @@ msgstr ""
 msgid "A user with this email address already exists."
 msgstr ""
 
-msgid "A Captain needs an assigned team."
+msgid "A team can only be assigned to Admin or Captain accounts."
+msgstr ""
+
+msgid "Captain in this team"
 msgstr ""
 
 msgid "The two password fields didn't match."
@@ -60,7 +63,7 @@ msgstr ""
 msgid "team"
 msgstr ""
 
-msgid "Required for Captain role; ignored for Admin."
+msgid "Optional captaincy: the team this account leads. Allowed for Captain and Admin."
 msgstr ""
 
 msgid "linked player"
@@ -1101,4 +1104,60 @@ msgstr ""
 
 #: app\templates\dashboard\financial_overview.html
 msgid "Full amount"
+msgstr ""
+
+# --- Per-team catalog flags / integrated fee form / guarded delete (2026-09) ---
+#: app\penalties\views.py
+msgid "Catalog item deleted."
+msgstr ""
+
+#: app\penalties\views.py
+msgid "This catalog item cannot be deleted because it is still referenced by penalties."
+msgstr ""
+
+#: app\templates\penalties\catalog_form.html
+msgid "Delete this catalog item?"
+msgstr ""
+
+#: app\templates\penalties\catalog_form.html
+msgid "All fees must be filled — when creating an entry the default amount is copied into every row automatically."
+msgstr ""
+
+# --- Teams & Players: all teams + season flag / team form season field ---
+#: app\templates\teams\team_list.html
+msgid "Active in season"
+msgstr ""
+
+#: app\teams\forms.py
+msgid "Assign to season"
+msgstr ""
+
+#: app\teams\forms.py
+msgid "Optionally activate the new team in an existing season."
+msgstr ""
+
+#: app\templates\teams\team_list.html
+#, python-format
+msgid "The table below lists every team — the ✓/✗ shows who is active in %(name)s. The assignment matrix only shows the teams active in this season; manage them on the seasons page."
+msgstr ""
+
+# --- New audit action labels (AuditAction, core app) ---
+#: app\core\models.py
+msgid "Catalog item created"
+msgstr ""
+
+#: app\core\models.py
+msgid "Catalog item updated"
+msgstr ""
+
+#: app\core\models.py
+msgid "Catalog item deleted"
+msgstr ""
+
+#: app\core\models.py
+msgid "E-mail sent"
+msgstr ""
+
+#: app\core\models.py
+msgid "E-mail failed"
 msgstr ""

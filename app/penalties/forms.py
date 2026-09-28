@@ -5,21 +5,199 @@ from typing import ClassVar
 from django import forms
 from django.utils.translation import gettext_lazy as _
 
-from app.penalties.models import Penalty, PenaltyCatalogItem, PenaltyType
+from app.core.permissions import user_is_admin
+from app.penalties.models import (
+    Penalty,
+    PenaltyCatalogItem,
+    PenaltyType,
+    TeamCatalogAmount,
+    active_for_team,
+)
 from app.players.models import Player
 from app.teams.models import Team
 
 
+def _format_amount(amount) -> str | None:
+    """JSON-safe representation of an (optional) Decimal amount."""
+    return None if amount is None else f"{amount:.2f}"
+
+
 class CatalogItemForm(forms.ModelForm):
+    """Create/edit a catalog item — including the per-team fees + active flags.
+
+    The former dedicated "Team fees" page is merged into this form. Dynamic
+    fields (one pair per team):
+
+    * ``team_active_<pk>`` — per-team active checkbox (missing in POST = off),
+    * ``team_amount_<pk>`` — that team's OWN fee (required, always filled),
+
+    Admins AND captains see and edit EVERY team (same scope, decision). Only
+    the CREATE defaults differ: an admin's entry starts with every team
+    active, a captain's entry starts with the own team active and all other
+    teams INACTIVE (still visible/editable). On create the default amount is
+    copied into every fee field automatically (inline JS).
+    """
+
     class Meta:
         model = PenaltyCatalogItem
-        fields: ClassVar[list] = ["description", "amount_eur", "type", "active"]
+        fields: ClassVar[list] = ["description", "amount_eur", "type"]
+
+    def __init__(self, *args, user=None, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.user = user
+        # No user (system/fixture usage) counts as admin scope.
+        self._admin_scope = user is None or user_is_admin(user)
+        self._teams = list(self._editable_teams())
+        is_create = self.instance.pk is None
+
+        rows = {}
+        if self.instance.pk is not None:
+            rows = {row.team_id: row for row in self.instance.team_amounts.all()}
+        for team in self._teams:
+            row = rows.get(team.pk)
+            if row is not None:
+                default_active = row.active
+            elif is_create and not self._admin_scope:
+                # Captain creates: only MY team starts active — every other
+                # team defaults to INACTIVE (but stays visible/editable).
+                default_active = self.user is not None and team.pk == self.user.team_id
+            else:
+                default_active = True  # no row yet = active (legacy/effective)
+            self.fields[f"team_active_{team.pk}"] = forms.BooleanField(
+                required=False,
+                label=_("Active"),
+                initial=default_active,
+                widget=forms.CheckboxInput(
+                    attrs={"aria-label": f"{_('Active')}: {team.name}"},
+                ),
+            )
+            # Every row must be filled: existing amount, else the default
+            # (legacy/no-row) — on create the JS copies the typed default.
+            self.fields[f"team_amount_{team.pk}"] = forms.DecimalField(
+                max_digits=8,
+                decimal_places=2,
+                required=True,
+                label=_("Fee (EUR)"),
+                initial=(
+                    row.amount_eur
+                    if row is not None and row.amount_eur is not None
+                    else self.instance.amount_eur  # None on create -> JS fills it
+                ),
+                widget=forms.NumberInput(attrs={"step": "0.01", "min": "0"}),
+            )
+
+        # BoundFields consumed by the template (model fields vs. team table).
+        self.core_fields = [self[name] for name in ("description", "amount_eur", "type")]
+        self.team_field_rows = [
+            {
+                "team": team,
+                "active": self[f"team_active_{team.pk}"],
+                "amount": self[f"team_amount_{team.pk}"],
+            }
+            for team in self._teams
+        ]
+
+    def _editable_teams(self):
+        # Admins AND captains work on every team's fee/active flags (decision);
+        # only the CREATE defaults differ (see __init__).
+        return Team.objects.all().order_by("name")
 
     def clean_amount_eur(self):
         amount = self.cleaned_data.get("amount_eur")
         if amount is not None and amount <= 0:
             raise forms.ValidationError(_("The amount must be a positive number."))
         return amount
+
+    def clean(self):
+        cleaned = super().clean()
+        for team in self._teams:
+            key = f"team_amount_{team.pk}"
+            amount = cleaned.get(key)
+            if amount is not None and amount <= 0:
+                self.add_error(key, _("The amount must be a positive number."))
+        return cleaned
+
+    def save(self, commit=True):
+        """Persist the item and its per-team rows (former fee-page logic)."""
+        item = super().save(commit=commit)
+        if not commit:
+            return item
+        # One row per team — admins and captains both edit ALL teams; the
+        # create-time checkbox defaults decide active/inactive per team.
+        for team in self._teams:
+            TeamCatalogAmount.objects.update_or_create(
+                team=team,
+                catalog_item=item,
+                defaults={
+                    "active": bool(self.cleaned_data.get(f"team_active_{team.pk}", False)),
+                    "amount_eur": self.cleaned_data.get(f"team_amount_{team.pk}"),
+                    "updated_by": self.user,
+                },
+            )
+        return item
+
+    # -- audit metadata ---------------------------------------------------
+    @staticmethod
+    def snapshot_state(item) -> dict:
+        """Pre-save state of the item incl. its per-team rows (audit diff base)."""
+        return {
+            "description": item.description,
+            "amount_eur": item.amount_eur,
+            "type": item.type,
+            "teams": {
+                row.team_id: {"active": row.active, "amount": row.amount_eur}
+                for row in item.team_amounts.all()
+            },
+        }
+
+    def created_metadata(self) -> dict:
+        item = self.instance
+        rows = list(item.team_amounts.all())
+        row_by_team = {row.team_id: row for row in rows}
+        active_teams = sorted(
+            pk
+            for pk in Team.objects.values_list("pk", flat=True)
+            if pk not in row_by_team or row_by_team[pk].active
+        )
+        return {
+            "description": item.description,
+            "amount_eur": _format_amount(item.amount_eur),
+            "type": item.type,
+            "active_teams": active_teams,
+            "team_amounts": {str(row.team_id): _format_amount(row.amount_eur) for row in rows},
+        }
+
+    def updated_metadata(self, *, before: dict) -> dict:
+        """Created snapshot plus a ``changes`` diff (core fields + per-team rows)."""
+        meta = self.created_metadata()
+        item = self.instance
+        changes: dict = {}
+        if before["description"] != item.description:
+            changes["description"] = {"from": before["description"], "to": item.description}
+        if before["amount_eur"] != item.amount_eur:
+            changes["amount_eur"] = {
+                "from": _format_amount(before["amount_eur"]),
+                "to": _format_amount(item.amount_eur),
+            }
+        if before["type"] != item.type:
+            changes["type"] = {"from": before["type"], "to": item.type}
+        after_rows = {row.team_id: row for row in item.team_amounts.all()}
+        for team_pk in sorted(set(before["teams"]) | set(after_rows)):
+            old = before["teams"].get(team_pk)
+            new = after_rows.get(team_pk)
+            old_active = old["active"] if old is not None else True
+            new_active = new.active if new is not None else True
+            if old_active != new_active:
+                changes[f"team_{team_pk}_active"] = {"from": old_active, "to": new_active}
+            old_amount = old["amount"] if old is not None else None
+            new_amount = new.amount_eur if new is not None else None
+            if old_amount != new_amount:
+                changes[f"team_{team_pk}_amount"] = {
+                    "from": _format_amount(old_amount),
+                    "to": _format_amount(new_amount),
+                }
+        meta["changes"] = changes
+        return meta
 
 
 class PenaltyAssignForm(forms.Form):
@@ -34,7 +212,7 @@ class PenaltyAssignForm(forms.Form):
     """
 
     catalog_item = forms.ModelChoiceField(
-        queryset=PenaltyCatalogItem.objects.filter(active=True).order_by("type", "description"),
+        queryset=PenaltyCatalogItem.objects.all().order_by("type", "description"),
         label=_("Penalty type"),
         empty_label=None,
     )
@@ -65,6 +243,14 @@ class PenaltyAssignForm(forms.Form):
             self.fields["player"].queryset = Player.objects.filter(pk__in=participant_ids).order_by(
                 "name"
             )
+            if matchday.team_id is not None:
+                # Only items active for THIS team's matchday (per-team state —
+                # a missing row means active, an explicit row decides alone).
+                self.fields["catalog_item"].queryset = (
+                    PenaltyCatalogItem.objects.filter(active_for_team(matchday.team))
+                    .order_by("type", "description")
+                    .distinct()
+                )
         # pks of the MANUAL items — the template toggles the amount field.
         self.manual_ids = list(
             self.fields["catalog_item"]

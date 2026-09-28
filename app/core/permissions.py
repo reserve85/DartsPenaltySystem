@@ -108,21 +108,29 @@ def user_can_view_penalty(user, penalty) -> bool:
 
 
 def user_can_view_player(user, player) -> bool:
-    """Admins see every player; Captains players of one of their teams.
+    """READ: every signed-in account may view EVERY player.
 
-    The check is intentionally SEASON-AGNOSTIC: a captain may still open the
-    page of a player who played for their team in an earlier season (history
-    stays visible) — the roster *listings*, however, are season-scoped.
+    Widened by decision: read access is universal (all players, all entries,
+    all seasons, all teams) — e.g. a captain must be able to open a player
+    who has penalties from the captain's team but moved to another team.
+    WRITE is governed separately by ``user_can_edit_player``.
+    """
+    return bool(user and user.is_authenticated)
+
+
+def user_can_edit_player(user, player) -> bool:
+    """WRITE: Admins may edit/deactivate every player, Captains only theirs.
+
+    Captains are limited to players of one of their OWN teams (checked
+    against the player's assignments — any season).
     """
     if not user or not user.is_authenticated:
         return False
     if user_is_admin(user):
         return True
-    return bool(
-        user_is_captain(user)
-        and user.team_id is not None
-        and player.teams.filter(pk=user.team_id).exists()
-    )
+    if not (user_is_captain(user) and user.team_id is not None):
+        return False
+    return bool(player.teams.filter(pk=user.team_id).exists())
 
 
 def assert_can_manage_team(user, team) -> None:

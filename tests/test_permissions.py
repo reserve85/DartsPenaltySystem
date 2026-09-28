@@ -69,12 +69,25 @@ def test_hybrid_admin_captain_sees_all_matchdays(db, role_groups, team, other_te
 
     client = Client()
     client.force_login(hybrid)
-    response = client.get(reverse("matchdays:matchday_list"))
+    url = reverse("matchdays:matchday_list")
+    response = client.get(url)
 
     assert response.status_code == 200
+    # Default = own team (a team is assigned), but the admin is NOT scoped:
+    # the selector offers every team of the season …
+    assert response.context["selected_team"] == team
+    assert {t.pk for t in response.context["teams"]} == {team.pk, other_team.pk}
+    assert own in list(response.context["page_obj"].object_list)
+
+    # … an explicit "All teams" (?team=) shows every matchday again …
+    response = client.get(url, {"team": ""})
     object_list = list(response.context["page_obj"].object_list)
     assert own in object_list
     assert foreign in object_list  # admin precedence: NO team scoping
+
+    # … and picking a foreign team works as well (view-only read).
+    response = client.get(url, {"team": other_team.pk})
+    assert list(response.context["page_obj"].object_list) == [foreign]
 
 
 # ---------------------------------------------------------------------------

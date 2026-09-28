@@ -16,9 +16,10 @@ mobile-first responsive design and one-club/multi-team support.
 - **Penalties**
   - catalog-driven *normal* penalties — the amount ALWAYS comes from the
     catalog (optionally team-specific); no amount is asked when assigning,
-  - **team-specific catalog fees**: every team can override a catalog fee
-    (e.g. "3 or less" costs 3 € in the 1st team but only 1 € in the 2nd) or
-    keep the default,
+  - **per-team catalog fees**: every team carries its own amount for each
+    catalog entry (e.g. "3 or less" costs 3 € in the 1st team but only 1 € in
+    the 2nd) — seeded with the default amount when the entry or the team is
+    created; every fee row is always filled,
   - *group* penalties (`180` → one row for every **other** participant),
   - **manual penalties**: via the built-in catalog entry **"Manual"** (type
     *Manual*) — individual amount + required comment per assignment
@@ -127,21 +128,38 @@ GitHub release for it (→ release workflow + release page). The footer version
 
 ## Roles & permissions
 
-| Action | Admin | Captain | Player |
+| Action | Admin | Captain | Player / User |
 |---|---|---|---|
-| Teams / users / audit / catalog items | all teams | – | – |
-| Players + catalog team fees | all teams | own team | – |
+| Teams / users / audit | all teams | – | – |
+| Catalog items (create/edit/delete while unused) | all teams | all items + all teams' fees/activation | – |
+| Players | all teams | own team (write); read: everyone | read: everyone |
 | Matchdays, penalties (incl. manual) | all teams | own team | – |
-| Financial overview | all teams | own team | own penalties + own team(s), read-only |
+| Financial overview | all teams | read: all teams; write: own team | read: all teams |
 | Settings (password, language, theme) | ✔ | ✔ | ✔ |
 
-Captains act exclusively on **their own team** (a user is linked to exactly one
-team via `User.team`); admins act on all teams. The own-team rights include the
-season roster (creating/editing players of that team) and the team's catalog
-fee overrides.
+**Read access is universal** for every signed-in account: all players, all
+penalty entries, all seasons, all teams (financial overview + player pages).
+Only WRITE actions are role-scoped: admins act on all teams, captains on
+their own team (players/users never write). Captains act on **their own
+team** (a user is linked to exactly one team via `User.team`); the own-team
+rights include the season roster (creating/editing players of that team) and
+matchday/penalty management. Catalog entries may be created, edited and
+deleted (as long as no penalty references them) by admins **and** captains;
+activation and fees are **per team** — every fee row is always filled, and
+captains configure all teams (a captain's NEW entry defaults the other
+teams to inactive).
 
-Accounts without any role get HTTP 403 on the financial overview (the view
-explicitly checks admin → captain → player instead of falling through).
+The team link (`User.team`) is an **optional captaincy assignment**,
+decoupled from the role: a Captain can be created *without* a team (such an
+account then manages nothing), an Admin may additionally be assigned as
+captain of one team, and the Player role never gets a team. The financial
+overview marks the captains assigned to the selected team with a **👑 crown**
+— under the team heading and in the roster row of a player linked to a
+captain account (the team selector stays unmarked).
+
+Accounts **without any role** can sign in and read everything (financial
+overview, players, entries) but have no write actions — they never see
+create/edit affordances.
 
 `is_staff` (Django admin access) is auto-derived: Admin group → `True`,
 everyone else → `False`, re-synced by forms, signals and `bootstrap`.

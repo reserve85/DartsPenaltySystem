@@ -25,10 +25,11 @@
     <table class="table table-striped align-middle">
         <thead>
         <tr>
-            <th><a href="?sort=date&dir={{ sort_next.date }}{% if selected_team %}&team={{ selected_team.pk }}{% endif %}">{% translate "Date" %}{% if sort == "date" %} {% if dir == "asc" %}▲{% else %}▼{% endif %}{% endif %}</a></th>
-            <th><a href="?sort=venue&dir={{ sort_next.venue }}{% if selected_team %}&team={{ selected_team.pk }}{% endif %}">{% translate "Venue" %}{% if sort == "venue" %} {% if dir == "asc" %}▲{% else %}▼{% endif %}{% endif %}</a></th>
-            <th><a href="?sort=opponent&dir={{ sort_next.opponent }}{% if selected_team %}&team={{ selected_team.pk }}{% endif %}">{% translate "Opponent" %}{% if sort == "opponent" %} {% if dir == "asc" %}▲{% else %}▼{% endif %}{% endif %}</a></th>
-            <th><a href="?sort=team&dir={{ sort_next.team }}{% if selected_team %}&team={{ selected_team.pk }}{% endif %}">{% translate "Team" %}{% if sort == "team" %} {% if dir == "asc" %}▲{% else %}▼{% endif %}{% endif %}</a></th>
+            {# &team= always (empty = "All teams") so the selection survives sorting #}
+            <th><a href="?sort=date&dir={{ sort_next.date }}&team={{ selected_team.pk }}">{% translate "Date" %}{% if sort == "date" %} {% if dir == "asc" %}▲{% else %}▼{% endif %}{% endif %}</a></th>
+            <th><a href="?sort=venue&dir={{ sort_next.venue }}&team={{ selected_team.pk }}">{% translate "Venue" %}{% if sort == "venue" %} {% if dir == "asc" %}▲{% else %}▼{% endif %}{% endif %}</a></th>
+            <th><a href="?sort=opponent&dir={{ sort_next.opponent }}&team={{ selected_team.pk }}">{% translate "Opponent" %}{% if sort == "opponent" %} {% if dir == "asc" %}▲{% else %}▼{% endif %}{% endif %}</a></th>
+            <th><a href="?sort=team&dir={{ sort_next.team }}&team={{ selected_team.pk }}">{% translate "Team" %}{% if sort == "team" %} {% if dir == "asc" %}▲{% else %}▼{% endif %}{% endif %}</a></th>
         </tr>
         </thead>
         <tbody>

@@ -104,13 +104,22 @@ def test_captain_creates_matchday_for_own_team(captain_client, team, other_team)
     assert not Matchday.objects.filter(team=other_team).exists()
 
 
-def test_captain_list_only_own_team(captain_client, team, other_team):
+def test_captain_list_defaults_to_own_team(captain_client, other_captain_client, team, other_team):
+    """The team selector is offered to captains too and defaults to OWN team."""
     Matchday.objects.create(team=team, opponent="A", venue="home", date=date(2026, 1, 1))
     Matchday.objects.create(team=other_team, opponent="B", venue="home", date=date(2026, 1, 2))
-    response = captain_client.get(reverse("matchdays:matchday_list"))
+    url = reverse("matchdays:matchday_list")
+
+    response = captain_client.get(url)
     assert response.status_code == 200
-    opponents = {m.opponent for m in response.context["page_obj"]}
-    assert opponents == {"A"}
+    assert response.context["selected_team"] == team
+    assert {m.opponent for m in response.context["page_obj"]} == {"A"}
+    assert 'name="team"' in response.content.decode()  # selector visible for captains
+
+    # Own team is NOT the first alphabetically -> the default must still be OWN.
+    response = other_captain_client.get(url)
+    assert response.context["selected_team"] == other_team
+    assert {m.opponent for m in response.context["page_obj"]} == {"B"}
 
 
 def test_admin_team_filter(admin_client, team, other_team):
@@ -182,30 +191,55 @@ def test_matchday_list_marks_today_and_mutes_past(admin_client, team):
     assert "matchday-today" not in _row_for(content, "Future FC")
 
 
-def test_captain_team_filter_ignored(captain_client, team, other_team):
-    """Captains are locked to their own team — ?team= never widens the scope."""
+def test_captain_team_filter_switches_to_view_foreign_team(captain_client, team, other_team):
+    """View-only decision: captains may SELECT any team in the dropdown."""
     Matchday.objects.create(team=team, opponent="A", venue="home", date=date(2026, 1, 1))
     Matchday.objects.create(team=other_team, opponent="B", venue="home", date=date(2026, 1, 2))
-    response = captain_client.get(reverse("matchdays:matchday_list"), {"team": other_team.pk})
+    url = reverse("matchdays:matchday_list")
+
+    response = captain_client.get(url, {"team": other_team.pk})
     assert response.status_code == 200
-    assert {m.opponent for m in response.context["page_obj"]} == {"A"}
+    assert response.context["selected_team"] == other_team
+    assert {m.opponent for m in response.context["page_obj"]} == {"B"}
+
+    # explicit "All teams" (empty value) — must NOT fall back to the default
+    response = captain_client.get(url, {"team": ""})
+    assert response.context["selected_team"] is None
+    assert {m.opponent for m in response.context["page_obj"]} == {"A", "B"}
+
+    assert captain_client.get(url, {"team": "abc"}).status_code == 404  # not a 500
 
 
-def test_team_selector_only_offered_to_admin(admin_client, captain_client, team):
+def test_team_selector_offered_to_admin_and_captain(admin_client, captain_client):
     content = admin_client.get(reverse("matchdays:matchday_list")).content.decode()
     assert 'name="team"' in content
     content = captain_client.get(reverse("matchdays:matchday_list")).content.decode()
-    assert 'name="team"' not in content
+    assert 'name="team"' in content
 
 
-def test_captain_cannot_manage_other_team_matchday(captain_client, other_team):
+def test_captain_views_foreign_matchday_read_only(captain_client, other_team):
+    """Foreign matchdays are VIEW-ONLY: the detail page renders without write
+    controls, every write action still raises 403."""
     p = Player.objects.create(name="F", team=other_team)
     md = Matchday.objects.create(team=other_team, opponent="X", venue="home", date=date(2026, 1, 1))
     MatchdayPlayer.objects.create(matchday=md, player=p)
-    assert captain_client.get(reverse("matchdays:matchday_detail", args=[md.pk])).status_code == 403
+
+    response = captain_client.get(reverse("matchdays:matchday_detail", args=[md.pk]))
+    assert response.status_code == 200
+    assert response.context["can_manage"] is False
+    content = response.content.decode()
+    assert reverse("penalties:penalty_create", args=[md.pk]) not in content
+    assert reverse("matchdays:matchday_update", args=[md.pk]) not in content
+    assert reverse("matchdays:matchday_participants", args=[md.pk]) not in content
+
+    # WRITE stays forbidden (server-side, not only hidden in the template)
+    assert captain_client.get(reverse("penalties:penalty_create", args=[md.pk])).status_code == 403
     assert captain_client.get(reverse("matchdays:matchday_update", args=[md.pk])).status_code == 403
     assert (
         captain_client.post(reverse("matchdays:matchday_delete", args=[md.pk])).status_code == 403
+    )
+    assert (
+        captain_client.post(_participants_url(md), {"participants": [str(p.pk)]}).status_code == 403
     )
 
 

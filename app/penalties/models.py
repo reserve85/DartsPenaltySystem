@@ -2,7 +2,32 @@ from typing import ClassVar
 
 from django.conf import settings
 from django.db import models
+from django.db.models import Q
 from django.utils.translation import gettext_lazy as _
+
+
+def active_for_team(team) -> Q:
+    """Queryset condition for catalog items that are ACTIVE for ``team``.
+
+    Effective state is purely per-team: a missing ``TeamCatalogAmount`` row
+    means "active" (default), only an explicit row with ``active=False``
+    deactivates the item for exactly that team.
+
+    NOTE: this must NOT be written as ``~Q(team_amounts__team=team,
+    team_amounts__active=False)`` — Django splits a negated multi-valued
+    span into one EXISTS subquery PER leaf and negates their CONJUNCTION:
+    ``NOT (any inactive row exists AND any row for the team exists)``. An
+    item carrying rows for every team (the pattern the catalog form writes)
+    was then dropped for its OWN active team because some OTHER team's row
+    is inactive — only row-less items (e.g. "Manual") stayed selectable.
+    The ``pk__in`` subquery keeps the semantics exact.
+    """
+    if team is None:
+        return Q()  # no team -> no restriction (everything active)
+    inactive_ids = TeamCatalogAmount.objects.filter(team=team, active=False).values(
+        "catalog_item_id"
+    )
+    return ~Q(pk__in=inactive_ids)
 
 
 class PenaltyType(models.TextChoices):
@@ -24,16 +49,26 @@ class PenaltyCatalogItem(models.Model):
         default=PenaltyType.NORMAL,
         verbose_name=_("type"),
     )
-    active = models.BooleanField(default=True, verbose_name=_("active"))
+    # NOTE: there is NO global "active" switch anymore — activation exists per
+    # team only (``TeamCatalogAmount.active``; a missing row means active).
     created_at = models.DateTimeField(auto_now_add=True, verbose_name=_("created at"))
 
     def amount_for_team(self, team):
-        """Team-specific fee if configured, else the default catalog amount."""
+        """The team's own fee; the default catalog amount if no row exists yet."""
         if team is not None:
             override = self.team_amounts.filter(team=team).first()
-            if override is not None:
+            # amount_eur is required — the None guard only heals legacy rows
+            # written before the field became mandatory.
+            if override is not None and override.amount_eur is not None:
                 return override.amount_eur
         return self.amount_eur
+
+    def is_active_for_team(self, team) -> bool:
+        """Per-team activation: no row for the team means active (default)."""
+        if team is None:
+            return True
+        row = self.team_amounts.filter(team=team).first()
+        return row is None or row.active
 
     def __str__(self):
         return f"{self.description} ({self.amount_eur} €)"
@@ -50,11 +85,16 @@ class PenaltyCatalogItem(models.Model):
 
 
 class TeamCatalogAmount(models.Model):
-    """Optional per-team fee override for one catalog item.
+    """Per-team catalog configuration row for one catalog item.
 
-    A missing row means "use the default catalog amount"; a row with a
-    positive ``amount_eur`` replaces the default for exactly that team
-    (e.g. "3 or less" costs 3 € in the 1st team but only 1 € in the 2nd).
+    Full per-team state lives here:
+
+    * ``active=False`` deactivates the item for exactly that team,
+    * ``amount_eur`` is that team's OWN fee — always filled (the default
+      catalog amount is only the seed value that is copied here on creation;
+      e.g. "3 or less" costs 3 € in the 1st team but only 1 € in the 2nd),
+    * a missing row means "active with the default amount" (legacy safety —
+      a NEW team and a NEW catalog entry both get explicit rows).
     """
 
     team = models.ForeignKey(
@@ -69,6 +109,7 @@ class TeamCatalogAmount(models.Model):
         related_name="team_amounts",
         verbose_name=_("catalog item"),
     )
+    active = models.BooleanField(default=True, verbose_name=_("active"))
     amount_eur = models.DecimalField(max_digits=8, decimal_places=2, verbose_name=_("amount (EUR)"))
     updated_by = models.ForeignKey(
         settings.AUTH_USER_MODEL,

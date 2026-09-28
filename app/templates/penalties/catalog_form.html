@@ -6,16 +6,86 @@
 <form method="post" novalidate class="card card-body">
     {% csrf_token %}
     {% include "includes/_form_errors.html" with form=form %}
-    {% for field in form %}
+    {% for field in form.core_fields %}
         <div class="mb-3">
             <label for="{{ field.id_for_label }}" class="form-label">{{ field.label }}</label>
             {{ field }}
+            {% if field.help_text %}<div class="form-text">{{ field.help_text }}</div>{% endif %}
             {% for error in field.errors %}<div class="text-danger small">{{ error }}</div>{% endfor %}
         </div>
     {% endfor %}
+
+    {# ------------------------------------------------------------------ #}
+    {# Team fees + active flags (former dedicated "Team fees" page).        #}
+    {# Admin AND captain: every team (create defaults differ, see form).    #}
+    {# ------------------------------------------------------------------ #}
+    <div class="mb-3">
+        <label class="form-label">{% translate "Team fees" %}</label>
+        <div class="table-responsive">
+            <table class="table align-middle">
+                <thead>
+                <tr>
+                    <th scope="col">{% translate "Team" %}</th>
+                    <th scope="col" class="text-center">{% translate "Active" %}</th>
+                    <th scope="col">{% translate "Fee (EUR)" %}</th>
+                </tr>
+                </thead>
+                <tbody>
+                {% for row in form.team_field_rows %}
+                    <tr>
+                        <td>{{ row.team.name }}</td>
+                        <td class="text-center">{{ row.active }}</td>
+                        <td style="max-width: 12rem;">{{ row.amount }}</td>
+                    </tr>
+                    {% for error in row.amount.errors %}<tr><td colspan="3" class="text-danger small">{{ error }}</td></tr>{% endfor %}
+                {% empty %}
+                    <tr><td colspan="3" class="text-center text-muted py-3">{% translate "No teams yet." %}</td></tr>
+                {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        <p class="form-text mb-0">{% translate "All fees must be filled — when creating an entry the default amount is copied into every row automatically." %}</p>
+    </div>
+
     <div class="d-flex gap-2">
         <button type="submit" class="btn btn-primary">{% translate "Save" %}</button>
         <a class="btn btn-outline-secondary" href="{% url 'penalties:catalog_list' %}">{% translate "Cancel" %}</a>
     </div>
 </form>
+{% if view.object.pk %}
+    {# Deleting a catalog item lives here (the list only shows "Edit"). #}
+    <div class="mt-3">
+        <form method="post" action="{% url 'penalties:catalog_delete' view.object.pk %}" class="d-inline"
+              data-confirm="{% translate 'Delete this catalog item?' %}">
+            {% csrf_token %}
+            <button type="submit" class="btn btn-outline-danger">{% translate "Delete" %}</button>
+        </form>
+    </div>
+{% endif %}
+{% if not view.object.pk %}
+<script>
+(function () {
+    // NEW entry only: while the default "Amount (EUR)" is typed, copy it into
+    // every not-yet-edited team fee field (each row can still be adjusted
+    // individually afterwards; the server requires every row to be filled).
+    const defaultAmount = document.getElementById("id_amount_eur");
+    if (!defaultAmount) return;
+    const teamInputs = Array.prototype.slice.call(
+        document.querySelectorAll("input[id^='id_team_amount_']")
+    );
+    teamInputs.forEach(function (input) {
+        input.addEventListener("input", function () {
+            input.dataset.touched = "1";
+        });
+    });
+    function copyDefaultToRows() {
+        teamInputs.forEach(function (input) {
+            if (!input.dataset.touched) input.value = defaultAmount.value;
+        });
+    }
+    defaultAmount.addEventListener("input", copyDefaultToRows);
+    copyDefaultToRows();
+})();
+</script>
+{% endif %}
 {% endblock %}

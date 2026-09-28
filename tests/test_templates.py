@@ -74,6 +74,15 @@ def test_detail_pages_200(admin_client, team, matchday, catalog_normal, player):
     )
 
 
+def test_catalog_list_drops_amount_and_global_active_columns(admin_client, catalog_normal):
+    """Columns are Description | Type | Team fees | actions — no global Amount/Active."""
+    content = admin_client.get(reverse("penalties:catalog_list")).content.decode()
+    # base.html carries no table headers, so a page-wide count is exact:
+    # 4x bare <th> + 1x <thead> is NOT counted (<th> without attributes only).
+    assert content.count("<th>") == 4
+    assert content.count("<thead>") == 1
+
+
 def test_old_team_detail_redirects_to_financial_overview(admin_client, team):
     response = admin_client.get(reverse("teams:team_detail", args=[team.pk]))
     assert response.status_code == 302

@@ -1,5 +1,8 @@
 """Accounts tests — email login, group roles, is_staff derivation, user mgmt, settings."""
 
+import re
+from pathlib import Path
+
 import pytest
 from django.contrib.auth import get_user_model
 from django.test import Client
@@ -11,6 +14,8 @@ from app.core.permissions import GROUP_ADMIN, GROUP_CAPTAIN, GROUP_PLAYER
 pytestmark = pytest.mark.django_db
 
 User = get_user_model()
+
+MO_DE = Path(__file__).resolve().parent.parent / "locale" / "de" / "LC_MESSAGES" / "django.mo"
 
 
 # ---------------------------------------------------------------------------
@@ -151,7 +156,8 @@ def test_admin_creates_captain_with_team(admin_client, team):
     assert user.team_id == team.pk
 
 
-def test_captain_without_team_fails_validation(admin_client):
+def test_captain_without_team_is_allowed(admin_client):
+    """The team is an OPTIONAL captaincy — the role itself needs no team."""
     response = admin_client.post(
         reverse("accounts:user_create"),
         {
@@ -162,8 +168,65 @@ def test_captain_without_team_fails_validation(admin_client):
             "preferred_language": "de",
         },
     )
-    assert response.status_code == 200
-    assert not User.objects.filter(email="noclub@example.com").exists()
+    assert response.status_code == 302
+    user = User.objects.get(email="noclub@example.com")
+    assert user.is_captain is True
+    assert user.team_id is None
+
+
+def test_admin_can_be_assigned_captain_team(admin_client, team):
+    """Role decoupling: an Admin may additionally captain a team."""
+    response = admin_client.post(
+        reverse("accounts:user_create"),
+        {
+            "email": "admincap@example.com",
+            "role": GROUP_ADMIN,
+            "team": team.pk,
+            "password1": "Strong-Pass-123!",
+            "password2": "Strong-Pass-123!",
+            "preferred_language": "de",
+        },
+    )
+    assert response.status_code == 302
+    user = User.objects.get(email="admincap@example.com")
+    assert user.is_admin is True
+    assert user.is_staff is True
+    assert user.team_id == team.pk
+
+
+def test_player_role_rejects_assigned_team(admin_client, team):
+    """The team field is a captaincy — the Player role can never hold one."""
+    response = admin_client.post(
+        reverse("accounts:user_create"),
+        {
+            "email": "plr@example.com",
+            "role": GROUP_PLAYER,
+            "team": team.pk,
+            "password1": "Strong-Pass-123!",
+            "password2": "Strong-Pass-123!",
+            "preferred_language": "de",
+        },
+    )
+    assert response.status_code == 200  # form validation error
+    assert not User.objects.filter(email="plr@example.com").exists()
+
+
+def test_update_user_rejects_team_for_player_role(admin_client, player_user, team):
+    """Same rule on the edit form: dropping to Player clears/excludes a team."""
+    response = admin_client.post(
+        reverse("accounts:user_update", args=[player_user.pk]),
+        {
+            "email": player_user.email,
+            "role": GROUP_PLAYER,
+            "team": team.pk,
+            "is_active": "on",
+            "preferred_language": "de",
+        },
+    )
+    assert response.status_code == 200  # form re-rendered with an error
+    player_user.refresh_from_db()
+    assert player_user.is_player is True
+    assert player_user.team_id is None
 
 
 def test_update_user_keeps_staff_consistent(admin_client, player_user, team):
@@ -185,6 +248,70 @@ def test_update_user_keeps_staff_consistent(admin_client, player_user, team):
         AuditLog.objects.filter(action=AuditAction.USER_UPDATED, target_id=player_user.pk).count()
         == 1
     )
+
+
+# ---------------------------------------------------------------------------
+# Edit user form — "Captain in this team" label + role-gated team dropdown
+# ---------------------------------------------------------------------------
+def _team_select_tag(content):
+    """The rendered <select name="team"> opening tag of the edit form."""
+    match = re.search(r"<select[^>]*name=\"team\"[^>]*>", content)
+    assert match, "team select not rendered"
+    return match.group(0)
+
+
+def test_edit_form_renames_team_to_captaincy(admin_client, player_user):
+    """'Benutzer bearbeiten': the Team field is labelled 'Captain in this team'."""
+    from django.utils import translation
+
+    response = admin_client.get(reverse("accounts:user_update", args=[player_user.pk]))
+    assert response.status_code == 200
+    with translation.override("en"):
+        label = str(response.context["form"].fields["team"].label)
+    assert label == "Captain in this team"
+
+
+def test_edit_form_captaincy_label_is_translated(admin_client, player_user):
+    """The German catalog renders the requested 'Kapitän in diesem Team'."""
+    from django.utils import translation
+
+    if not MO_DE.exists():
+        pytest.skip("compiled German catalog missing (run: python manage.py compilemessages)")
+    response = admin_client.get(reverse("accounts:user_update", args=[player_user.pk]))
+    with translation.override("de"):
+        label = str(response.context["form"].fields["team"].label)
+    assert label == "Kapitän in diesem Team"
+
+
+def test_edit_form_team_dropdown_disabled_for_player(admin_client, player_user):
+    """Only Captain/Admin accounts may pick a team — the Player role is locked."""
+    response = admin_client.get(reverse("accounts:user_update", args=[player_user.pk]))
+    assert response.status_code == 200
+    attrs = response.context["form"].fields["team"].widget.attrs
+    assert attrs["data-team-roles"] == "Admin,Captain"
+    assert attrs.get("disabled") is True
+    assert "disabled" in _team_select_tag(response.content.decode())
+
+
+def test_edit_form_team_dropdown_enabled_for_captain_and_admin(
+    admin_client, captain_user, admin_user
+):
+    for user in (captain_user, admin_user):
+        response = admin_client.get(reverse("accounts:user_update", args=[user.pk]))
+        assert response.status_code == 200
+        attrs = response.context["form"].fields["team"].widget.attrs
+        assert attrs["data-team-roles"] == "Admin,Captain"
+        assert "disabled" not in attrs
+        assert "disabled" not in _team_select_tag(response.content.decode())
+
+
+def test_create_form_team_dropdown_unaffected(admin_client):
+    """The rename/lockdown is scoped to the EDIT form — create stays untouched."""
+    response = admin_client.get(reverse("accounts:user_create"))
+    assert response.status_code == 200
+    attrs = response.context["form"].fields["team"].widget.attrs
+    assert "disabled" not in attrs
+    assert "data-team-roles" not in attrs
 
 
 def test_admin_deactivates_user(admin_client, player_user):

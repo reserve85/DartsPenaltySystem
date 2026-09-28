@@ -107,6 +107,15 @@ class MatchdayForm(forms.ModelForm):
             if self.instance.pk:
                 selectable = selectable | Team.objects.filter(pk=self.instance.team_id)
             self.fields["team"].queryset = selectable
+            if (
+                not self.instance.pk
+                and user is not None
+                and user.team_id is not None
+                and selectable.filter(pk=user.team_id).exists()
+            ):
+                # Default on CREATE: the account's own team (an existing
+                # matchday keeps its stored team — that is the model initial).
+                self.initial["team"] = user.team_id
 
     def _roster_season(self):
         """Season whose active teams may be picked (same fallback as ``clean``)."""

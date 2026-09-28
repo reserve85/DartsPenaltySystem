@@ -18,8 +18,6 @@ from app.core.pagination import PAGE_SIZE
 from app.core.permissions import (
     assert_admin_or_captain,
     user_can_manage_team,
-    user_is_admin,
-    user_is_captain,
 )
 from app.core.services import log_action
 from app.core.utils import numeric_pk
@@ -45,8 +43,13 @@ def _eligible_participants(matchday, season):
 
 
 class MatchdayListView(LoginRequiredMixin, View):
-    """Admin: all matchdays of the active season, optional ``?team=`` filter.
-    Captain: own team only (the team parameter is ignored for them).
+    """Admin + Captain: matchdays of the active season with a team selector.
+
+    READ is open for every team (view-only decision for foreign teams): the
+    dropdown lists all season teams and defaults to the OWN team of the
+    account ("All teams" for accounts without a team). ``?team=<pk>`` picks
+    one team, an explicit empty ``?team=`` selects "All teams". WRITE actions
+    stay own-team — see the detail/update/participant views.
 
     Columns are sortable via ``?sort=date|venue|opponent|team&dir=asc|desc``
     (default: date ascending — oldest entries first).
@@ -68,22 +71,21 @@ class MatchdayListView(LoginRequiredMixin, View):
         if season is not None:
             queryset = queryset.filter(season=season)
 
-        # Team selector: admins pick any season team (mirrors the financial
-        # overview); captains stay locked to their own team.
-        teams = None
+        # Team selector for Admin AND Captain (mirrors the financial
+        # overview): READ of every team is open, WRITE stays own-team. The
+        # DEFAULT selection is the own team of the account — an explicit
+        # ``?team=`` (empty value = "All teams") opts out of that default.
+        teams = list(teams_for_season(season).order_by("name"))
         selected_team = None
-        if user_is_admin(request.user):
-            teams = list(teams_for_season(season).order_by("name"))
-            team_id = request.GET.get("team", "")
-            if team_id:
-                selected_team = get_object_or_404(teams_for_season(season), pk=numeric_pk(team_id))
-                queryset = queryset.filter(team=selected_team)
-        elif user_is_captain(request.user):
-            # Precedence admin > captain: hybrids take the admin branch above.
-            if request.user.team_id is not None:
-                queryset = queryset.filter(team_id=request.user.team_id)
-            else:
-                queryset = queryset.none()
+        team_param = request.GET.get("team")
+        if team_param:
+            selected_team = get_object_or_404(teams_for_season(season), pk=numeric_pk(team_param))
+            queryset = queryset.filter(team=selected_team)
+        elif team_param is None:
+            own_team = next((entry for entry in teams if entry.pk == request.user.team_id), None)
+            if own_team is not None:
+                selected_team = own_team
+                queryset = queryset.filter(team=own_team)
 
         sort = request.GET.get("sort", "date")
         if sort not in self.sort_fields:
@@ -181,10 +183,10 @@ class MatchdayDetailView(LoginRequiredMixin, DetailView):
         return super().dispatch(request, *args, **kwargs)
 
     def get_object(self, queryset=None):
-        matchday = super().get_object(queryset)
-        if not user_can_manage_team(self.request.user, matchday.team):
-            raise PermissionDenied
-        return matchday
+        # READ: Admins and Captains may VIEW every matchday (view-only for
+        # foreign teams). WRITE stays own-team — the template hides those
+        # controls behind ``can_manage`` and the POST views raise 403.
+        return super().get_object(queryset)
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
@@ -192,6 +194,8 @@ class MatchdayDetailView(LoginRequiredMixin, DetailView):
             self.object.participants.select_related("player").order_by("player__name")
         )
         context["participants"] = participants
+        # WRITE gate for "Add penalty" / "Edit" / "Add players" / penalty edit.
+        context["can_manage"] = user_can_manage_team(self.request.user, self.object.team)
         # Roster for the inline "Add players" editor on this page.
         context["eligible_players"] = _eligible_participants(
             self.object, season_for_request(self.request)

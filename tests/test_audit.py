@@ -43,6 +43,20 @@ def test_audit_action_labels_are_translated_pairs():
     assert any(value == "login" for value, _ in choices)
     assert any(value == "penalty_assigned" for value, _ in choices)
     assert all(str(label) for _, label in choices)
+    # The five new actions (catalog CRUD + e-mail outcomes) must be complete,
+    # translatable pairs — never raw enum leakage in the audit UI filter.
+    required = {
+        "catalog_item_created",
+        "catalog_item_updated",
+        "catalog_item_deleted",
+        "email_sent",
+        "email_failed",
+    }
+    labels = {value: str(label) for value, label in choices}
+    assert required <= set(labels)
+    for value in required:
+        assert labels[value]
+        assert not labels[value].startswith("AuditAction.")
 
 
 # ---------------------------------------------------------------------------

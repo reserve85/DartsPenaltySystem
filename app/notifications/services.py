@@ -37,6 +37,8 @@ from django.template.loader import render_to_string
 from django.utils import translation
 from django.utils.translation import gettext_lazy as _
 
+from app.core.services import log_email_outcome
+
 if TYPE_CHECKING:  # pragma: no cover — typing only
     from django.contrib.auth.models import AbstractBaseUser
     from django.http import HttpRequest
@@ -149,13 +151,23 @@ class NotificationService:
             for address in self._valid_recipients(bcc or [])
             if address.lower() not in to_keys
         ]
-        if not email_configured():
-            return 0
 
         # Subject and language are fixed in the CALLER's context (request
         # language active) before any background thread starts.
         subject_line = " ".join(str(subject).splitlines()).strip()
         lang = language or translation.get_language()
+
+        if not email_configured():
+            log_email_outcome(
+                success=False,
+                recipients=to,
+                bcc=bcc_list,
+                template=template_base,
+                subject=subject_line,
+                language=lang,
+                error="SMTP backend not configured",
+            )
+            return 0
 
         ctx = {
             "support_email": settings.SUPPORT_EMAIL,
@@ -177,7 +189,13 @@ class NotificationService:
 
     @staticmethod
     def _deliver(to, bcc_list, template_base, subject_line, ctx, lang) -> int:
-        """Render + send — runs inline (tests) or in a background thread."""
+        """Render + send — runs inline (tests) or in a background thread.
+
+        Every outcome (success, template missing, SMTP failure) is audited
+        best-effort via ``log_email_outcome`` — the audit write itself can
+        never break the delivery (and delivery never breaks the business
+        transaction that triggered it).
+        """
         try:
             try:
                 with translation.override(lang):
@@ -189,6 +207,15 @@ class NotificationService:
                     template_base,
                     template_base,
                 )
+                log_email_outcome(
+                    success=False,
+                    recipients=to,
+                    bcc=bcc_list,
+                    template=template_base,
+                    subject=subject_line,
+                    language=lang,
+                    error=f"template missing: {template_base}",
+                )
                 return 0
             message = EmailMultiAlternatives(
                 subject_line, text_body, settings.DEFAULT_FROM_EMAIL, to, bcc=bcc_list
@@ -196,9 +223,26 @@ class NotificationService:
             message.attach_alternative(html_body, "text/html")
             try:
                 message.send(fail_silently=False)
-            except Exception:
+            except Exception as exc:
                 logger.exception("Sending notification '%s' to %s failed.", template_base, to)
+                log_email_outcome(
+                    success=False,
+                    recipients=to,
+                    bcc=bcc_list,
+                    template=template_base,
+                    subject=subject_line,
+                    language=lang,
+                    error=f"{type(exc).__name__}: {exc}",
+                )
                 return 0
+            log_email_outcome(
+                success=True,
+                recipients=to,
+                bcc=bcc_list,
+                template=template_base,
+                subject=subject_line,
+                language=lang,
+            )
             logger.info("Notification '%s' sent to %s.", template_base, to)
             return len(to)
         finally:

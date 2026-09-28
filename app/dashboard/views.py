@@ -1,14 +1,11 @@
 """Role-aware financial overview (season-scoped money data) — the start page."""
 
 from django.contrib.auth.mixins import LoginRequiredMixin
-from django.core.exceptions import PermissionDenied
 from django.shortcuts import get_object_or_404, render
 from django.views import View
 
 from app.core.permissions import (
     user_can_manage_team,
-    user_is_admin,
-    user_is_captain,
     user_is_player,
 )
 from app.core.utils import numeric_pk
@@ -26,84 +23,117 @@ from app.penalties.services import (
     team_paid_total,
     team_penalties_total,
 )
-from app.players.services import teams_for
-from app.teams.models import Team
-from app.teams.services import teams_for_season
+from app.teams.services import captains_for_teams, teams_for_season
+
+
+def _own_team(user, teams, season):
+    """The account's OWN team for the default selection, or ``None``.
+
+    Resolution order:
+    1. ``User.team`` — the optional captaincy link (Captain/Admin accounts);
+    2. the ROSTER membership of the linked player (``PlayerTeam``), preferring
+       the ACTIVE season, then any other season — a Player-role account has no
+       captaincy field, its "assignment to a team" lives in the roster;
+    3. ``None`` → the caller falls back to the first team alphabetically.
+
+    Only teams from ``teams`` (the active season's teams) are considered.
+    """
+    by_pk = {team.pk: team for team in teams}
+    own = by_pk.get(user.team_id)
+    if own is not None:
+        return own
+    player = getattr(user, "player_link", None)
+    if player is None:
+        return None
+    assignments = player.team_assignments.all()
+    if season is not None:
+        ordered = list(assignments.filter(season=season)) + list(assignments.exclude(season=season))
+    else:
+        ordered = list(assignments)
+    for assignment in ordered:
+        team = by_pk.get(assignment.team_id)
+        if team is not None:
+            return team
+    return None
 
 
 class FinancialOverviewView(LoginRequiredMixin, View):
-    """Admin: every team. Captain: own team. Player: own penalties + own team(s).
+    """READ is open to every signed-in account: all teams, all seasons.
 
-    Precedence matches ``User.role`` (admin > captain > player); any other
-    approved account (no role yet) gets 403 — it must never fall through to
-    the admin branch.
+    Universal read access (decision): Admin, Captain, Player and role-less
+    accounts all get the full team selector and money data. Only WRITE
+    actions stay role-scoped — ``can_manage`` (per selected team) gates the
+    payment buttons/modal, so Captains can manage their own team and nothing
+    else; Players and role-less accounts never get write affordances.
     """
 
     template_name = "dashboard/financial_overview.html"
 
     def get(self, request):
         season = season_for_request(request)
-        if user_is_admin(request.user):
-            # Only the teams active in the shown season are selectable.
-            teams = list(teams_for_season(season).order_by("name"))
-            team_id = request.GET.get("team")
-            if not team_id and teams:
-                team = teams[0]
-            elif team_id:
-                team = get_object_or_404(teams_for_season(season), pk=numeric_pk(team_id))
-            else:
-                team = None
-        elif user_is_captain(request.user):
-            if request.user.team_id is None:
-                raise PermissionDenied
-            teams = None
-            team = request.user.team
-        elif user_is_player(request.user):
-            return self._render_player(request, season)
+        teams = list(teams_for_season(season).order_by("name"))
+        # Captains of EVERY team of the season — Captain and Admin accounts
+        # assigned to a team, see captains_for_teams.
+        captains_by_team = captains_for_teams(teams)
+        team_id = request.GET.get("team")
+        if team_id:
+            team = get_object_or_404(teams_for_season(season), pk=numeric_pk(team_id))
+        elif teams:
+            # Default: the account's OWN team — the captaincy link (captains
+            # and admins alike) or, for Player accounts, their roster team of
+            # the active season. Accounts without any team (e.g. the system
+            # admin) fall back to the first team alphabetically.
+            team = _own_team(request.user, teams, season) or teams[0]
         else:
-            raise PermissionDenied
+            team = None
+        context: dict = {
+            "teams": teams,
+            "selected_team": team,
+            "can_manage": False,
+        }
+
+        # Player role: extra "own penalties" section on top of the shared view.
+        if user_is_player(request.user):
+            context.update(self._own_section(request, season))
 
         if team is None:
-            return render(request, self.template_name, {"teams": teams, "selected_team": None})
-        return render(request, self.template_name, self._context_for_team(team, teams, season))
-
-    def _render_player(self, request, season):
-        """Own penalties plus a READ-ONLY overview of the player's own team(s).
-
-        ``?team=`` can only select among the teams the linked player belongs to
-        in the shown season — anything else is a 404 (no foreign team names).
-        """
-        player = request.user.player_link
-        if player is None:
-            return render(request, self.template_name, {"own_mode": True, "no_player_link": True})
-        context = {
-            "own_mode": True,
-            "player": player,
-            "own_penalties": assigned_penalties_qs(season=season).filter(player=player),
-            "own_balance": player_balance(player, season=season),
-            "own_total": player_total(player, season=season),
-            "own_paid": player_total_paid(player, season=season),
-        }
-        player_teams = teams_for(player, season)
-        if player_teams:
-            team_id = request.GET.get("team")
-            if team_id:
-                team = get_object_or_404(
-                    Team, pk=numeric_pk(team_id), pk__in=[t.pk for t in player_teams]
-                )
-            else:
-                team = player_teams[0]
-            # Selector only when there is a choice (mirrors the captain behaviour).
-            teams = player_teams if len(player_teams) > 1 else None
-            context.update(self._context_for_team(team, teams, season))
+            return render(request, self.template_name, context)
+        context.update(self._context_for_team(team, teams, season, captains_by_team))
         return render(request, self.template_name, context)
 
-    def _context_for_team(self, team, teams, season):
+    @staticmethod
+    def _own_section(request, season) -> dict:
+        """Own penalties summary for the Player role (read-only extras)."""
+        context: dict = {"own_mode": True}
+        player = request.user.player_link
+        if player is None:
+            context["no_player_link"] = True
+            return context
+        context.update(
+            {
+                "player": player,
+                "own_penalties": assigned_penalties_qs(season=season).filter(player=player),
+                "own_balance": player_balance(player, season=season),
+                "own_total": player_total(player, season=season),
+                "own_paid": player_total_paid(player, season=season),
+            }
+        )
+        return context
+
+    def _context_for_team(self, team, teams, season, captains_by_team):
         balances = team_balances(team, season=season)
         inactive = inactive_player_balances(team, season=season)
+        captains = captains_by_team.get(team.pk, [])
         return {
             "teams": teams,
             "selected_team": team,
+            # Captain marking in the overview: the accounts that lead this
+            # team (Captain OR Admin — the assignment is decoupled from the
+            # role) plus the player rows linked to them.
+            "team_captains": captains,
+            "captain_player_ids": [
+                captain.player_link_id for captain in captains if captain.player_link_id
+            ],
             "team_balances": balances,
             # Team trio: total penalties, settled, still open (net = sum of rows)
             "team_penalties": team_penalties_total(team, season=season),

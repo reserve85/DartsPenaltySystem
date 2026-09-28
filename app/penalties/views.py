@@ -1,25 +1,28 @@
 """Penalty views — catalog management + assign/edit/delete (service layer only)."""
 
-from decimal import Decimal, InvalidOperation
 from typing import ClassVar
 
 from django.contrib import messages
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.core.exceptions import PermissionDenied, ValidationError
+from django.db import transaction
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse, reverse_lazy
 from django.utils.translation import gettext_lazy as _
 from django.views import View
 from django.views.generic import CreateView, UpdateView
 
+from app.core.models import AuditAction
 from app.core.permissions import (
     GROUP_ADMIN,
+    GROUP_CAPTAIN,
     GroupRequiredMixin,
     assert_admin_or_captain,
     user_can_manage_team,
     user_is_admin,
     user_is_captain,
 )
+from app.core.services import log_action
 from app.core.utils import safe_next_url
 from app.matchdays.models import Matchday
 from app.matchdays.services import season_for_request
@@ -46,161 +49,140 @@ from app.penalties.services import (
     soft_delete_penalty,
 )
 from app.teams.models import Team
-from app.teams.services import teams_for_season
 
 
 # ---------------------------------------------------------------------------
 # Catalog
 # ---------------------------------------------------------------------------
 class CatalogListView(LoginRequiredMixin, View):
-    """Admin: manage. Captain: view + own team fees. Player: 403."""
+    """Admin + Captain: manage the catalog (players get 403).
+
+    The list shows every team's effective fee/active state per item (read-only
+    status column) and a single "Edit" button — team fees and active flags are
+    edited in the integrated catalog form.
+    """
 
     template_name = "penalties/catalog_list.html"
 
     def get(self, request):
         assert_admin_or_captain(request.user)
         items = list(PenaltyCatalogItem.objects.order_by("type", "description"))
-        overrides: dict[int, list] = {}
-        for team_amount in TeamCatalogAmount.objects.select_related("team").filter(
-            catalog_item__in=items
-        ):
-            overrides.setdefault(team_amount.catalog_item_id, []).append(team_amount)
+        teams = list(Team.objects.order_by("name"))
+        rows = {
+            (row.catalog_item_id, row.team_id): row
+            for row in TeamCatalogAmount.objects.filter(catalog_item__in=items)
+        }
         for item in items:
-            item.team_amount_list = sorted(
-                overrides.get(item.pk, []), key=lambda row: row.team.name
-            )
+            # Missing row = active with the default amount (legacy safety);
+            # normally every team row exists and carries its own fee.
+            item.team_config_list = []
+            for team in teams:
+                row = rows.get((item.pk, team.pk))
+                amount = row.amount_eur if row is not None else None
+                item.team_config_list.append(
+                    {
+                        "team": team,
+                        "active": True if row is None else row.active,
+                        "amount": amount if amount is not None else item.amount_eur,
+                    }
+                )
+        can_create = user_is_admin(request.user) or user_is_captain(request.user)
         return render(
             request,
             self.template_name,
-            {"items": items, "can_manage": user_is_admin(request.user)},
+            {"items": items, "can_create": can_create},
         )
-
-
-class CatalogTeamAmountsView(LoginRequiredMixin, View):
-    """Per-team fee overrides for ONE catalog item.
-
-    Admin: every team. Captain: own team only (foreign team ids are ignored).
-    A blank input clears the override so the team falls back to the default.
-    """
-
-    template_name = "penalties/catalog_team_amounts.html"
-
-    def get_item(self):
-        return get_object_or_404(PenaltyCatalogItem, pk=self.kwargs["pk"])
-
-    def _teams(self):
-        user = self.request.user
-        if user_is_admin(user):
-            # Only teams active in the shown season carry a fee row.
-            season = season_for_request(self.request)
-            return list(teams_for_season(season).order_by("name"))
-        if user_is_captain(user) and user.team_id is not None:
-            return list(Team.objects.filter(pk=user.team_id))
-        raise PermissionDenied
-
-    def _render(self, request, item, rows):
-        return render(
-            request,
-            self.template_name,
-            {"item": item, "rows": rows, "default_amount": item.amount_eur},
-        )
-
-    def get(self, request, pk):
-        assert_admin_or_captain(request.user)
-        item = self.get_item()
-        teams = self._teams()
-        current = {row.team_id: row.amount_eur for row in item.team_amounts.filter(team__in=teams)}
-        rows = [{"team": team, "value": current.get(team.pk, "")} for team in teams]
-        return self._render(request, item, rows)
-
-    def post(self, request, pk):
-        assert_admin_or_captain(request.user)
-        item = self.get_item()
-        teams = self._teams()
-
-        parsed: dict = {}
-        errors: list = []
-        for team in teams:
-            raw = (request.POST.get(f"team_{team.pk}") or "").strip()
-            if raw == "":
-                parsed[team.pk] = None  # back to default
-                continue
-            try:
-                amount = Decimal(raw)
-            except InvalidOperation:
-                errors.append(
-                    _("'%(value)s' is not a valid amount for team '%(team)s'.")
-                    % {"value": raw, "team": team.name}
-                )
-                continue
-            if amount <= 0:
-                errors.append(
-                    _("The amount for team '%(team)s' must be a positive number or empty.")
-                    % {"team": team.name}
-                )
-                continue
-            parsed[team.pk] = amount
-
-        if errors:
-            for error in errors:
-                messages.error(request, error)
-            rows = [
-                {"team": team, "value": request.POST.get(f"team_{team.pk}", "")} for team in teams
-            ]
-            return self._render(request, item, rows)
-
-        for team in teams:
-            amount = parsed.get(team.pk)
-            if amount is None:
-                item.team_amounts.filter(team=team).delete()
-            else:
-                TeamCatalogAmount.objects.update_or_create(
-                    team=team,
-                    catalog_item=item,
-                    defaults={"amount_eur": amount, "updated_by": request.user},
-                )
-        messages.success(request, _("Team fees saved."))
-        return redirect("penalties:catalog_list")
 
 
 class CatalogCreateView(GroupRequiredMixin, LoginRequiredMixin, CreateView):
-    groups: ClassVar[list] = [GROUP_ADMIN]
+    """Admin + Captain create — the form also owns the per-team fees/flags."""
+
+    groups: ClassVar[list] = [GROUP_ADMIN, GROUP_CAPTAIN]
     model = PenaltyCatalogItem
     form_class = CatalogItemForm
     template_name = "penalties/catalog_form.html"
     success_url = reverse_lazy("penalties:catalog_list")
 
+    def get_form_kwargs(self):
+        kwargs = super().get_form_kwargs()
+        kwargs["user"] = self.request.user
+        return kwargs
+
     def form_valid(self, form):
         response = super().form_valid(form)
+        log_action(
+            AuditAction.CATALOG_ITEM_CREATED,
+            user=self.request.user,
+            target=self.object,
+            metadata=form.created_metadata(),
+        )
         messages.success(self.request, _("Catalog item created."))
         return response
 
 
 class CatalogUpdateView(GroupRequiredMixin, LoginRequiredMixin, UpdateView):
-    groups: ClassVar[list] = [GROUP_ADMIN]
+    """Admin + Captain edit — core fields + per-team fees/flags + delete entry."""
+
+    groups: ClassVar[list] = [GROUP_ADMIN, GROUP_CAPTAIN]
     model = PenaltyCatalogItem
     form_class = CatalogItemForm
     template_name = "penalties/catalog_form.html"
     success_url = reverse_lazy("penalties:catalog_list")
 
+    def get_form_kwargs(self):
+        kwargs = super().get_form_kwargs()
+        kwargs["user"] = self.request.user
+        return kwargs
+
+    def get_form(self, form_class=None):
+        form = super().get_form(form_class)
+        # Pristine pre-save state: ModelForm.is_valid() writes the cleaned
+        # core fields INTO the instance, so the snapshot must happen here.
+        if form.instance is not None and form.instance.pk is not None:
+            self._before = CatalogItemForm.snapshot_state(form.instance)
+        return form
+
     def form_valid(self, form):
         response = super().form_valid(form)
+        log_action(
+            AuditAction.CATALOG_ITEM_UPDATED,
+            user=self.request.user,
+            target=self.object,
+            metadata=form.updated_metadata(before=self._before),
+        )
         messages.success(self.request, _("Catalog item updated."))
         return response
 
 
-class CatalogToggleActiveView(GroupRequiredMixin, LoginRequiredMixin, View):
-    groups: ClassVar[list] = [GROUP_ADMIN]
+class CatalogDeleteView(LoginRequiredMixin, View):
+    """POST-only guarded delete (Admin + Captain) — only while unused.
+
+    ``Penalty.all_objects()`` includes soft-deleted rows: once ANY penalty row
+    ever referenced the item, deletion is blocked so audit history (the
+    ``SET_NULL`` catalog reference) stays intact.
+    """
 
     def post(self, request, pk):
+        assert_admin_or_captain(request.user)
         item = get_object_or_404(PenaltyCatalogItem, pk=pk)
-        item.active = not item.active
-        item.save(update_fields=["active"])
-        state = _("activated") if item.active else _("deactivated")
-        messages.success(
-            request,
-            _("Catalog item '%(name)s' %(state)s.") % {"name": item.description, "state": state},
-        )
+        if Penalty.all_objects().filter(catalog_item=item).exists():
+            messages.error(
+                request,
+                _(
+                    "This catalog item cannot be deleted because it is still "
+                    "referenced by penalties."
+                ),
+            )
+            return redirect("penalties:catalog_list")
+        with transaction.atomic():
+            log_action(
+                AuditAction.CATALOG_ITEM_DELETED,
+                user=request.user,
+                target=item,
+                metadata={"description": item.description},
+            )
+            item.delete()  # cascades the per-team rows
+        messages.success(request, _("Catalog item deleted."))
         return redirect("penalties:catalog_list")
 
 

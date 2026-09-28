@@ -418,10 +418,17 @@ def test_navbar_marks_the_default_season(admin_client, season):
 # ---------------------------------------------------------------------------
 # Teams active per season
 # ---------------------------------------------------------------------------
-def test_team_list_only_shows_season_teams(admin_client, season, team, other_team):
+def test_team_list_shows_all_teams_with_season_flag(admin_client, season, team, other_team):
+    """Top table: ALL teams with an active-in-season badge; matrix stays scoped."""
     season.teams.set([team])
     response = admin_client.get(reverse("teams:team_list"))
-    assert list(response.context["teams"]) == [team]
+    # The top table lists every team (not only the season's) …
+    assert {t.pk for t in response.context["teams"]} == {team.pk, other_team.pk}
+    # … with per-season highlighting …
+    flags = {t.pk: t.active_in_season for t in response.context["teams"]}
+    assert flags == {team.pk: True, other_team.pk: False}
+    # … while the assignment matrix keeps only the season-active columns.
+    assert [t.pk for t in response.context["matrix_teams"]] == [team.pk]
 
 
 def test_team_list_falls_back_to_all_teams_without_selection(
@@ -429,6 +436,8 @@ def test_team_list_falls_back_to_all_teams_without_selection(
 ):
     response = admin_client.get(reverse("teams:team_list"))
     assert {t.pk for t in response.context["teams"]} == {team.pk, other_team.pk}
+    assert all(t.active_in_season for t in response.context["teams"])  # no selection -> all
+    assert {t.pk for t in response.context["matrix_teams"]} == {team.pk, other_team.pk}
 
 
 def test_financial_overview_selects_only_season_teams(admin_client, season, team, other_team):

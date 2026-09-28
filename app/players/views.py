@@ -17,8 +17,8 @@ from app.core.permissions import (
     GROUP_CAPTAIN,
     GroupRequiredMixin,
     assert_admin_or_captain,
+    user_can_edit_player,
     user_can_view_player,
-    user_is_player,
 )
 from app.core.services import log_action
 from app.matchdays.services import season_for_request
@@ -45,11 +45,9 @@ class PlayerDetailView(LoginRequiredMixin, DetailView):
 
     def get_object(self, queryset=None):
         player = super().get_object(queryset)
-        user = self.request.user
-        if not (
-            user_can_view_player(user, player)
-            or (user_is_player(user) and user.player_link_id == player.pk)
-        ):
+        # READ is open to every signed-in account (see user_can_view_player);
+        # LoginRequiredMixin has already excluded anonymous visitors.
+        if not user_can_view_player(self.request.user, player):
             raise PermissionDenied
         return player
 
@@ -57,6 +55,7 @@ class PlayerDetailView(LoginRequiredMixin, DetailView):
         context = super().get_context_data(**kwargs)
         player = self.object
         season = season_for_request(self.request)
+        context["can_edit"] = user_can_edit_player(self.request.user, player)
         context["balance"] = player_balance(player, season=season)
         context["total"] = player_total(player, season=season)
         context["paid"] = player_total_paid(player, season=season)
@@ -126,7 +125,9 @@ class PlayerUpdateView(LoginRequiredMixin, UpdateView):
 
     def get_object(self, queryset=None):
         player = super().get_object(queryset)
-        if not user_can_view_player(self.request.user, player):
+        # WRITE gate: admin or captain of one of the player's teams (READ of
+        # the detail page is open to every signed-in account).
+        if not user_can_edit_player(self.request.user, player):
             raise PermissionDenied
         return player
 
@@ -148,7 +149,7 @@ class PlayerDeactivateView(LoginRequiredMixin, View):
     def post(self, request, pk):
         assert_admin_or_captain(request.user)
         player = get_object_or_404(Player, pk=pk)
-        if not user_can_view_player(request.user, player):
+        if not user_can_edit_player(request.user, player):
             raise PermissionDenied
         player.active = False
         player.save(update_fields=["active"])

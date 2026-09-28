@@ -6,19 +6,24 @@
     <h1 class="h3 mb-0">{{ matchday.display_label }}
         {% if matchday.season %}<span class="badge text-bg-secondary">{{ matchday.season.name }}</span>{% endif %}
     </h1>
+    {# WRITE controls only for Admins / the own team's captain (view-only for foreign teams). #}
+    {% if can_manage %}
     <div class="btn-group">
         <a class="btn btn-primary" href="{% url 'penalties:penalty_create' matchday.pk %}">{% translate "Add penalty" %}</a>
         <a class="btn btn-outline-secondary" href="{% url 'matchdays:matchday_update' matchday.pk %}">{% translate "Edit" %}</a>
     </div>
+    {% endif %}
 </div>
 {% if matchday.description %}<p>{{ matchday.description }}</p>{% endif %}
 
 <h2 class="h5 d-flex justify-content-between align-items-center mb-2">
     <span>{% translate "Participants" %} ({{ participants|length }})</span>
+    {% if can_manage %}
     <button class="btn btn-primary" type="button" data-bs-toggle="collapse"
             data-bs-target="#participantEditor" aria-expanded="false" aria-controls="participantEditor">
         {% translate "Add players" %}
     </button>
+    {% endif %}
 </h2>
 <div class="d-flex flex-wrap gap-2 mb-2">
     {% for participation in participants %}
@@ -27,6 +32,7 @@
         <span class="text-muted">{% translate "No participants." %}</span>
     {% endfor %}
 </div>
+{% if can_manage %}
 <div class="collapse" id="participantEditor">
     <form method="post" action="{% url 'matchdays:matchday_participants' matchday.pk %}" class="card card-body mb-4">
         {% csrf_token %}
@@ -67,6 +73,7 @@
         </div>
     </form>
 </div>
+{% endif %}
 
 <h2 class="h5">{% translate "Penalties" %}</h2>
 <div class="table-responsive">
@@ -91,7 +98,9 @@
                 </td>
                 <td class="text-end text-danger">{{ penalty.amount_eur|floatformat:2 }} €</td>
                 <td class="text-end text-nowrap">
+                    {% if can_manage %}
                     <a class="btn btn-sm btn-outline-secondary" href="{% url 'penalties:penalty_update' penalty.pk %}">{% translate "Edit" %}</a>
+                    {% endif %}
                 </td>
             </tr>
         {% empty %}

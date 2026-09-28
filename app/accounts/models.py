@@ -53,7 +53,9 @@ class User(AbstractUser):
         blank=True,
         related_name="users",
         verbose_name=_("team"),
-        help_text=_("Required for Captain role; ignored for Admin."),
+        help_text=_(
+            "Optional captaincy: the team this account leads. Allowed for Captain and Admin."
+        ),
     )
     player_link = models.OneToOneField(
         "players.Player",

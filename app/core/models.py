@@ -41,6 +41,11 @@ class AuditAction(models.TextChoices):
     USER_REGISTERED = "user_registered", _("User self-registered")
     USER_APPROVED = "user_approved", _("User approved")
     USER_REJECTED = "user_rejected", _("User rejected")
+    CATALOG_ITEM_CREATED = "catalog_item_created", _("Catalog item created")
+    CATALOG_ITEM_UPDATED = "catalog_item_updated", _("Catalog item updated")
+    CATALOG_ITEM_DELETED = "catalog_item_deleted", _("Catalog item deleted")
+    EMAIL_SENT = "email_sent", _("E-mail sent")
+    EMAIL_FAILED = "email_failed", _("E-mail failed")
 
 
 class AuditLog(models.Model):

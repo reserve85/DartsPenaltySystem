@@ -7,8 +7,9 @@ from app.penalties.models import Payment, Penalty, PenaltyCatalogItem, TeamCatal
 
 @admin.register(PenaltyCatalogItem)
 class PenaltyCatalogItemAdmin(admin.ModelAdmin):
-    list_display: ClassVar[list] = ["description", "amount_eur", "type", "active"]
-    list_filter: ClassVar[list] = ["type", "active"]
+    # Global "active" is gone — activation is per team (TeamCatalogAmount).
+    list_display: ClassVar[list] = ["description", "amount_eur", "type"]
+    list_filter: ClassVar[list] = ["type"]
     search_fields: ClassVar[list] = ["description"]
 
 
@@ -17,11 +18,12 @@ class TeamCatalogAmountAdmin(admin.ModelAdmin):
     list_display: ClassVar[list] = [
         "catalog_item",
         "team",
+        "active",
         "amount_eur",
         "updated_by",
         "updated_at",
     ]
-    list_filter: ClassVar[list] = ["team"]
+    list_filter: ClassVar[list] = ["team", "active"]
     search_fields: ClassVar[list] = ["catalog_item__description", "team__name"]
 
 

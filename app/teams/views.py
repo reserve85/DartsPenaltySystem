@@ -5,7 +5,7 @@ from typing import ClassVar
 from django.contrib import messages
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.core.paginator import Paginator
-from django.db.models import Count
+from django.db.models import Count, Exists, OuterRef, Value
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse, reverse_lazy
 from django.utils.translation import gettext_lazy as _
@@ -18,10 +18,12 @@ from app.core.permissions import (
     GROUP_ADMIN,
     GROUP_CAPTAIN,
     GroupRequiredMixin,
+    user_can_edit_player,
     user_is_admin,
 )
 from app.core.services import log_action
 from app.matchdays.services import season_for_request
+from app.penalties.models import PenaltyCatalogItem, TeamCatalogAmount
 from app.players.models import Player
 from app.players.services import assign_teams, player_count_annotation, prefetch_season_assignments
 from app.teams.forms import TeamForm
@@ -47,17 +49,20 @@ class TeamListView(GroupRequiredMixin, LoginRequiredMixin, ListView):
     context_object_name = "teams"
 
     def get_queryset(self):
-        # Player count is season-dependent (active season from the navbar) and
-        # only teams active in that season are listed (per-season teams).
+        # The top table lists ALL teams (highlighted per season); the matrix
+        # columns below stay season-scoped (context key ``matrix_teams``).
+        # Player count is season-dependent (active season from the navbar).
         season = season_for_request(self.request)
-        return (
-            teams_for_season(season)
-            .annotate(
-                captain_count=Count("users", distinct=True),
-                player_count=player_count_annotation(season),
-            )
-            .order_by("name")
-        )
+        if season is None or not season.teams.exists():
+            # No season / no explicit selection => every team is active.
+            active_in_season = Value(True)
+        else:
+            active_in_season = Exists(season.teams.filter(pk=OuterRef("pk")))
+        return Team.objects.annotate(
+            active_in_season=active_in_season,
+            captain_count=Count("users", distinct=True),
+            player_count=player_count_annotation(season),
+        ).order_by("name")
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
@@ -68,8 +73,10 @@ class TeamListView(GroupRequiredMixin, LoginRequiredMixin, ListView):
         context["season_teams_scoped"] = bool(season and season.teams.exists())
 
         # --- assignment matrix -------------------------------------------------
-        columns = list(context["teams"])
-        column_pks = {t.pk for t in columns}
+        # Columns = the season-active subset only (per decision); the top team
+        # table above shows every team with its active-state badge.
+        context["matrix_teams"] = [team for team in context["teams"] if team.active_in_season]
+        column_pks = {team.pk for team in context["matrix_teams"]}
         if user_is_admin(request.user):
             context["editable_team_pks"] = column_pks
         elif request.user.team_id:
@@ -85,6 +92,8 @@ class TeamListView(GroupRequiredMixin, LoginRequiredMixin, ListView):
         for player in page:
             # Flat pk list — the template checks membership per column cell.
             player.assigned_team_pks = [a.team_id for a in player.season_assignments]
+            # WRITE gate for the "Edit" button (READ of the page is open anyway).
+            player.can_edit = user_can_edit_player(request.user, player)
         context["page_obj"] = page
         return context
 
@@ -168,9 +177,41 @@ class TeamCreateView(GroupRequiredMixin, LoginRequiredMixin, CreateView):
     template_name = "teams/team_form.html"
     success_url = reverse_lazy("teams:team_list")
 
+    def get_form_kwargs(self):
+        kwargs = super().get_form_kwargs()
+        kwargs["include_season"] = True  # create-only season assignment field
+        return kwargs
+
     def form_valid(self, form):
         response = super().form_valid(form)
-        log_action(AuditAction.TEAM_CREATED, user=self.request.user, target=self.object)
+        season = form.cleaned_data.get("season")
+        if season is not None:
+            season.teams.add(self.object)
+        # A NEW team gets the standard fee assigned for every existing catalog
+        # entry (own row per item — from then on each team carries its own fee).
+        catalog_items = list(PenaltyCatalogItem.objects.all())
+        TeamCatalogAmount.objects.bulk_create(
+            [
+                TeamCatalogAmount(
+                    team=self.object,
+                    catalog_item=item,
+                    active=True,
+                    amount_eur=item.amount_eur,
+                    updated_by=self.request.user,
+                )
+                for item in catalog_items
+            ],
+            ignore_conflicts=True,
+        )
+        log_action(
+            AuditAction.TEAM_CREATED,
+            user=self.request.user,
+            target=self.object,
+            metadata={
+                "season_id": season.pk if season is not None else None,
+                "catalog_fees_assigned": len(catalog_items),
+            },
+        )
         messages.success(self.request, _("Team created."))
         return response
 

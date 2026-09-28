@@ -3,7 +3,7 @@
 from decimal import Decimal
 
 import pytest
-from django.urls import reverse
+from django.urls import NoReverseMatch, reverse
 
 from app.core.models import AuditAction, AuditLog
 from app.matchdays.models import MatchdayPlayer
@@ -22,65 +22,155 @@ def test_catalog_list_admin_and_captain(admin_client, captain_client, player_cli
     assert player_client.get(reverse("penalties:catalog_list")).status_code == 403
 
 
-def test_catalog_manage_admin_only(captain_client):
-    assert captain_client.get(reverse("penalties:catalog_create")).status_code == 403
+def test_catalog_manage_player_forbidden_captain_allowed(
+    player_client, captain_client, team, other_team
+):
+    """Players stay locked out; captains create/edit catalog entries."""
+    assert player_client.get(reverse("penalties:catalog_create")).status_code == 403
     assert (
-        captain_client.post(
+        player_client.post(
             reverse("penalties:catalog_create"),
-            {"description": "X", "amount_eur": 1, "type": "NORMAL", "active": "on"},
+            {"description": "X", "amount_eur": 1, "type": "NORMAL"},
         ).status_code
         == 403
     )
 
+    assert captain_client.get(reverse("penalties:catalog_create")).status_code == 200
+    response = captain_client.post(
+        reverse("penalties:catalog_create"),
+        {
+            "description": "Captain entry",
+            "amount_eur": 2,
+            "type": "NORMAL",
+            f"team_active_{team.pk}": "on",  # own team ticked (others default off)
+            f"team_amount_{team.pk}": "2",  # every fee row must be filled
+            f"team_amount_{other_team.pk}": "2",
+        },
+    )
+    assert response.status_code == 302
+    item = PenaltyCatalogItem.objects.get(description="Captain entry")
+    # Only the captain's own team is active — every other team is inactive
+    # (the create form shows ALL teams; others are pre-unchecked).
+    own = item.team_amounts.get(team=team)
+    assert own.active is True
+    other = item.team_amounts.get(team=other_team)
+    assert other.active is False
+    assert other.amount_eur == Decimal(2)  # filled row (own fee per team)
 
-def test_catalog_admin_crud_and_toggle(admin_client):
+
+def test_catalog_admin_crud(admin_client, team, other_team):
     response = admin_client.post(
         reverse("penalties:catalog_create"),
-        {"description": "Too loud", "amount_eur": 2, "type": "NORMAL", "active": "on"},
+        {
+            "description": "Too loud",
+            "amount_eur": 2,
+            "type": "NORMAL",
+            f"team_active_{team.pk}": "on",
+            f"team_active_{other_team.pk}": "on",
+            f"team_amount_{team.pk}": "2",
+            f"team_amount_{other_team.pk}": "2",
+        },
     )
     assert response.status_code == 302
     item = PenaltyCatalogItem.objects.get(description="Too loud")
-    assert item.active is True
+    assert all(row.active for row in item.team_amounts.all())
 
-    response = admin_client.post(reverse("penalties:catalog_toggle_active", args=[item.pk]))
-    assert response.status_code == 302
-    item.refresh_from_db()
-    assert item.active is False
-
+    # No global "active" field anymore — per-team flags come from the POST.
     response = admin_client.post(
         reverse("penalties:catalog_update", args=[item.pk]),
-        {"description": "Too loud", "amount_eur": 3, "type": "NORMAL", "active": ""},
+        {
+            "description": "Too loud",
+            "amount_eur": 3,
+            "type": "NORMAL",
+            f"team_amount_{team.pk}": "3",
+            f"team_amount_{other_team.pk}": "3",
+        },
     )
     assert response.status_code == 302
     item.refresh_from_db()
     assert item.amount_eur == Decimal(3)
+    assert not any(row.active for row in item.team_amounts.all())
 
 
-def test_catalog_list_has_no_toggle_button(admin_client, catalog_normal):
-    """No 'Deactivate' button in the list — the edit form's 'Active' checkbox owns it."""
+def test_catalog_list_has_single_edit_action_and_edit_page_has_delete(admin_client, catalog_normal):
+    """No toggle URL anymore; one action per row; delete lives on the edit page."""
+    with pytest.raises(NoReverseMatch):
+        reverse("penalties:catalog_toggle_active", args=[catalog_normal.pk])
+    with pytest.raises(NoReverseMatch):
+        reverse("penalties:catalog_team_amounts", args=[catalog_normal.pk])
+
     content = admin_client.get(reverse("penalties:catalog_list")).content.decode()
-    assert reverse("penalties:catalog_toggle_active", args=[catalog_normal.pk]) not in content
-    assert reverse("penalties:catalog_update", args=[catalog_normal.pk]) in content
+    edit_url = reverse("penalties:catalog_update", args=[catalog_normal.pk])
+    assert edit_url in content
+    assert content.count(edit_url) == 1  # exactly ONE action button per row
+
+    edit = admin_client.get(edit_url).content.decode()
+    assert reverse("penalties:catalog_delete", args=[catalog_normal.pk]) in edit
 
 
-def test_catalog_form_rejects_non_positive(admin_client):
+def test_catalog_form_rejects_non_positive(admin_client, team):
     response = admin_client.post(
         reverse("penalties:catalog_create"),
-        {"description": "Bad", "amount_eur": 0, "type": "NORMAL", "active": "on"},
+        {
+            "description": "Bad",
+            "amount_eur": 0,
+            "type": "NORMAL",
+            f"team_active_{team.pk}": "on",
+            f"team_amount_{team.pk}": "1",
+        },
     )
     assert response.status_code == 200
     assert not PenaltyCatalogItem.objects.filter(description="Bad").exists()
 
 
-def test_assign_form_excludes_inactive_items(matchday_with_players):
-    from app.penalties.models import PenaltyType
+def test_create_requires_filled_team_rows(admin_client, team, other_team):
+    """Every fee row must be filled — a blank row blocks the save."""
+    response = admin_client.post(
+        reverse("penalties:catalog_create"),
+        {
+            "description": "Half filled",
+            "amount_eur": 5,
+            "type": "NORMAL",
+            f"team_active_{team.pk}": "on",
+            f"team_active_{other_team.pk}": "on",
+            f"team_amount_{team.pk}": "5",
+            # other team's row intentionally left blank
+        },
+    )
+    assert response.status_code == 200  # re-rendered with a required error
+    assert not PenaltyCatalogItem.objects.filter(description="Half filled").exists()
+
+
+def test_assign_form_excludes_inactive_items(matchday_with_players, catalog_normal, other_team):
+    """Deactivation is per team: only rows for the matchday's team count."""
+    from datetime import date
+
+    from app.matchdays.models import Matchday
+    from app.penalties.models import PenaltyType, TeamCatalogAmount
 
     md, _players = matchday_with_players(2)
     inactive = PenaltyCatalogItem.objects.create(
-        description="Old", amount_eur=1, type=PenaltyType.NORMAL, active=False
+        description="Old", amount_eur=1, type=PenaltyType.NORMAL
     )
+    TeamCatalogAmount.objects.create(
+        team=md.team, catalog_item=inactive, active=False, amount_eur=1
+    )
+
     form = PenaltyAssignForm(matchday=md)
-    assert inactive.pk not in form.fields["catalog_item"].queryset.values_list("pk", flat=True)
+    pks = list(form.fields["catalog_item"].queryset.values_list("pk", flat=True))
+    assert inactive.pk not in pks
+    assert catalog_normal.pk in pks  # no row -> active by default
+
+    # Another team's matchday is unaffected (no row for that team).
+    other_md = Matchday.objects.create(
+        team=other_team, opponent="X", venue="home", date=date(2026, 1, 1)
+    )
+    other_pks = list(
+        PenaltyAssignForm(matchday=other_md)
+        .fields["catalog_item"]
+        .queryset.values_list("pk", flat=True)
+    )
+    assert inactive.pk in other_pks
 
 
 # ---------------------------------------------------------------------------

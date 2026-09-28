@@ -20,3 +20,24 @@
     </div>
 </form>
 {% endblock %}
+{% block extra_js %}
+<script>
+(function () {
+    // The team select is a captaincy: enable it only for Admin/Captain roles.
+    // The server renders the same state (data-team-roles + disabled); this just
+    // keeps the dropdown in sync when the role select changes. Without the
+    // marker (create form) nothing happens.
+    var roleSelect = document.getElementById("id_role");
+    var teamSelect = document.getElementById("id_team");
+    if (!roleSelect || !teamSelect) return;
+    var allowed = teamSelect.getAttribute("data-team-roles");
+    if (!allowed) return;
+    allowed = allowed.split(",");
+    function sync() {
+        teamSelect.disabled = allowed.indexOf(roleSelect.value) === -1;
+    }
+    roleSelect.addEventListener("change", sync);
+    sync();
+})();
+</script>
+{% endblock %}

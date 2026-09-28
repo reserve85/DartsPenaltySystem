@@ -65,9 +65,13 @@ msgstr "Passwortbestätigung"
 msgid "A user with this email address already exists."
 msgstr "Ein Benutzer mit dieser E-Mail-Adresse existiert bereits."
 
-#: .\app\accounts\forms.py:95 .\app\accounts\forms.py:196
-msgid "A Captain needs an assigned team."
-msgstr "Ein Kapitän braucht ein zugewiesenes Team."
+#: .\app\accounts\forms.py:108 .\app\accounts\forms.py:220
+msgid "A team can only be assigned to Admin or Captain accounts."
+msgstr "Ein Team kann nur Konten mit der Rolle Admin oder Captain zugewiesen werden."
+
+#: .\app\accounts\forms.py:201
+msgid "Captain in this team"
+msgstr "Kapitän in diesem Team"
 
 #: .\app\accounts\forms.py:102
 msgid "The two password fields didn't match."
@@ -140,9 +144,9 @@ msgstr "Benutzer in der Warteliste können sich erst nach der Freigabe durch ein
 msgid "team"
 msgstr "Team"
 
-#: .\app\accounts\models.py:54
-msgid "Required for Captain role; ignored for Admin."
-msgstr "Für die Rolle Kapitän erforderlich; bei Admin wird es ignoriert."
+#: .\app\accounts\models.py:56
+msgid "Optional captaincy: the team this account leads. Allowed for Captain and Admin."
+msgstr "Optional: die Mannschaft, für die dieses Konto Kapitän ist (Rollen: Captain oder Admin)."
 
 #: .\app\accounts\models.py:62
 msgid "linked player"
@@ -2400,3 +2404,59 @@ msgstr "Ungelesen"
 #: app\templates\notifications\list.html
 msgid "No notifications yet."
 msgstr "Noch keine Benachrichtigungen."
+
+# --- Per-team catalog flags / integrated fee form / guarded delete (2026-09) ---
+#: app\penalties\views.py
+msgid "Catalog item deleted."
+msgstr "Katalogeintrag gelöscht."
+
+#: app\penalties\views.py
+msgid "This catalog item cannot be deleted because it is still referenced by penalties."
+msgstr "Dieser Katalogeintrag kann nicht gelöscht werden, weil noch Strafen auf ihn verweisen."
+
+#: app\templates\penalties\catalog_form.html
+msgid "Delete this catalog item?"
+msgstr "Diesen Katalogeintrag löschen?"
+
+#: app\templates\penalties\catalog_form.html
+msgid "All fees must be filled — when creating an entry the default amount is copied into every row automatically."
+msgstr "Alle Gebühren müssen gefüllt sein – beim Anlegen wird der Standardbetrag automatisch in jede Zeile kopiert."
+
+# --- Teams & Players: all teams + season flag / team form season field ---
+#: app\templates\teams\team_list.html
+msgid "Active in season"
+msgstr "Aktiv in der Saison"
+
+#: app\teams\forms.py
+msgid "Assign to season"
+msgstr "Saison zuweisen"
+
+#: app\teams\forms.py
+msgid "Optionally activate the new team in an existing season."
+msgstr "Aktiviert die neue Mannschaft optional in einer bestehenden Saison."
+
+#: app\templates\teams\team_list.html
+#, python-format
+msgid "The table below lists every team — the ✓/✗ shows who is active in %(name)s. The assignment matrix only shows the teams active in this season; manage them on the seasons page."
+msgstr "Die Tabelle unten listet alle Mannschaften — ✓/✗ zeigt, wer in der Saison %(name)s aktiv ist. Die Zuordnungsmatrix zeigt nur die in dieser Saison aktiven Mannschaften; diese verwaltet man auf den Seiten der Saisons."
+
+# --- New audit action labels (AuditAction, core app) ---
+#: app\core\models.py
+msgid "Catalog item created"
+msgstr "Katalogeintrag erstellt"
+
+#: app\core\models.py
+msgid "Catalog item updated"
+msgstr "Katalogeintrag aktualisiert"
+
+#: app\core\models.py
+msgid "Catalog item deleted"
+msgstr "Katalogeintrag gelöscht"
+
+#: app\core\models.py
+msgid "E-mail sent"
+msgstr "E-Mail gesendet"
+
+#: app\core\models.py
+msgid "E-mail failed"
+msgstr "E-Mail fehlgeschlagen"

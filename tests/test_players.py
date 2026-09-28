@@ -229,15 +229,65 @@ def test_player_detail_permission_matrix(
     from django.test import Client
 
     url = reverse("players:player_detail", args=[player.pk])
+    # READ is universal: every signed-in account may open every player page.
     assert admin_client.get(url).status_code == 200
     assert captain_client.get(url).status_code == 200  # captain of the player's team
-    assert other_captain_client.get(url).status_code == 403
-    assert player_client.get(url).status_code == 403  # not linked yet
+    assert other_captain_client.get(url).status_code == 200  # read: other teams too
+    assert player_client.get(url).status_code == 200  # read: any signed-in account
     assert Client().get(url).status_code == 302  # anonymous -> login
+
+    # WRITE stays scoped: the "Edit" button only shows for actual editors …
+    content = captain_client.get(url).content.decode()
+    assert reverse("players:player_update", args=[player.pk]) in content
+    content = other_captain_client.get(url).content.decode()
+    assert reverse("players:player_update", args=[player.pk]) not in content
 
     player_user.player_link = player
     player_user.save()
     assert player_client.get(url).status_code == 200  # own page after linking
+
+
+def test_captain_can_read_player_moved_to_another_team(
+    captain_client,
+    captain_user,
+    team,
+    other_team,
+    matchday_with_players,
+    catalog_normal,
+    admin_user,
+):
+    """The Gerold case: penalty from MY team, the player already moved away.
+
+    The player's memberships now point ONLY to the other team — the captain
+    of the old team must still be able to open the page (read) because the
+    old penalty keeps showing up in the captain's financial overview.
+    """
+    from app.penalties.services import assign_penalty
+    from app.players.models import PlayerTeam
+
+    md, players = matchday_with_players(2)
+    player = players[0]
+    assign_penalty(
+        matchday=md,
+        player=player,
+        catalog_item=catalog_normal,
+        amount_eur=5,
+        description_snapshot="Late arrival",
+        actor=admin_user,
+    )
+    # The player is MOVED to the other team (all assignments retargeted).
+    PlayerTeam.objects.filter(player=player).update(team=other_team)
+    assert not player.teams.filter(pk=team.pk).exists()
+
+    # The old penalty still belongs to the captain's team …
+    content = captain_client.get(reverse("dashboard:financial_overview")).content.decode()
+    assert player.name in content
+
+    # … so the captain must be able to open the player page (read).
+    response = captain_client.get(reverse("players:player_detail", args=[player.pk]))
+    assert response.status_code == 200
+    # But WRITE stays out of reach (not the player's team anymore).
+    assert reverse("players:player_update", args=[player.pk]) not in response.content.decode()
 
 
 def test_player_detail_shows_per_team_balance(
