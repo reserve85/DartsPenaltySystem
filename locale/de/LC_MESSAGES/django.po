@@ -2460,3 +2460,212 @@ msgstr "E-Mail gesendet"
 #: app\core\models.py
 msgid "E-mail failed"
 msgstr "E-Mail fehlgeschlagen"
+
+#: app\core\models.py (hand-added: invitation audit actions)
+msgid "Invitation sent"
+msgstr "Einladung gesendet"
+
+msgid "Invitation resent"
+msgstr "Einladung erneut gesendet"
+
+msgid "Invitation cancelled"
+msgstr "Einladung storniert"
+
+msgid "Invitation accepted"
+msgstr "Einladung angenommen"
+
+msgid "Invitation obsolete"
+msgstr "Einladung obsolet"
+
+#: app\accounts\models.py (hand-added: ApprovalStatus + Invitation)
+msgid "Invited"
+msgstr "Eingeladen"
+
+msgid "invitation"
+msgstr "Einladung"
+
+msgid "invitations"
+msgstr "Einladungen"
+
+msgid "token"
+msgstr "Token"
+
+msgid "invited by"
+msgstr "eingeladen von"
+
+msgid "invited at"
+msgstr "Einladungsdatum"
+
+msgid "expires at"
+msgstr "Ablaufdatum"
+
+msgid "accepted at"
+msgstr "Annahmedatum"
+
+msgid "Single-use acceptance token — blanked on acceptance, regenerated on resend."
+msgstr "Einmaliger Annahme-Token — bei der Annahme geleert, beim erneuten Senden neu erzeugt."
+
+msgid "Optional captaincy pre-assignment — only valid for Captain/Admin."
+msgstr "Optionale vorab zugewiesene Kapitänsrolle — nur für Kapitän/Administrator gültig."
+
+msgid "Pre-assigned player — linked to the user on acceptance."
+msgstr "Vorab zugewiesener Spieler — wird bei der Annahme mit dem Konto verknüpft."
+
+#: app\accounts\forms.py (hand-added: invitation forms + requested login gate)
+msgid "You have been invited but have not completed your registration yet. Please use the link in your invitation e-mail."
+msgstr "Du wurdest eingeladen, aber deine Registrierung wurde noch nicht abgeschlossen. Bitte verwende den Link in deiner Einladungs-E-Mail."
+
+msgid "Optional: pre-assigned player — linked to the account when the invitation is accepted."
+msgstr "Optional: vorab zugewiesener Spieler — wird bei der Annahme der Einladung mit dem Konto verknüpft."
+
+msgid "Already invited — cancel or resend the existing invitation."
+msgstr "Bereits eingeladen — bestehende Einladung stornieren oder erneut senden."
+
+msgid "This player is already reserved by another invitation."
+msgstr "Dieser Spieler ist bereits durch eine andere Einladung reserviert."
+
+#: app\accounts\services.py (hand-added: invitation services)
+msgid "This invitation has already been used."
+msgstr "Diese Einladung wurde bereits verwendet."
+
+msgid "This invitation has expired. Please ask the club to resend it."
+msgstr "Diese Einladung ist abgelaufen. Bitte lass sie vom Verein erneut senden."
+
+msgid "This invitation is no longer valid."
+msgstr "Diese Einladung ist nicht mehr gültig."
+
+msgid "The pre-assigned player has already been linked to another account."
+msgstr "Der vorab zugewiesene Spieler wurde bereits mit einem anderen Konto verknüpft."
+
+msgid "This invitation has already been accepted."
+msgstr "Diese Einladung wurde bereits angenommen."
+
+msgid "The pre-assigned player has meanwhile been linked to another account — cancel this invitation instead."
+msgstr "Der vorab zugewiesene Spieler wurde inzwischen mit einem anderen Konto verknüpft — storniere diese Einladung stattdessen."
+
+#: app\accounts\views.py (hand-added: invitation views)
+msgid "Cancel or resend the invitation instead."
+msgstr "Storniere oder sende die Einladung stattdessen erneut."
+
+msgid "Invitation created, but the e-mail could not be sent — use Resend."
+msgstr "Einladung erstellt, aber die E-Mail konnte nicht gesendet werden — nutze „Erneut senden“."
+
+msgid "Invitation sent."
+msgstr "Einladung gesendet."
+
+msgid "Invitation resent."
+msgstr "Einladung erneut gesendet."
+
+msgid "Invitation cancelled — the account was deleted."
+msgstr "Einladung storniert — das Konto wurde gelöscht."
+
+msgid "Registration completed — you can now log in."
+msgstr "Registrierung abgeschlossen — du kannst dich jetzt anmelden."
+
+#: app\notifications\services.py + app\notifications\inapp.py (hand-added)
+msgid "You have been invited to {site}"
+msgstr "Du wurdest zu {site} eingeladen"
+
+msgid "Invited user completed registration: {email}"
+msgstr "Eingeladener Nutzer hat die Registrierung abgeschlossen: {email}"
+
+msgid "Invited user completed registration"
+msgstr "Eingeladener Nutzer hat die Registrierung abgeschlossen"
+
+#: app\templates\emails\invitation.* + invitation_completed.* (hand-added)
+msgid "You have been invited to create your account on the Darts Penalty Manager:"
+msgstr "Du wurdest eingeladen, dein Konto im Darts Penalty Manager anzulegen:"
+
+msgid "Invited by"
+msgstr "Eingeladen von"
+
+msgid "Valid until"
+msgstr "Gültig bis"
+
+msgid "Accept invitation"
+msgstr "Einladung annehmen"
+
+msgid "If you don't know this club, ignore this message."
+msgstr "Wenn du diesen Verein nicht kennst, ignoriere diese Nachricht."
+
+msgid "You have been invited"
+msgstr "Du wurdest eingeladen"
+
+msgid "An invited user has completed their registration:"
+msgstr "Ein eingeladener Nutzer hat seine Registrierung abgeschlossen:"
+
+msgid "Completed at"
+msgstr "Abgeschlossen am"
+
+msgid "Open user list"
+msgstr "Benutzerliste öffnen"
+
+msgid "Invitation completed"
+msgstr "Einladung abgeschlossen"
+
+#: app\templates\accounts\invite_list.html (hand-added)
+msgid "Invitations"
+msgstr "Einladungen"
+
+msgid "New invitation"
+msgstr "Neue Einladung"
+
+msgid "An invited account is created immediately and becomes active when the invited person sets a password via the link in the e-mail — no approval step."
+msgstr "Ein eingeladenes Konto wird sofort angelegt und aktiviert sich, sobald die eingeladene Person über den Link in der E-Mail ein Passwort setzt — kein Freigabeschritt."
+
+msgid "Invited at"
+msgstr "Eingeladen am"
+
+msgid "Accepted"
+msgstr "Angenommen"
+
+msgid "Expires soon"
+msgstr "Läuft bald ab"
+
+msgid "Expired"
+msgstr "Abgelaufen"
+
+msgid "Open"
+msgstr "Offen"
+
+msgid "Resend first to get a new link."
+msgstr "Zuerst erneut senden, um einen neuen Link zu erhalten."
+
+msgid "Copy link"
+msgstr "Link kopieren"
+
+msgid "Accept link"
+msgstr "Annahmelink"
+
+msgid "Cancel this invitation? The account will be deleted."
+msgstr "Diese Einladung stornieren? Das Konto wird gelöscht."
+
+msgid "Resend"
+msgstr "Erneut senden"
+
+msgid "No invitations yet."
+msgstr "Noch keine Einladungen."
+
+#: app\templates\accounts\invite_form.html (hand-added)
+msgid "The invited person receives an e-mail with an acceptance link (valid for %(days)s days). Setting a password completes the registration — no approval step follows."
+msgstr "Die eingeladene Person erhält eine E-Mail mit einem Annahmelink (gültig für %(days)s Tage). Das Setzen eines Passworts schließt die Registrierung ab — es folgt kein Freigabeschritt."
+
+msgid "Send invitation"
+msgstr "Einladung senden"
+
+#: app\templates\account\invite_accept.html (hand-added)
+msgid "Accept your invitation"
+msgstr "Nimm deine Einladung an"
+
+msgid "Please contact the club if you think you should still have access."
+msgstr "Bitte kontaktiere den Verein, falls du der Meinung bist, dass du noch Zugang haben solltest."
+
+msgid "You will play as %(player)s."
+msgstr "Du wirst als %(player)s spielen."
+
+msgid "Set password and activate account"
+msgstr "Passwort festlegen und Konto aktivieren"
+
+#: app\templates\account\login.html + signup.html (hand-added)
+msgid "Were you invited? Use the link in your invitation e-mail."
+msgstr "Wurdest du eingeladen? Verwende den Link in deiner Einladungs-E-Mail."

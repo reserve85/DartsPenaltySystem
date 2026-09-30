@@ -1161,3 +1161,209 @@ msgstr ""
 #: app\core\models.py
 msgid "E-mail failed"
 msgstr ""
+
+#: app\core\models.py (hand-added: invitation audit actions)
+msgid "Invitation sent"
+msgstr ""
+
+msgid "Invitation resent"
+msgstr ""
+
+msgid "Invitation cancelled"
+msgstr ""
+
+msgid "Invitation accepted"
+msgstr ""
+
+msgid "Invitation obsolete"
+msgstr ""
+
+#: app\accounts\models.py (hand-added: ApprovalStatus + Invitation)
+msgid "Invited"
+msgstr ""
+
+msgid "invitation"
+msgstr ""
+
+msgid "invitations"
+msgstr ""
+
+msgid "token"
+msgstr ""
+
+msgid "invited by"
+msgstr ""
+
+msgid "invited at"
+msgstr ""
+
+msgid "expires at"
+msgstr ""
+
+msgid "accepted at"
+msgstr ""
+
+msgid "Single-use acceptance token — blanked on acceptance, regenerated on resend."
+msgstr ""
+
+msgid "Optional captaincy pre-assignment — only valid for Captain/Admin."
+msgstr ""
+
+msgid "Pre-assigned player — linked to the user on acceptance."
+msgstr ""
+
+#: app\accounts\forms.py (hand-added: invitation forms + requested login gate)
+msgid "You have been invited but have not completed your registration yet. Please use the link in your invitation e-mail."
+msgstr ""
+
+msgid "Optional: pre-assigned player — linked to the account when the invitation is accepted."
+msgstr ""
+
+msgid "Already invited — cancel or resend the existing invitation."
+msgstr ""
+
+msgid "This player is already reserved by another invitation."
+msgstr ""
+
+#: app\accounts\services.py (hand-added: invitation services)
+msgid "This invitation has already been used."
+msgstr ""
+
+msgid "This invitation has expired. Please ask the club to resend it."
+msgstr ""
+
+msgid "This invitation is no longer valid."
+msgstr ""
+
+msgid "The pre-assigned player has already been linked to another account."
+msgstr ""
+
+msgid "This invitation has already been accepted."
+msgstr ""
+
+msgid "The pre-assigned player has meanwhile been linked to another account — cancel this invitation instead."
+msgstr ""
+
+#: app\accounts\views.py (hand-added: invitation views)
+msgid "Cancel or resend the invitation instead."
+msgstr ""
+
+msgid "Invitation created, but the e-mail could not be sent — use Resend."
+msgstr ""
+
+msgid "Invitation sent."
+msgstr ""
+
+msgid "Invitation resent."
+msgstr ""
+
+msgid "Invitation cancelled — the account was deleted."
+msgstr ""
+
+msgid "Registration completed — you can now log in."
+msgstr ""
+
+#: app\notifications\services.py + app\notifications\inapp.py (hand-added)
+msgid "You have been invited to {site}"
+msgstr ""
+
+msgid "Invited user completed registration: {email}"
+msgstr ""
+
+msgid "Invited user completed registration"
+msgstr ""
+
+#: app\templates\emails\invitation.* + invitation_completed.* (hand-added)
+msgid "You have been invited to create your account on the Darts Penalty Manager:"
+msgstr ""
+
+msgid "Invited by"
+msgstr ""
+
+msgid "Valid until"
+msgstr ""
+
+msgid "Accept invitation"
+msgstr ""
+
+msgid "If you don't know this club, ignore this message."
+msgstr ""
+
+msgid "You have been invited"
+msgstr ""
+
+msgid "An invited user has completed their registration:"
+msgstr ""
+
+msgid "Completed at"
+msgstr ""
+
+msgid "Open user list"
+msgstr ""
+
+msgid "Invitation completed"
+msgstr ""
+
+#: app\templates\accounts\invite_list.html (hand-added)
+msgid "Invitations"
+msgstr ""
+
+msgid "New invitation"
+msgstr ""
+
+msgid "An invited account is created immediately and becomes active when the invited person sets a password via the link in the e-mail — no approval step."
+msgstr ""
+
+msgid "Invited at"
+msgstr ""
+
+msgid "Accepted"
+msgstr ""
+
+msgid "Expires soon"
+msgstr ""
+
+msgid "Expired"
+msgstr ""
+
+msgid "Resend first to get a new link."
+msgstr ""
+
+msgid "Copy link"
+msgstr ""
+
+msgid "Accept link"
+msgstr ""
+
+msgid "Cancel this invitation? The account will be deleted."
+msgstr ""
+
+msgid "Resend"
+msgstr ""
+
+msgid "No invitations yet."
+msgstr ""
+
+#: app\templates\accounts\invite_form.html (hand-added)
+msgid "The invited person receives an e-mail with an acceptance link (valid for %(days)s days). Setting a password completes the registration — no approval step follows."
+msgstr ""
+
+msgid "Send invitation"
+msgstr ""
+
+#: app\templates\account\invite_accept.html (hand-added)
+msgid "Accept your invitation"
+msgstr ""
+
+msgid "Please contact the club if you think you should still have access."
+msgstr ""
+
+msgid "You will play as %(player)s."
+msgstr ""
+
+msgid "Set password and activate account"
+msgstr ""
+
+#: app\templates\account\login.html + signup.html (hand-added)
+msgid "Were you invited? Use the link in your invitation e-mail."
+msgstr ""
