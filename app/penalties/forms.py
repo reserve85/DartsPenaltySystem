@@ -6,6 +6,7 @@ from django import forms
 from django.utils.translation import gettext_lazy as _
 
 from app.core.permissions import user_is_admin
+from app.matchdays.models import MatchdayPlayer
 from app.penalties.models import (
     Penalty,
     PenaltyCatalogItem,
@@ -40,7 +41,7 @@ class CatalogItemForm(forms.ModelForm):
 
     class Meta:
         model = PenaltyCatalogItem
-        fields: ClassVar[list] = ["description", "amount_eur", "type"]
+        fields: ClassVar[list] = ["description", "amount_eur", "type", "affects_both_players"]
 
     def __init__(self, *args, user=None, **kwargs):
         super().__init__(*args, **kwargs)
@@ -87,7 +88,9 @@ class CatalogItemForm(forms.ModelForm):
             )
 
         # BoundFields consumed by the template (model fields vs. team table).
-        self.core_fields = [self[name] for name in ("description", "amount_eur", "type")]
+        self.core_fields = [
+            self[name] for name in ("description", "amount_eur", "type", "affects_both_players")
+        ]
         self.team_field_rows = [
             {
                 "team": team,
@@ -144,6 +147,7 @@ class CatalogItemForm(forms.ModelForm):
             "description": item.description,
             "amount_eur": item.amount_eur,
             "type": item.type,
+            "affects_both_players": item.affects_both_players,
             "teams": {
                 row.team_id: {"active": row.active, "amount": row.amount_eur}
                 for row in item.team_amounts.all()
@@ -163,6 +167,7 @@ class CatalogItemForm(forms.ModelForm):
             "description": item.description,
             "amount_eur": _format_amount(item.amount_eur),
             "type": item.type,
+            "affects_both_players": item.affects_both_players,
             "active_teams": active_teams,
             "team_amounts": {str(row.team_id): _format_amount(row.amount_eur) for row in rows},
         }
@@ -181,6 +186,11 @@ class CatalogItemForm(forms.ModelForm):
             }
         if before["type"] != item.type:
             changes["type"] = {"from": before["type"], "to": item.type}
+        if before["affects_both_players"] != item.affects_both_players:
+            changes["affects_both_players"] = {
+                "from": before["affects_both_players"],
+                "to": item.affects_both_players,
+            }
         after_rows = {row.team_id: row for row in item.team_amounts.all()}
         for team_pk in sorted(set(before["teams"]) | set(after_rows)):
             old = before["teams"].get(team_pk)
@@ -221,6 +231,19 @@ class PenaltyAssignForm(forms.Form):
         label=_("Player"),
         help_text=_("For group penalties this player is the trigger (e.g. the 180 thrower)."),
     )
+    # Optional second player of a DOUBLES penalty — only offered when the
+    # selected catalog item is flagged ``affects_both_players`` (JS toggles the
+    # field, ``clean()`` drops it otherwise). Empty = NO doubles partner.
+    double_partner = forms.ModelChoiceField(
+        queryset=Player.objects.none(),
+        required=False,
+        label=_("Doubles partner"),
+        empty_label=_("No doubles partner"),
+        help_text=_(
+            "Optional — only offered when the catalog item applies to both "
+            "doubles players (e.g. a low dart achieved together)."
+        ),
+    )
     amount_eur = forms.DecimalField(
         max_digits=8,
         decimal_places=2,
@@ -240,9 +263,10 @@ class PenaltyAssignForm(forms.Form):
         self.matchday = matchday
         if matchday is not None:
             participant_ids = matchday.participants.values_list("player_id", flat=True)
-            self.fields["player"].queryset = Player.objects.filter(pk__in=participant_ids).order_by(
-                "name"
-            )
+            participant_qs = Player.objects.filter(pk__in=participant_ids).order_by("name")
+            self.fields["player"].queryset = participant_qs
+            # Same roster for the optional doubles partner (independent clone).
+            self.fields["double_partner"].queryset = participant_qs.all()
             if matchday.team_id is not None:
                 # Only items active for THIS team's matchday (per-team state —
                 # a missing row means active, an explicit row decides alone).
@@ -255,6 +279,13 @@ class PenaltyAssignForm(forms.Form):
         self.manual_ids = list(
             self.fields["catalog_item"]
             .queryset.filter(type=PenaltyType.MANUAL)
+            .values_list("pk", flat=True)
+        )
+        # pks of the items flagged "applies to both doubles players" — the
+        # template only offers the doubles-partner select for those.
+        self.both_ids = list(
+            self.fields["catalog_item"]
+            .queryset.filter(affects_both_players=True)
             .values_list("pk", flat=True)
         )
 
@@ -279,8 +310,39 @@ class PenaltyAssignForm(forms.Form):
             # Without a second participant there is nobody to charge — the
             # service would raise, so catch it here as a friendly form error.
             self.add_error("catalog_item", _("A group penalty needs at least two participants."))
-        if cleaned.get("player") is None:
+        player = cleaned.get("player")
+        if player is None:
             self.add_error("player", _("Select a player."))
+            return cleaned
+
+        # Doubles partner: only meaningful (and only offered) for catalog items
+        # flagged ``affects_both_players`` — a stale tab / disabled select may
+        # still post a value, which is silently dropped instead of failing.
+        partner = cleaned.get("double_partner")
+        if partner is not None:
+            if catalog_item is None or not catalog_item.affects_both_players:
+                cleaned["double_partner"] = None
+            elif partner.pk == player.pk:
+                self.add_error("double_partner", _("The doubles partner must be another player."))
+            elif (
+                catalog_item.type == PenaltyType.PER_ALL_OTHER_MATCHDAY_PLAYERS
+                and self.matchday is not None
+            ):
+                # Trigger + partner are BOTH excluded — somebody must remain.
+                remaining = (
+                    MatchdayPlayer.objects.filter(matchday=self.matchday)
+                    .exclude(player=player)
+                    .exclude(player=partner)
+                    .count()
+                )
+                if remaining < 1:
+                    self.add_error(
+                        "double_partner",
+                        _(
+                            "A group penalty with a doubles partner needs at least "
+                            "three participants."
+                        ),
+                    )
         return cleaned
 
 

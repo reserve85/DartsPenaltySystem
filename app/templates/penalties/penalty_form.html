@@ -51,15 +51,32 @@
     const description = document.getElementById("id_description");
     if (!select || !amount) return;
     const manualIds = {{ manual_ids|default:"[]" }};
+    const bothIds = {{ both_ids|default:"[]" }};
+    const player = document.getElementById("id_player");
+    const partner = document.getElementById("id_double_partner");
+    const partnerBox = partner ? partner.closest(".mb-3") : null;
     const amountBox = amount.closest(".mb-3");
+    function syncPartner() {
+        // The partner select is only offered for flagged catalog items; while
+        // hidden it is disabled (never posted) and may not repeat the player.
+        const appliesBoth = bothIds.indexOf(parseInt(select.value, 10)) !== -1;
+        if (partnerBox) partnerBox.classList.toggle("d-none", !appliesBoth);
+        if (partner) partner.disabled = !appliesBoth;
+        if (partner && partner.value && player && partner.value === player.value) {
+            partner.value = "";  // NO doubles partner is always a valid choice
+        }
+    }
     function sync() {
         const isManual = manualIds.indexOf(parseInt(select.value, 10)) !== -1;
         if (amountBox) amountBox.classList.toggle("d-none", !isManual);
         amount.disabled = !isManual;
         amount.required = isManual;
         if (description) description.required = isManual;
+        syncPartner();
     }
     select.addEventListener("change", sync);
+    if (player) player.addEventListener("change", syncPartner);
+    if (partner) partner.addEventListener("change", syncPartner);
     sync();
 })();
 </script>

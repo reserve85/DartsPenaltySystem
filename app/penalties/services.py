@@ -95,19 +95,48 @@ def _assert_participant(matchday, player) -> None:
         raise ValidationError(_("Player is not a participant of this matchday."))
 
 
+def _assert_double_partner(*, matchday, trigger, partner, catalog_item) -> None:
+    """Guard the optional DOUBLES partner (flag + distinct + participant).
+
+    ``partner`` may always be ``None`` — "no doubles partner" is a valid choice.
+    """
+    if partner is None:
+        return
+    if not catalog_item.affects_both_players:
+        raise ValidationError(_("This catalog item does not apply to both doubles players."))
+    if partner.pk == trigger.pk:
+        raise ValidationError(_("The doubles partner must be another player."))
+    _assert_participant(matchday, partner)
+
+
 def assign_penalty(
-    *, matchday, player, catalog_item, amount_eur=None, description_snapshot=None, actor
+    *,
+    matchday,
+    player,
+    catalog_item,
+    amount_eur=None,
+    description_snapshot=None,
+    double_partner=None,
+    actor,
 ) -> Penalty:
-    """Create ONE penalty row + one PENALTY_ASSIGNED audit entry.
+    """Create ONE penalty row (+ a second for a doubles partner) + audit entries.
 
     NORMAL items always use the effective catalog amount for the matchday's
     team — a passed-in ``amount_eur`` is IGNORED (an individual amount is a
     MANUAL entry). MANUAL items require an individual ``amount_eur`` and a
     non-empty ``description_snapshot`` (the reason/comment).
+
+    With ``double_partner`` (only allowed for catalog items flagged
+    ``affects_both_players``) BOTH players are charged the same amount/comment;
+    the two rows share one ``group_id`` so edit/soft-delete hit the pair.
+    Returns the row of ``player`` (the doubles lead).
     """
     if catalog_item.type not in (PenaltyType.NORMAL, PenaltyType.MANUAL):
         raise ValidationError(_("A normal penalty requires a NORMAL catalog item."))
     _assert_participant(matchday, player)
+    _assert_double_partner(
+        matchday=matchday, trigger=player, partner=double_partner, catalog_item=catalog_item
+    )
 
     if catalog_item.type == PenaltyType.MANUAL:
         if amount_eur is None:
@@ -123,43 +152,77 @@ def assign_penalty(
         amount = catalog_item.amount_for_team(matchday.team)
         text = (description_snapshot or "").strip() or catalog_item.description
 
+    metadata: dict | None = {"manual": True} if catalog_item.type == PenaltyType.MANUAL else None
+    if double_partner is not None:
+        metadata = dict(metadata or {})
+        metadata["double_partner_pk"] = double_partner.pk
+    # Both rows of a doubles penalty share ONE group_id: edit and soft delete
+    # always act on the pair (same semantics as any other group rows).
+    group_id = uuid.uuid4().hex if double_partner is not None else None
+    charged = [player] if double_partner is None else [player, double_partner]
+    created: list[Penalty] = []
     with transaction.atomic():
-        penalty = Penalty.objects.create(
-            matchday=matchday,
-            player=player,
-            catalog_item=catalog_item,
-            description_snapshot=text,
-            amount_eur=amount,
-            created_by=actor,
-        )
-        metadata = {"manual": True} if catalog_item.type == PenaltyType.MANUAL else None
-        log_action(AuditAction.PENALTY_ASSIGNED, user=actor, target=penalty, metadata=metadata)
-    _notify_penalty_created(penalty)
-    return penalty
+        for charged_player in charged:
+            penalty = Penalty.objects.create(
+                matchday=matchday,
+                player=charged_player,
+                catalog_item=catalog_item,
+                description_snapshot=text,
+                amount_eur=amount,
+                group_id=group_id,
+                created_by=actor,
+            )
+            created.append(penalty)
+            log_action(AuditAction.PENALTY_ASSIGNED, user=actor, target=penalty, metadata=metadata)
+    # Notify only after the rows are committed — a rollback must not mail.
+    for penalty in created:
+        _notify_penalty_created(penalty)
+    return created[0]
 
 
-def assign_group_penalty(*, matchday, trigger_player, catalog_item, actor) -> list[Penalty]:
+def assign_group_penalty(
+    *, matchday, trigger_player, catalog_item, double_partner=None, actor
+) -> list[Penalty]:
     """Group penalty: one +amount row for EVERY OTHER participant (M4).
 
-    The trigger player (e.g. the 180 thrower) receives no row. All rows share
-    one ``group_id``; one PENALTY_ASSIGNED audit entry per generated row.
+    The trigger player (e.g. the 180 thrower) receives no row. With a
+    ``double_partner`` (only allowed for catalog items flagged
+    ``affects_both_players``) that player is EXCLUDED as well — every remaining
+    participant pays. All rows share one ``group_id``; one PENALTY_ASSIGNED
+    audit entry per generated row.
     """
     if catalog_item.type != PenaltyType.PER_ALL_OTHER_MATCHDAY_PLAYERS:
         raise ValidationError(_("A group penalty requires a group catalog item."))
     _assert_participant(matchday, trigger_player)
+    _assert_double_partner(
+        matchday=matchday,
+        trigger=trigger_player,
+        partner=double_partner,
+        catalog_item=catalog_item,
+    )
 
     total = MatchdayPlayer.objects.filter(matchday=matchday).count()
-    if total < 2:
-        raise ValidationError(_("A group penalty needs at least two participants."))
+    excluded = 1 if double_partner is None else 2  # trigger (+ doubles partner)
+    if total <= excluded:
+        if double_partner is None:
+            raise ValidationError(_("A group penalty needs at least two participants."))
+        raise ValidationError(
+            _("A group penalty with a doubles partner needs at least three participants.")
+        )
 
-    other_participants = (
-        MatchdayPlayer.objects.filter(matchday=matchday)
-        .exclude(player=trigger_player)
-        .select_related("player")
+    other_participants = MatchdayPlayer.objects.filter(matchday=matchday).exclude(
+        player=trigger_player
     )
+    if double_partner is not None:
+        # The doubles partner is excluded TOO — all others receive the penalty.
+        other_participants = other_participants.exclude(player=double_partner)
+    other_participants = other_participants.select_related("player")
     # Per-team catalog fee: each team may override the default amount.
     amount = catalog_item.amount_for_team(matchday.team)
     group_id = uuid.uuid4().hex
+    metadata: dict = {"group_id": group_id, "trigger_player_pk": trigger_player.pk}
+    if double_partner is not None:
+        metadata["double_partner_pk"] = double_partner.pk
     created: list[Penalty] = []
     with transaction.atomic():
         for participation in other_participants:
@@ -177,7 +240,7 @@ def assign_group_penalty(*, matchday, trigger_player, catalog_item, actor) -> li
                 AuditAction.PENALTY_ASSIGNED,
                 user=actor,
                 target=penalty,
-                metadata={"group_id": group_id, "trigger_player_pk": trigger_player.pk},
+                metadata=metadata,
             )
     # Notify only after the group is committed — a rollback must not mail.
     for penalty in created:

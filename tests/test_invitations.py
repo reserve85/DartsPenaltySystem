@@ -466,7 +466,9 @@ def test_resend_defensive_check_when_player_linked_by_bypass(admin_client, admin
     old_token = invitation.token
     with pytest.raises(ValidationError) as exc:
         resend_invitation(invitation, actor=admin_user)
-    assert "cancel this invitation" in str(exc.value).lower()
+    # en / de catalog — mirrors the view-level assertion below.
+    message = str(exc.value).lower()
+    assert "cancel this invitation" in message or "storniere diese einladung" in message
 
     # view level: error message, no new token, no second mail
     response = admin_client.post(reverse("accounts:invite_resend", args=[invitation.pk]))

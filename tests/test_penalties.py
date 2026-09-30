@@ -226,3 +226,151 @@ def test_assert_can_manage_penalty(captain_user, other_captain_user, player_user
         assert_can_manage_penalty(other_captain_user, penalty)
     with pytest.raises(PermissionDenied):
         assert_can_manage_penalty(player_user, penalty)
+
+
+# ---------------------------------------------------------------------------
+# DOUBLES (Doppelspiel) — optional second player on flagged catalog items
+# ---------------------------------------------------------------------------
+def test_normal_with_doubles_partner_charges_both(
+    matchday_with_players, catalog_doubles, admin_user
+):
+    md, players = matchday_with_players(3)
+    penalty = assign_penalty(
+        matchday=md,
+        player=players[0],
+        catalog_item=catalog_doubles,
+        description_snapshot="Lowdart",
+        double_partner=players[1],
+        actor=admin_user,
+    )
+
+    assert Penalty.objects.count() == 2
+    assert {row.player_id for row in Penalty.objects.all()} == {
+        players[0].pk,
+        players[1].pk,
+    }
+    partner_row = Penalty.objects.get(player=players[1])
+    # Both rows form ONE group — edit/soft delete act on the pair (M4).
+    assert penalty.group_id is not None
+    assert partner_row.group_id == penalty.group_id
+    assert partner_row.amount_eur == penalty.amount_eur == Decimal(5)
+    assert partner_row.description_snapshot == "Lowdart"
+
+    entries = list(AuditLog.objects.filter(action=AuditAction.PENALTY_ASSIGNED))
+    assert len(entries) == 2
+    assert all(entry.metadata["double_partner_pk"] == players[1].pk for entry in entries)
+
+
+def test_normal_flagged_without_partner_stays_single_row(
+    matchday_with_players, catalog_doubles, admin_user
+):
+    """Choosing NO doubles partner is always allowed (optional field)."""
+    md, players = matchday_with_players(3)
+    penalty = assign_penalty(
+        matchday=md,
+        player=players[0],
+        catalog_item=catalog_doubles,
+        double_partner=None,
+        actor=admin_user,
+    )
+    assert Penalty.objects.count() == 1
+    assert penalty.group_id is None
+    assert not any(
+        entry.metadata.get("double_partner_pk")
+        for entry in AuditLog.objects.filter(action=AuditAction.PENALTY_ASSIGNED)
+    )
+
+
+def test_doubles_partner_rejected_without_flag(matchday_with_players, catalog_normal, admin_user):
+    md, players = matchday_with_players(3)
+    with pytest.raises(DjangoValidationError):
+        assign_penalty(
+            matchday=md,
+            player=players[0],
+            catalog_item=catalog_normal,
+            double_partner=players[1],
+            actor=admin_user,
+        )
+    assert Penalty.objects.count() == 0
+
+
+def test_doubles_partner_must_be_another_participant(
+    matchday_with_players, catalog_doubles, team, admin_user
+):
+    md, players = matchday_with_players(3)
+    with pytest.raises(DjangoValidationError):  # same player as the lead
+        assign_penalty(
+            matchday=md,
+            player=players[0],
+            catalog_item=catalog_doubles,
+            double_partner=players[0],
+            actor=admin_user,
+        )
+    outsider = Player.objects.create(name="Outsider", team=team)
+    with pytest.raises(DjangoValidationError):  # not on the matchday roster
+        assign_penalty(
+            matchday=md,
+            player=players[0],
+            catalog_item=catalog_doubles,
+            double_partner=outsider,
+            actor=admin_user,
+        )
+    assert Penalty.objects.count() == 0
+
+
+def test_group_penalty_excludes_both_doubles_players(
+    matchday_with_players, catalog_group_doubles, admin_user
+):
+    md, players = matchday_with_players(6)
+    created = assign_group_penalty(
+        matchday=md,
+        trigger_player=players[0],
+        catalog_item=catalog_group_doubles,
+        double_partner=players[1],
+        actor=admin_user,
+    )
+
+    assert len(created) == 4  # trigger AND partner excluded
+    charged = {row.player_id for row in Penalty.objects.all()}
+    assert charged == {player.pk for player in players[2:]}
+    assert all(row.group_id == created[0].group_id for row in Penalty.objects.all())
+    entries = list(AuditLog.objects.filter(action=AuditAction.PENALTY_ASSIGNED))
+    assert len(entries) == 4
+    assert all(entry.metadata["double_partner_pk"] == players[1].pk for entry in entries)
+
+
+def test_group_penalty_with_partner_needs_three_participants(
+    matchday_with_players, catalog_group_doubles, admin_user
+):
+    """Two players = trigger + partner — nobody remains to be charged."""
+    md, players = matchday_with_players(2)
+    with pytest.raises(DjangoValidationError):
+        assign_group_penalty(
+            matchday=md,
+            trigger_player=players[0],
+            catalog_item=catalog_group_doubles,
+            double_partner=players[1],
+            actor=admin_user,
+        )
+    assert Penalty.objects.count() == 0
+
+
+def test_doubles_pair_edit_and_delete_hit_both_rows(
+    matchday_with_players, catalog_doubles, admin_user
+):
+    md, players = matchday_with_players(3)
+    penalty = assign_penalty(
+        matchday=md,
+        player=players[0],
+        catalog_item=catalog_doubles,
+        description_snapshot="Lowdart",
+        double_partner=players[1],
+        actor=admin_user,
+    )
+
+    edit_penalty(penalty=penalty, actor=admin_user, amount_eur=10)
+    assert all(row.amount_eur == Decimal(10) for row in Penalty.objects.all())
+
+    soft_delete_penalty(penalty=penalty, actor=admin_user)
+    assert Penalty.objects.count() == 0
+    assert Penalty.all_objects().count() == 2

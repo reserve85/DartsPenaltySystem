@@ -1367,3 +1367,34 @@ msgstr ""
 #: app\templates\account\login.html + signup.html (hand-added)
 msgid "Were you invited? Use the link in your invitation e-mail."
 msgstr ""
+
+#: app\penalties\models.py (hand-added)
+msgid "Affects both doubles players?"
+msgstr ""
+
+msgid "Offer the doubles partner when this penalty is assigned — e.g. a low dart both players achieved together."
+msgstr ""
+
+#: app\penalties\forms.py (hand-added)
+msgid "Doubles partner"
+msgstr ""
+
+msgid "No doubles partner"
+msgstr ""
+
+msgid "Optional — only offered when the catalog item applies to both doubles players (e.g. a low dart achieved together)."
+msgstr ""
+
+msgid "The doubles partner must be another player."
+msgstr ""
+
+msgid "A group penalty with a doubles partner needs at least three participants."
+msgstr ""
+
+#: app\penalties\services.py (hand-added)
+msgid "This catalog item does not apply to both doubles players."
+msgstr ""
+
+#: app\penalties\views.py (hand-added)
+msgid "Penalty assigned to both players."
+msgstr ""

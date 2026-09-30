@@ -208,6 +208,7 @@ class PenaltyCreateView(LoginRequiredMixin, View):
                 "form": form,
                 "matchday": matchday,
                 "manual_ids": getattr(form, "manual_ids", []),
+                "both_ids": getattr(form, "both_ids", []),
             },
         )
 
@@ -221,12 +222,15 @@ class PenaltyCreateView(LoginRequiredMixin, View):
         if form.is_valid():
             catalog_item = form.cleaned_data["catalog_item"]
             player = form.cleaned_data["player"]
+            # Optional (flagged items only) — ``clean()`` cleared it otherwise.
+            double_partner = form.cleaned_data.get("double_partner")
             try:
                 if catalog_item.type == PenaltyType.PER_ALL_OTHER_MATCHDAY_PLAYERS:
                     created = assign_group_penalty(
                         matchday=matchday,
                         trigger_player=player,
                         catalog_item=catalog_item,
+                        double_partner=double_partner,
                         actor=request.user,
                     )
                 else:
@@ -237,6 +241,7 @@ class PenaltyCreateView(LoginRequiredMixin, View):
                         catalog_item=catalog_item,
                         amount_eur=form.cleaned_data.get("amount_eur"),
                         description_snapshot=form.cleaned_data.get("description"),
+                        double_partner=double_partner,
                         actor=request.user,
                     )
             except ValidationError as exc:
@@ -251,6 +256,8 @@ class PenaltyCreateView(LoginRequiredMixin, View):
                     _("%(count)s penalties assigned to the other participants.")
                     % {"count": len(created)},
                 )
+            elif double_partner is not None:
+                messages.success(request, _("Penalty assigned to both players."))
             else:
                 messages.success(request, _("Penalty assigned."))
             return redirect("matchdays:matchday_detail", pk=matchday.pk)

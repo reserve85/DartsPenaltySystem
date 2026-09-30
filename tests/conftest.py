@@ -178,6 +178,28 @@ def catalog_manual(db):
 
 
 @pytest.fixture
+def catalog_doubles(db):
+    """NORMAL item flagged "applies to both doubles players" (Doppelspiel)."""
+    return PenaltyCatalogItem.objects.create(
+        description="Lowdart",
+        amount_eur=5,
+        type=PenaltyType.NORMAL,
+        affects_both_players=True,
+    )
+
+
+@pytest.fixture
+def catalog_group_doubles(db):
+    """Group item flagged "applies to both doubles players" (Doppelspiel)."""
+    return PenaltyCatalogItem.objects.create(
+        description="Doubles 180",
+        amount_eur=1,
+        type=PenaltyType.PER_ALL_OTHER_MATCHDAY_PLAYERS,
+        affects_both_players=True,
+    )
+
+
+@pytest.fixture
 def admin_client(db, admin_user):
     return _login_client(admin_user)
 

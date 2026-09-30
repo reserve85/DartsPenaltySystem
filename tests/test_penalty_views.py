@@ -306,3 +306,177 @@ def test_group_penalty_view_single_participant_shows_form_error(
     flat = " ".join(str(error) for group in errors.values() for error in group)
     assert "participants" in flat or "Teilnehmer" in flat  # en / de catalog
     assert Penalty.objects.count() == 0
+
+
+# ---------------------------------------------------------------------------
+# DOUBLES (Doppelspiel) — catalog flag + optional partner on assignment
+# ---------------------------------------------------------------------------
+def test_catalog_create_and_edit_with_doubles_flag(admin_client, team):
+    """The doubles checkbox is written on create AND on edit (Bearbeiten)."""
+    response = admin_client.post(
+        reverse("penalties:catalog_create"),
+        {
+            "description": "Lowdart",
+            "amount_eur": 5,
+            "type": "NORMAL",
+            "affects_both_players": "on",
+            f"team_active_{team.pk}": "on",
+            f"team_amount_{team.pk}": "5",
+        },
+    )
+    assert response.status_code == 302
+    item = PenaltyCatalogItem.objects.get(description="Lowdart")
+    assert item.affects_both_players is True
+    created = AuditLog.objects.get(action=AuditAction.CATALOG_ITEM_CREATED, target_id=item.pk)
+    assert created.metadata["affects_both_players"] is True
+
+    response = admin_client.post(
+        reverse("penalties:catalog_update", args=[item.pk]),
+        {
+            "description": "Lowdart",
+            "amount_eur": 5,
+            "type": "NORMAL",
+            # checkbox left out -> off again
+            f"team_amount_{team.pk}": "5",
+        },
+    )
+    assert response.status_code == 302
+    item.refresh_from_db()
+    assert item.affects_both_players is False
+    updated = AuditLog.objects.get(action=AuditAction.CATALOG_ITEM_UPDATED, target_id=item.pk)
+    assert updated.metadata["changes"]["affects_both_players"] == {"from": True, "to": False}
+
+
+def test_assign_form_offers_partner_only_for_flagged_items(
+    matchday_with_players, catalog_normal, catalog_doubles
+):
+    md, players = matchday_with_players(3)
+    form = PenaltyAssignForm(matchday=md)
+    assert form.both_ids == [catalog_doubles.pk]
+    # The partner select offers exactly the matchday's participants.
+    assert set(form.fields["double_partner"].queryset.values_list("pk", flat=True)) == {
+        player.pk for player in players
+    }
+
+    # A posted partner for an UNFLAGGED item is dropped by clean().
+    bound = PenaltyAssignForm(
+        data={
+            "catalog_item": catalog_normal.pk,
+            "player": players[0].pk,
+            "double_partner": players[1].pk,
+        },
+        matchday=md,
+    )
+    assert bound.is_valid(), bound.errors
+    assert bound.cleaned_data["double_partner"] is None
+
+
+def test_assign_normal_with_partner_via_view(admin_client, matchday_with_players, catalog_doubles):
+    md, players = matchday_with_players(4)
+    url = reverse("penalties:penalty_create", args=[md.pk])
+    response = admin_client.post(
+        url,
+        {
+            "catalog_item": catalog_doubles.pk,
+            "player": players[0].pk,
+            "double_partner": players[1].pk,
+        },
+    )
+    assert response.status_code == 302
+    assert {row.player_id for row in Penalty.objects.all()} == {
+        players[0].pk,
+        players[1].pk,
+    }
+
+    # No partner selected -> only the lead player is charged.
+    response = admin_client.post(url, {"catalog_item": catalog_doubles.pk, "player": players[2].pk})
+    assert response.status_code == 302
+    assert Penalty.objects.filter(player=players[2].pk).count() == 1
+    assert Penalty.objects.count() == 3
+
+
+def test_assign_group_with_partner_via_view(
+    admin_client, matchday_with_players, catalog_group_doubles
+):
+    md, players = matchday_with_players(5)
+    response = admin_client.post(
+        reverse("penalties:penalty_create", args=[md.pk]),
+        {
+            "catalog_item": catalog_group_doubles.pk,
+            "player": players[0].pk,
+            "double_partner": players[1].pk,
+        },
+    )
+    assert response.status_code == 302
+    charged = {row.player_id for row in Penalty.objects.all()}
+    assert len(charged) == 3
+    assert players[0].pk not in charged and players[1].pk not in charged
+
+
+def test_partner_ignored_for_unflagged_item_via_view(
+    admin_client, matchday_with_players, catalog_normal
+):
+    md, players = matchday_with_players(3)
+    response = admin_client.post(
+        reverse("penalties:penalty_create", args=[md.pk]),
+        {
+            "catalog_item": catalog_normal.pk,
+            "player": players[0].pk,
+            "double_partner": players[1].pk,
+        },
+    )
+    assert response.status_code == 302
+    assert Penalty.objects.count() == 1  # only the lead player
+
+
+def test_partner_equal_to_player_shows_form_error(
+    admin_client, matchday_with_players, catalog_doubles
+):
+    md, players = matchday_with_players(3)
+    response = admin_client.post(
+        reverse("penalties:penalty_create", args=[md.pk]),
+        {
+            "catalog_item": catalog_doubles.pk,
+            "player": players[0].pk,
+            "double_partner": players[0].pk,
+        },
+    )
+    assert response.status_code == 200  # re-rendered with an error, no row
+    assert "double_partner" in response.context["form"].errors
+    assert Penalty.objects.count() == 0
+
+
+def test_group_partner_needs_three_participants_via_view(
+    admin_client, matchday_with_players, catalog_group_doubles
+):
+    md, players = matchday_with_players(2)
+    response = admin_client.post(
+        reverse("penalties:penalty_create", args=[md.pk]),
+        {
+            "catalog_item": catalog_group_doubles.pk,
+            "player": players[0].pk,
+            "double_partner": players[1].pk,
+        },
+    )
+    assert response.status_code == 200  # form error, never a 500
+    errors = response.context["form"].errors
+    flat = " ".join(str(error) for group in errors.values() for error in group)
+    assert "participants" in flat or "Teilnehmer" in flat  # en / de catalog
+    assert Penalty.objects.count() == 0
+
+
+def test_penalty_form_page_renders_partner_select(
+    admin_client, matchday_with_players, catalog_doubles, catalog_normal
+):
+    """The assign page offers the partner select + the JS gating list (both_ids)."""
+    md, _players = matchday_with_players(3)
+    content = admin_client.get(reverse("penalties:penalty_create", args=[md.pk])).content.decode()
+
+    assert 'id="id_double_partner"' in content
+    # Label + the always-available "no partner" option (en / de catalog).
+    assert "Doubles partner" in content or "Doppelspieler" in content
+    assert "No doubles partner" in content or "Kein Doppelspieler" in content
+    # JS only shows the select for flagged items: exactly catalog_doubles.
+    both_ids_line = next(line for line in content.splitlines() if "const bothIds" in line)
+    assert str(catalog_doubles.pk) in both_ids_line
+    assert str(catalog_normal.pk) not in both_ids_line

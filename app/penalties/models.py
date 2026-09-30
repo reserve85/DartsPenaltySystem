@@ -49,6 +49,16 @@ class PenaltyCatalogItem(models.Model):
         default=PenaltyType.NORMAL,
         verbose_name=_("type"),
     )
+    # Doubles (Doppelspiel): when checked, assigning this penalty OFFERS an
+    # optional second player (the doubles partner) — see PenaltyAssignForm.
+    affects_both_players = models.BooleanField(
+        default=False,
+        verbose_name=_("Affects both doubles players?"),
+        help_text=_(
+            "Offer the doubles partner when this penalty is assigned — e.g. a "
+            "low dart both players achieved together."
+        ),
+    )
     # NOTE: there is NO global "active" switch anymore — activation exists per
     # team only (``TeamCatalogAmount.active``; a missing row means active).
     created_at = models.DateTimeField(auto_now_add=True, verbose_name=_("created at"))

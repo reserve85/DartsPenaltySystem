@@ -2332,9 +2332,6 @@ msgstr "Teilnehmer gespeichert."
 msgid "Today"
 msgstr "Heute"
 
-#~ msgid "Open"
-#~ msgstr "Öffnen"
-
 #~ msgid "Balance (owed)"
 #~ msgstr "Saldo (geschuldet)"
 
@@ -2669,3 +2666,34 @@ msgstr "Passwort festlegen und Konto aktivieren"
 #: app\templates\account\login.html + signup.html (hand-added)
 msgid "Were you invited? Use the link in your invitation e-mail."
 msgstr "Wurdest du eingeladen? Verwende den Link in deiner Einladungs-E-Mail."
+
+#: app\penalties\models.py (hand-added)
+msgid "Affects both doubles players?"
+msgstr "Betrifft im Doppelspiel beide Spieler?"
+
+msgid "Offer the doubles partner when this penalty is assigned — e.g. a low dart both players achieved together."
+msgstr "Beim Verhängen dieser Strafe den Doppelspieler anbieten – z. B. ein gemeinsam erzielter Lowdart."
+
+#: app\penalties\forms.py (hand-added)
+msgid "Doubles partner"
+msgstr "Doppelspieler"
+
+msgid "No doubles partner"
+msgstr "Kein Doppelspieler"
+
+msgid "Optional — only offered when the catalog item applies to both doubles players (e.g. a low dart achieved together)."
+msgstr "Optional – nur angeboten, wenn der Katalogeintrag beide Doppelspieler betrifft (z. B. ein gemeinsam erzielter Lowdart)."
+
+msgid "The doubles partner must be another player."
+msgstr "Der Doppelspieler muss ein anderer Spieler sein."
+
+msgid "A group penalty with a doubles partner needs at least three participants."
+msgstr "Eine Gruppenstraße mit Doppelspieler braucht mindestens drei Teilnehmer."
+
+#: app\penalties\services.py (hand-added)
+msgid "This catalog item does not apply to both doubles players."
+msgstr "Dieser Katalogeintrag betrifft nicht beide Doppelspieler."
+
+#: app\penalties\views.py (hand-added)
+msgid "Penalty assigned to both players."
+msgstr "Strafe für beide Spieler verhängt."

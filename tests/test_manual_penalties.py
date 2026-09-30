@@ -263,3 +263,36 @@ def test_manual_penalty_blocks_matchday_hard_delete(
     response = admin_client.post(reverse("matchdays:matchday_delete", args=[md.pk]))
     assert response.status_code == 302
     assert Matchday.objects.filter(pk=md.pk).exists()
+
+
+def test_manual_with_doubles_partner_charges_both(matchday_with_players, admin_user):
+    """MANUAL + flagged item: same individual amount and comment for BOTH."""
+    from app.penalties.models import PenaltyCatalogItem, PenaltyType
+
+    md, players = matchday_with_players(3)
+    item = PenaltyCatalogItem.objects.create(
+        description="Manual doubles",
+        amount_eur=1,
+        type=PenaltyType.MANUAL,
+        affects_both_players=True,
+    )
+    penalty = assign_penalty(
+        matchday=md,
+        player=players[0],
+        catalog_item=item,
+        amount_eur=3,
+        description_snapshot="shared comment",
+        double_partner=players[1],
+        actor=admin_user,
+    )
+
+    assert Penalty.objects.count() == 2
+    assert {row.player_id for row in Penalty.objects.all()} == {
+        players[0].pk,
+        players[1].pk,
+    }
+    assert all(row.amount_eur == Decimal(3) for row in Penalty.objects.all())
+    assert all(row.description_snapshot == "shared comment" for row in Penalty.objects.all())
+    assert penalty.group_id is not None
+    entry = AuditLog.objects.get(action=AuditAction.PENALTY_ASSIGNED, target_id=penalty.pk)
+    assert entry.metadata == {"manual": True, "double_partner_pk": players[1].pk}
