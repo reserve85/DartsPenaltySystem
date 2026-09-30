@@ -9,6 +9,9 @@
                 <p class="text-muted small">
                     {% translate "After registration, an administrator must release your account before you can log in. You will receive an e-mail as soon as your account is active." %}
                 </p>
+                <p class="text-muted small">
+                    {% translate "Were you invited? Use the link in your invitation e-mail." %}
+                </p>
                 <form method="post" action="{% url 'account_signup' %}" novalidate>
                     {% csrf_token %}
                     {% include "includes/_form_errors.html" with form=form %}

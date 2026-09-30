@@ -9,6 +9,10 @@
             {% translate "Pending approvals" %}
             {% if pending_count %}<span class="badge text-bg-warning">{{ pending_count }}</span>{% endif %}
         </a>
+        <a class="btn btn-outline-info" href="{% url 'accounts:invite_list' %}">
+            {% translate "Invitations" %}
+            {% if invite_count %}<span class="badge text-bg-info">{{ invite_count }}</span>{% endif %}
+        </a>
         <a class="btn btn-primary" href="{% url 'accounts:user_create' %}">{% translate "New user" %}</a>
     </div>
 </div>
@@ -27,23 +31,34 @@
         </thead>
         <tbody>
         {% for user in users %}
+            {% with invite=user.pending_invitation %}
             <tr>
                 <td>{{ user.email }}</td>
                 <td>
                     {% if user.player_link %}
                         <a href="{% url 'players:player_detail' user.player_link.pk %}">{{ user.player_link.name }}</a>
+                    {% elif invite and invite.player %}
+                        {{ invite.player.name }}
                     {% else %}<span class="text-muted">–</span>{% endif %}
                 </td>
                 <td>
-                    {% if user.role %}<span class="badge text-bg-secondary">{{ user.role|capfirst }}</span>
+                    {% if user.approval_status == "requested" and invite %}
+                        <span class="badge text-bg-secondary">{{ invite.get_role_display }}</span>
+                    {% elif user.role %}<span class="badge text-bg-secondary">{{ user.role|capfirst }}</span>
                     {% else %}<span class="text-muted">–</span>{% endif %}
                 </td>
-                <td>{{ user.team.name|default:"–" }}</td>
+                <td>
+                    {% if user.team %}{{ user.team.name }}
+                    {% elif invite and invite.team %}{{ invite.team.name }}
+                    {% else %}–{% endif %}
+                </td>
                 <td>
                     {% if user.approval_status == "pending" %}
                         <span class="badge text-bg-warning">{% translate "Pending" %}</span>
                     {% elif user.approval_status == "rejected" %}
                         <span class="badge text-bg-danger">{% translate "Rejected" %}</span>
+                    {% elif user.approval_status == "requested" %}
+                        <span class="badge text-bg-info">{% translate "Invited" %}</span>
                     {% else %}
                         <span class="badge text-bg-success">{% translate "Approved" %}</span>
                     {% endif %}
@@ -52,11 +67,17 @@
                 <td class="text-end text-nowrap">
                     {% if user.approval_status == "pending" %}
                         <a class="btn btn-sm btn-outline-warning" href="{% url 'accounts:approval' user.pk %}">{% translate "Review" %}</a>
+                    {% elif user.approval_status == "requested" %}
+                        {# No Edit/Review: a wrong entry is fixed with Cancel/Resend on the invitations screen. #}
+                        <a class="btn btn-sm btn-outline-info" href="{% url 'accounts:invite_list' %}">{% translate "Invitations" %}</a>
                     {% endif %}
                     {# No "Deactivate" button anymore — the edit form's "Active" checkbox owns activation (same rule as players). #}
-                    <a class="btn btn-sm btn-outline-secondary" href="{% url 'accounts:user_update' user.pk %}">{% translate "Edit" %}</a>
+                    {% if user.approval_status != "requested" %}
+                        <a class="btn btn-sm btn-outline-secondary" href="{% url 'accounts:user_update' user.pk %}">{% translate "Edit" %}</a>
+                    {% endif %}
                 </td>
             </tr>
+            {% endwith %}
         {% empty %}
             <tr><td colspan="7" class="text-center text-muted py-4">{% translate "No users yet." %}</td></tr>
         {% endfor %}

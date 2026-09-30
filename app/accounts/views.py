@@ -292,6 +292,12 @@ class InviteCreateView(GroupRequiredMixin, LoginRequiredMixin, FormView):
     template_name = "accounts/invite_form.html"
     success_url = reverse_lazy("accounts:invite_list")
 
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        # The form template documents the link validity (env-configurable).
+        context["invite_expire_days"] = settings.INVITE_EXPIRE_DAYS
+        return context
+
     def form_valid(self, form):
         data = form.cleaned_data
         invitation = create_invitation(

@@ -28,6 +28,9 @@
                     {{ redirect_field }}
                     <button type="submit" class="btn btn-primary w-100">{% translate "Sign in" %}</button>
                 </form>
+                <p class="text-muted small mt-3 mb-0">
+                    {% translate "Were you invited? Use the link in your invitation e-mail." %}
+                </p>
                 <div class="d-flex justify-content-between mt-3 small">
                     <a href="{% url 'account_reset_password' %}">{% translate "Forgot your password?" %}</a>
                     <a href="{% url 'account_signup' %}">{% translate "Create an account" %}</a>

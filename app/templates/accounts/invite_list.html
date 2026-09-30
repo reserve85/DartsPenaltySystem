@@ -1,0 +1,97 @@
+{% extends "base.html" %}
+{% load i18n %}
+{% block title %}{% translate "Invitations" %} – {% translate "Darts Penalty Manager" %}{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h1 class="h3 mb-0">{% translate "Invitations" %}</h1>
+    <div class="d-flex gap-2">
+        <a class="btn btn-outline-secondary" href="{% url 'accounts:user_list' %}">{% translate "Back to users" %}</a>
+        <a class="btn btn-primary" href="{% url 'accounts:invite_create' %}">{% translate "New invitation" %}</a>
+    </div>
+</div>
+<p class="text-muted">{% translate "An invited account is created immediately and becomes active when the invited person sets a password via the link in the e-mail — no approval step." %}</p>
+<div class="table-responsive">
+    <table class="table table-striped align-middle">
+        <thead>
+        <tr>
+            <th>{% translate "Email" %}</th>
+            <th>{% translate "Role" %}</th>
+            <th>{% translate "Team" %}</th>
+            <th>{% translate "Linked player" %}</th>
+            <th>{% translate "Invited by" %}</th>
+            <th>{% translate "Invited at" %}</th>
+            <th>{% translate "Status" %}</th>
+            <th></th>
+        </tr>
+        </thead>
+        <tbody>
+        {% for invitation in invitations %}
+            <tr>
+                <td>{{ invitation.user.email }}</td>
+                <td><span class="badge text-bg-secondary">{{ invitation.get_role_display }}</span></td>
+                <td>{{ invitation.team.name|default:"–" }}</td>
+                <td>{{ invitation.player.name|default:"–" }}</td>
+                <td>{{ invitation.invited_by.email|default:"–" }}</td>
+                <td>{{ invitation.created_at|date:"d.m.Y H:i" }}</td>
+                <td>
+                    {% if invitation.status == "accepted" %}
+                        <span class="badge text-bg-secondary">{% translate "Accepted" %}</span>
+                        <div class="small text-muted">{{ invitation.accepted_at|date:"d.m.Y H:i" }}</div>
+                    {% elif invitation.status == "expired" %}
+                        <span class="badge text-bg-danger">{% translate "Expired" %}</span>
+                    {% elif invitation.status == "expiring" %}
+                        <span class="badge text-bg-warning">{% translate "Expires soon" %}</span>
+                    {% else %}
+                        <span class="badge text-bg-success">{% translate "Open" %}</span>
+                    {% endif %}
+                </td>
+                <td class="text-end text-nowrap">
+                    {% if invitation.is_open %}
+                        <div class="input-group input-group-sm mb-1" style="max-width: 24rem;">
+                            <input type="text" class="form-control" readonly
+                                   aria-label="{% translate 'Accept link' %}"
+                                   value="{{ request.scheme }}://{{ request.get_host }}{% url 'accounts:invite_accept' invitation.token %}">
+                            <button type="button" class="btn btn-outline-secondary"
+                                    data-copy="{{ request.scheme }}://{{ request.get_host }}{% url 'accounts:invite_accept' invitation.token %}">{% translate "Copy link" %}</button>
+                        </div>
+                    {% elif invitation.status == "expired" %}
+                        <div class="small text-muted mb-1">{% translate "Resend first to get a new link." %}</div>
+                    {% endif %}
+                    {% if not invitation.accepted_at %}
+                        <form method="post" action="{% url 'accounts:invite_resend' invitation.pk %}" class="d-inline">
+                            {% csrf_token %}
+                            <button type="submit" class="btn btn-sm btn-outline-primary">{% translate "Resend" %}</button>
+                        </form>
+                        <form method="post" action="{% url 'accounts:invite_cancel' invitation.pk %}" class="d-inline"
+                              data-confirm="{% translate 'Cancel this invitation? The account will be deleted.' %}">
+                            {% csrf_token %}
+                            <button type="submit" class="btn btn-sm btn-outline-danger">{% translate "Cancel" %}</button>
+                        </form>
+                    {% endif %}
+                </td>
+            </tr>
+        {% empty %}
+            <tr><td colspan="8" class="text-center text-muted py-4">{% translate "No invitations yet." %}</td></tr>
+        {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% include "includes/_pagination.html" with page_obj=page_obj %}
+{% endblock %}
+{% block extra_js %}
+<script>
+(function () {
+    // "Copy link": put the accept URL into the clipboard (HTTPS/localhost only
+    // per browser policy — the readonly input stays selectable as fallback).
+    document.querySelectorAll("button[data-copy]").forEach(function (btn) {
+        btn.addEventListener("click", function () {
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+                navigator.clipboard.writeText(btn.getAttribute("data-copy")).then(function () {
+                    btn.classList.add("btn-success");
+                });
+            }
+        });
+    });
+})();
+</script>
+{% endblock %}

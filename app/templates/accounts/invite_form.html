@@ -1,0 +1,44 @@
+{% extends "base.html" %}
+{% load i18n %}
+{% block title %}{% translate "New invitation" %} – {% translate "Darts Penalty Manager" %}{% endblock %}
+{% block content %}
+<h1 class="h3 mb-3">{% translate "New invitation" %}</h1>
+<p class="text-muted">{% blocktranslate with days=invite_expire_days %}The invited person receives an e-mail with an acceptance link (valid for {{ days }} days). Setting a password completes the registration — no approval step follows.{% endblocktranslate %}</p>
+<form method="post" novalidate class="card card-body">
+    {% csrf_token %}
+    {% include "includes/_form_errors.html" with form=form %}
+    {% for field in form %}
+        <div class="mb-3">
+            <label for="{{ field.id_for_label }}" class="form-label">{{ field.label }}</label>
+            {{ field }}
+            {% if field.help_text %}<div class="form-text">{{ field.help_text }}</div>{% endif %}
+            {% for error in field.errors %}<div class="text-danger small">{{ error }}</div>{% endfor %}
+        </div>
+    {% endfor %}
+    <div class="d-flex gap-2">
+        <button type="submit" class="btn btn-primary">{% translate "Send invitation" %}</button>
+        <a class="btn btn-outline-secondary" href="{% url 'accounts:invite_list' %}">{% translate "Cancel" %}</a>
+    </div>
+</form>
+{% endblock %}
+{% block extra_js %}
+<script>
+(function () {
+    // The team select is a captaincy: enable it only for Admin/Captain roles.
+    // The server renders the same state (data-team-roles + disabled); this just
+    // keeps the dropdown in sync when the role select changes (same contract
+    // as user_form.html).
+    var roleSelect = document.getElementById("id_role");
+    var teamSelect = document.getElementById("id_team");
+    if (!roleSelect || !teamSelect) return;
+    var allowed = teamSelect.getAttribute("data-team-roles");
+    if (!allowed) return;
+    allowed = allowed.split(",");
+    function sync() {
+        teamSelect.disabled = allowed.indexOf(roleSelect.value) === -1;
+    }
+    roleSelect.addEventListener("change", sync);
+    sync();
+})();
+</script>
+{% endblock %}
