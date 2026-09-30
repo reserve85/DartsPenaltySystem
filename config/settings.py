@@ -100,6 +100,13 @@ if "smtp" in EMAIL_BACKEND.lower() and not EMAIL_HOST and not TESTING:
 ASYNC_NOTIFICATIONS = (not TESTING) and env_bool("NOTIFICATIONS_ASYNC", "True")
 
 # ---------------------------------------------------------------------------
+# Invitations (admin-sent account invitations, see app.accounts.services)
+# ---------------------------------------------------------------------------
+# Days until an invitation link expires; the admin can always Resend (new
+# token + fresh timer). Documented in .env.example / README.
+INVITE_EXPIRE_DAYS = env_int("INVITE_EXPIRE_DAYS", 14)
+
+# ---------------------------------------------------------------------------
 # Logging — console output for the project's own loggers (container-friendly).
 # ``app.*`` (notifications, accounts adapter, …) logs INFO+ to stdout;
 # Django's built-in loggers keep their defaults (disable_existing_loggers off).

@@ -5,15 +5,18 @@ Users and Players are decoupled entities (D2); ``player_link`` is an optional
 auto-derived from group membership (H1); see ``app/accounts/signals.py``.
 """
 
+from datetime import timedelta
 from typing import ClassVar
 
 from django.conf import settings
 from django.contrib.auth.models import AbstractUser
+from django.core.exceptions import ObjectDoesNotExist
 from django.db import models
+from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
 
 from app.accounts.managers import UserManager
-from app.core.choices import ThemeChoice
+from app.core.choices import RoleChoice, ThemeChoice
 from app.core.permissions import (
     _invalidate_role_cache,
     user_is_admin,
@@ -28,6 +31,10 @@ class ApprovalStatus(models.TextChoices):
     PENDING = "pending", _("Pending approval")
     APPROVED = "approved", _("Approved")
     REJECTED = "rejected", _("Rejected")
+    # Admin-sent invitation: created with an unusable password; becomes
+    # "approved" the moment the invitee accepts (sets a password) — no
+    # approval step, see ``app.accounts.services.accept_invitation``.
+    REQUESTED = "requested", _("Invited")
 
 
 class User(AbstractUser):
@@ -117,6 +124,21 @@ class User(AbstractUser):
         """True when the admin approval workflow allows a login."""
         return self.approval_status == ApprovalStatus.APPROVED or self.is_superuser
 
+    @property
+    def pending_invitation(self):
+        """The open invitation of this user — or ``None``.
+
+        Template-safe accessor (``user_list.html``): the reverse one-to-one
+        raises ``RelatedObjectDoesNotExist`` when no row exists, which templates
+        swallow silently — this property returns ``None`` instead so the
+        template never depends on that behaviour. Resolved at call time (the
+        ``Invitation`` model is defined below), so a plain try/except suffices.
+        """
+        try:
+            return self.invitation
+        except ObjectDoesNotExist:
+            return None
+
     def refresh_from_db(self, using=None, fields=None, **kwargs):
         """Group flags are not model fields — drop the role cache on reload."""
         _invalidate_role_cache(self)
@@ -128,3 +150,101 @@ class User(AbstractUser):
     class Meta:
         verbose_name = _("user")
         verbose_name_plural = _("users")
+
+
+class Invitation(models.Model):
+    """One admin-sent invitation: pre-assignment payload + single-use token.
+
+    The payload (role, team, player) lives HERE — not on ``User.player_link`` —
+    so the pre-assigned player stays free (``user_account IS NULL``) for every
+    other registration form while the request is open. The payload is applied
+    to the ``User`` only when the invitee accepts
+    (``app.accounts.services.accept_invitation``).
+
+    The companion user row is created at invite time with
+    ``approval_status="requested"`` and an unusable password (reserves the
+    unique e-mail address); cancel deletes the user, cascade deletes this row.
+    """
+
+    user = models.OneToOneField(
+        User,
+        on_delete=models.CASCADE,
+        related_name="invitation",
+        verbose_name=_("user"),
+    )
+    token = models.CharField(
+        _("token"),
+        max_length=64,
+        unique=True,
+        db_index=True,
+        help_text=_("Single-use acceptance token — blanked on acceptance, regenerated on resend."),
+    )
+    role = models.CharField(
+        _("role"),
+        max_length=16,
+        choices=RoleChoice.choices,
+        default=RoleChoice.PLAYER,
+    )
+    team = models.ForeignKey(
+        "teams.Team",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="invitations",
+        verbose_name=_("team"),
+        help_text=_("Optional captaincy pre-assignment — only valid for Captain/Admin."),
+    )
+    player = models.ForeignKey(
+        "players.Player",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="invitations",
+        verbose_name=_("player"),
+        help_text=_("Pre-assigned player — linked to the user on acceptance."),
+    )
+    invited_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="invited_accounts",
+        verbose_name=_("invited by"),
+    )
+    created_at = models.DateTimeField(_("invited at"), auto_now_add=True)
+    expires_at = models.DateTimeField(_("expires at"), db_index=True)
+    accepted_at = models.DateTimeField(_("accepted at"), null=True, blank=True)
+
+    @property
+    def is_open(self) -> bool:
+        """Reservation filter: unaccepted AND not yet expired."""
+        return self.accepted_at is None and self.expires_at > timezone.now()
+
+    @property
+    def is_expired(self) -> bool:
+        return self.accepted_at is None and self.expires_at <= timezone.now()
+
+    @property
+    def expiring_soon(self) -> bool:
+        """Open and less than 3 days of validity left (list badge)."""
+        return self.is_open and self.expires_at <= timezone.now() + timedelta(days=3)
+
+    @property
+    def status(self) -> str:
+        """List badge state: open / expiring / expired / accepted."""
+        if self.accepted_at is not None:
+            return "accepted"
+        if self.is_expired:
+            return "expired"
+        if self.expiring_soon:
+            return "expiring"
+        return "open"
+
+    def __str__(self):
+        return f"invitation for {self.user}"
+
+    class Meta:
+        ordering: ClassVar[list] = ["-created_at"]
+        indexes: ClassVar[list] = [models.Index(fields=["accepted_at", "expires_at"])]
+        verbose_name = _("invitation")
+        verbose_name_plural = _("invitations")

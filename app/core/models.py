@@ -46,6 +46,11 @@ class AuditAction(models.TextChoices):
     CATALOG_ITEM_DELETED = "catalog_item_deleted", _("Catalog item deleted")
     EMAIL_SENT = "email_sent", _("E-mail sent")
     EMAIL_FAILED = "email_failed", _("E-mail failed")
+    USER_INVITE_SENT = "user_invite_sent", _("Invitation sent")
+    USER_INVITE_RESENT = "user_invite_resent", _("Invitation resent")
+    USER_INVITE_CANCELLED = "user_invite_cancelled", _("Invitation cancelled")
+    USER_INVITE_ACCEPTED = "user_invite_accepted", _("Invitation accepted")
+    USER_INVITE_OBSOLETED = "user_invite_obsoleted", _("Invitation obsolete")
 
 
 class AuditLog(models.Model):
