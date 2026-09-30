@@ -43,7 +43,9 @@ def _nav_section(request) -> str:
             return _FINANCIAL
         # penalty assign/edit belongs to the matchday it was opened from
         return _MATCHDAYS
-    if namespace == "accounts" and name.startswith("user"):
+    if namespace == "accounts" and name.startswith(("user", "invite", "approval")):
+        # user_list/user_create/… + invite_list/invite_create/… + approval_list
+        # all live in the Administration dropdown (same highlight).
         return _ADMIN_AREA
     if name in {
         "audit_list",

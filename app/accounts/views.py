@@ -11,22 +11,37 @@ from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.contrib.auth.models import Group
+from django.core.exceptions import ValidationError
 from django.db import transaction
 from django.http import JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse_lazy
+from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
 from django.views import View
-from django.views.generic import CreateView, ListView, UpdateView
+from django.views.generic import CreateView, FormView, ListView, UpdateView
 
-from app.accounts.forms import SettingsForm, UserApprovalForm, UserCreateForm, UserUpdateForm
-from app.accounts.models import ApprovalStatus, User
-from app.accounts.services import mark_emails_verified
+from app.accounts.forms import (
+    InvitationAcceptForm,
+    InviteCreateForm,
+    SettingsForm,
+    UserApprovalForm,
+    UserCreateForm,
+    UserUpdateForm,
+)
+from app.accounts.models import ApprovalStatus, Invitation, User
+from app.accounts.services import (
+    accept_invitation,
+    cancel_invitation,
+    create_invitation,
+    mark_emails_verified,
+    resend_invitation,
+)
 from app.core.choices import ThemeChoice
 from app.core.models import AuditAction
 from app.core.permissions import GROUP_ADMIN, GROUP_PLAYER, GroupRequiredMixin
 from app.core.services import log_action
-from app.notifications.inapp import clear_approval_notifications
+from app.notifications.inapp import clear_approval_notifications, notify_invitation_completed
 from app.notifications.services import notification_service
 from app.players.models import Player
 
@@ -39,13 +54,18 @@ class UserListView(GroupRequiredMixin, LoginRequiredMixin, ListView):
     paginate_by = 25
 
     def get_queryset(self):
-        return User.objects.select_related("team", "player_link").order_by("email")
+        # select_related("invitation") feeds the pre-assignment columns of
+        # invited rows via the safe user.pending_invitation accessor.
+        return User.objects.select_related("team", "player_link", "invitation").order_by("email")
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context["pending_count"] = User.objects.filter(
             approval_status=ApprovalStatus.PENDING
         ).count()
+        # Open requests INCLUDING expired ones — they need a resend/cancel
+        # decision, so they must stay visible on the badge.
+        context["invite_count"] = Invitation.objects.filter(accepted_at__isnull=True).count()
         return context
 
 
@@ -167,12 +187,30 @@ class UserCreateView(GroupRequiredMixin, LoginRequiredMixin, CreateView):
         return response
 
 
+def _invite_guard(request, pk):
+    """Block edit/deactivate of requested (invited, not yet accepted) users.
+
+    A wrong entry is fixed with Cancel — editing here would bypass the
+    invitation payload. Returns the redirect response, or ``None`` to proceed.
+    """
+    if User.objects.filter(pk=pk, approval_status=ApprovalStatus.REQUESTED).exists():
+        messages.error(request, _("Cancel or resend the invitation instead."))
+        return redirect("accounts:invite_list")
+    return None
+
+
 class UserUpdateView(GroupRequiredMixin, LoginRequiredMixin, UpdateView):
     groups: ClassVar[list] = [GROUP_ADMIN]
     model = User
     form_class = UserUpdateForm
     template_name = "accounts/user_form.html"
     success_url = reverse_lazy("accounts:user_list")
+
+    def get(self, request, *args, **kwargs):
+        return _invite_guard(request, kwargs.get("pk")) or super().get(request, *args, **kwargs)
+
+    def post(self, request, *args, **kwargs):
+        return _invite_guard(request, kwargs.get("pk")) or super().post(request, *args, **kwargs)
 
     def _other_admins_exist(self) -> bool:
         """True when another account could still manage the system."""
@@ -211,6 +249,9 @@ class UserDeactivateView(GroupRequiredMixin, LoginRequiredMixin, View):
     groups: ClassVar[list] = [GROUP_ADMIN]
 
     def post(self, request, pk):
+        blocked = _invite_guard(request, pk)
+        if blocked is not None:
+            return blocked
         user = get_object_or_404(User, pk=pk)
         if user == request.user:
             messages.error(request, _("You cannot deactivate your own account."))
@@ -220,6 +261,176 @@ class UserDeactivateView(GroupRequiredMixin, LoginRequiredMixin, View):
         log_action(AuditAction.USER_DEACTIVATED, user=request.user, target=user)
         messages.success(request, _("User deactivated."))
         return redirect("accounts:user_list")
+
+
+# ---------------------------------------------------------------------------
+# Invitations (admin lifecycle + public acceptance)
+# ---------------------------------------------------------------------------
+def _invite_error_text(error: ValidationError) -> str:
+    """Flatten a (possibly multi-message) ValidationError for ``messages``."""
+    return " ".join(str(message) for message in error.messages)
+
+
+class InviteListView(GroupRequiredMixin, LoginRequiredMixin, ListView):
+    """Open/expiring/expired/accepted requests with Resend + Cancel actions."""
+
+    groups: ClassVar[list] = [GROUP_ADMIN]
+    model = Invitation
+    template_name = "accounts/invite_list.html"
+    context_object_name = "invitations"
+    paginate_by = 25
+
+    def get_queryset(self):
+        return Invitation.objects.select_related("user", "player", "team", "invited_by")
+
+
+class InviteCreateView(GroupRequiredMixin, LoginRequiredMixin, FormView):
+    """Send an invitation — spans two models, hence FormView (no CreateView)."""
+
+    groups: ClassVar[list] = [GROUP_ADMIN]
+    form_class = InviteCreateForm
+    template_name = "accounts/invite_form.html"
+    success_url = reverse_lazy("accounts:invite_list")
+
+    def form_valid(self, form):
+        data = form.cleaned_data
+        invitation = create_invitation(
+            email=data["email"],
+            role=data["role"],
+            team=data.get("team"),
+            player=data.get("player"),
+            language=data["preferred_language"],
+            invited_by=self.request.user,
+        )
+        log_action(
+            AuditAction.USER_INVITE_SENT,
+            user=self.request.user,
+            target=invitation.user,
+            metadata={
+                "email": invitation.user.email,
+                "role": invitation.role,
+                "player_id": invitation.player_id,
+                "team_id": invitation.team_id,
+            },
+        )
+        # Mail AFTER commit; a dead SMTP must never look like a dead request —
+        # the warning points at Resend instead of failing silently.
+        sent = notification_service.send_invitation(invitation, request=self.request)
+        if sent == 0:
+            messages.warning(
+                self.request,
+                _("Invitation created, but the e-mail could not be sent — use Resend."),
+            )
+        else:
+            messages.success(self.request, _("Invitation sent."))
+        return super().form_valid(form)
+
+
+class InviteResendView(GroupRequiredMixin, LoginRequiredMixin, View):
+    """POST-only: new token + fresh expiry, then re-send the mail."""
+
+    groups: ClassVar[list] = [GROUP_ADMIN]
+
+    def post(self, request, pk):
+        invitation = get_object_or_404(Invitation, pk=pk)
+        try:
+            resend_invitation(invitation, actor=request.user)
+        except ValidationError as error:
+            messages.error(request, _invite_error_text(error))
+            return redirect("accounts:invite_list")
+        sent = notification_service.send_invitation(invitation, request=request)
+        if sent == 0:
+            messages.warning(
+                request,
+                _("Invitation created, but the e-mail could not be sent — use Resend."),
+            )
+        else:
+            messages.success(request, _("Invitation resent."))
+        return redirect("accounts:invite_list")
+
+
+class InviteCancelView(GroupRequiredMixin, LoginRequiredMixin, View):
+    """POST-only + confirm: hard-delete the requested user (cascade)."""
+
+    groups: ClassVar[list] = [GROUP_ADMIN]
+
+    def post(self, request, pk):
+        invitation = get_object_or_404(Invitation, pk=pk)
+        cancel_invitation(invitation, actor=request.user)
+        messages.success(request, _("Invitation cancelled — the account was deleted."))
+        return redirect("accounts:invite_list")
+
+
+def _invite_unusable_reason(invitation) -> str | None:
+    """Why the link cannot be used right now — or ``None`` when it can.
+
+    Same wording as the service re-checks (one msgid per message); accepted
+    rows never reach this (their token is blanked → plain 404).
+    """
+    if invitation.accepted_at is not None:
+        return str(_("This invitation has already been used."))
+    if invitation.expires_at <= timezone.now():
+        return str(_("This invitation has expired. Please ask the club to resend it."))
+    return None
+
+
+class InviteAcceptView(View):
+    """Public set-password page of ``invite/<token>/`` (CSRF-protected POST).
+
+    GET: unknown token → 404; expired → explanatory error WITHOUT the form.
+    Valid POST → accept (one transaction) → audit → admin notifications →
+    success message → redirect to the login page (no auto-login, consistent
+    with the approval flow). No allauth ``user_signed_up`` fires here — never
+    "waiting for approval", never an approval-request bell.
+    """
+
+    template_name = "account/invite_accept.html"
+
+    def _render(self, request, invitation, form=None, error=None):
+        return render(
+            request,
+            self.template_name,
+            {"invitation": invitation, "form": form, "error": error},
+        )
+
+    def get(self, request, token):
+        invitation = get_object_or_404(Invitation, token=token)
+        if request.user.is_authenticated:
+            return redirect("dashboard:index")
+        error = _invite_unusable_reason(invitation)
+        if error is not None:
+            return self._render(request, invitation, error=error)
+        return self._render(request, invitation, form=InvitationAcceptForm())
+
+    def post(self, request, token):
+        invitation = get_object_or_404(Invitation, token=token)
+        if request.user.is_authenticated:
+            return redirect("dashboard:index")
+        form = InvitationAcceptForm(request.POST)
+        if not form.is_valid():
+            return self._render(request, invitation, form=form)
+        try:
+            user = accept_invitation(invitation, password=form.cleaned_data["password1"])
+        except ValidationError as error:
+            form.add_error(None, error)
+            return self._render(request, invitation, form=form)
+        log_action(
+            AuditAction.USER_INVITE_ACCEPTED,
+            user=user,
+            target=user,
+            metadata={
+                "email": user.email,
+                "role": invitation.role,
+                "player_id": invitation.player_id,
+                "invited_by": invitation.invited_by.email if invitation.invited_by_id else None,
+            },
+        )
+        # AND nothing else: no user_signed_up, no send_registration_received,
+        # no notify_new_approval_request (plan: acceptance non-triggers).
+        notification_service.send_invitation_completed(user, request=request)
+        notify_invitation_completed(user)
+        messages.success(request, _("Registration completed — you can now log in."))
+        return redirect("account_login")
 
 
 class SettingsView(LoginRequiredMixin, View):

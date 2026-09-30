@@ -16,6 +16,20 @@ urlpatterns = [
     path("settings/theme/", views.ThemeUpdateView.as_view(), name="settings_theme"),
     path("users/", views.UserListView.as_view(), name="user_list"),
     path("users/create/", views.UserCreateView.as_view(), name="user_create"),
+    path("users/invitations/", views.InviteListView.as_view(), name="invite_list"),
+    path("users/invitations/create/", views.InviteCreateView.as_view(), name="invite_create"),
+    path(
+        "users/invitations/<int:pk>/resend/",
+        views.InviteResendView.as_view(),
+        name="invite_resend",
+    ),
+    path(
+        "users/invitations/<int:pk>/cancel/",
+        views.InviteCancelView.as_view(),
+        name="invite_cancel",
+    ),
+    # Public acceptance page (allauth entrance area: no login required).
+    path("invite/<str:token>/", views.InviteAcceptView.as_view(), name="invite_accept"),
     path("users/pending/", views.PendingUserListView.as_view(), name="approval_list"),
     path("users/<int:pk>/approval/", views.UserApprovalView.as_view(), name="approval"),
     path("users/<int:pk>/update/", views.UserUpdateView.as_view(), name="user_update"),
