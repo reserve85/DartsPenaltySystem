@@ -31,6 +31,17 @@ class ApprovalGateMiddleware:
                     request,
                     _("Your registration has been declined. Please contact the club."),
                 )
+            elif user.approval_status == "requested":
+                # Defensive: invited accounts hold no usable password, so a
+                # session like this should not exist — never show the generic
+                # "not approved" text anyway (it points nowhere).
+                messages.error(
+                    request,
+                    _(
+                        "You have been invited but have not completed your registration"
+                        " yet. Please use the link in your invitation e-mail."
+                    ),
+                )
             else:
                 messages.error(
                     request,
