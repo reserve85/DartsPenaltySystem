@@ -1,5 +1,6 @@
 """i18n tests — language switch, UserLanguageMiddleware, German catalog, cookie banner."""
 
+import re
 from pathlib import Path
 
 import pytest
@@ -205,3 +206,145 @@ def test_settings_language_change_writes_cookie(captain_client, captain_user):
 def test_anonymous_default_language_renders(admin_user):
     content = Client().get(reverse("account_login")).content.decode()
     assert "Darts Penalty Manager" in content
+
+
+# ---------------------------------------------------------------------------
+# Catalog completeness + the msgid-drift regression (Teams & Players hint)
+# ---------------------------------------------------------------------------
+# The German catalog is maintained BY HAND on the dev machine (no xgettext,
+# see README). A source string that is reworded without updating its msgid
+# silently falls back to ENGLISH under a German UI — exactly what happened to
+# the season hint on the Teams & Players page (2026-09). These helpers mirror
+# the extraction rules of `makemessages` closely enough to catch that drift.
+PO_DE = Path(__file__).resolve().parent.parent / "locale" / "de" / "LC_MESSAGES" / "django.po"
+APP_DIR = Path(__file__).resolve().parent.parent / "app"
+TEMPLATES_DIR = APP_DIR / "templates"
+
+_TRANSLATE_RE = re.compile(
+    r"""\{%\s*(?:translate|trans)\s+("([^"\\]|\\.)*"|'([^'\\]|\\.)*')(?:\s+as\s+\w+)?\s*%\}"""
+)
+_BLOCKTRANS_RE = re.compile(
+    r"\{%\s*blocktrans(?:late)?(?:\s+[^%]*?)?%\}(.*?)\{%\s*endblocktrans(?:late)?\s*%\}", re.DOTALL
+)
+_VAR_RE = re.compile(r"\{\{\s*([\w.]+)\s*\}\}")
+_PY_FN_RE = re.compile(r"(?<![\w.])(?:_|gettext|ngettext|pgettext|ugettext)\s*\(")
+_PY_LIT_RE = re.compile(r"""\s*(?P<lit>"(?:[^"\\]|\\.)*"|'(?:[^'\\]|\\.)*')""")
+
+
+def _norm(text: str) -> str:
+    return " ".join(text.split())
+
+
+def _unquote(literal: str) -> str:
+    return literal[1:-1].replace('\\"', '"').replace("\\'", "'")
+
+
+def _var_to_percent(match) -> str:
+    # {{ name }} -> %(name)s, exactly like xgettext's Django templatize.
+    return f"%({match.group(1).split('.')[-1]})s"
+
+
+def _po_msgids(path: Path) -> set[str]:
+    """Every msgid of a .po file (multi-line strings supported)."""
+    msgids: list[str] = []
+    buf: list[str] = []
+    collecting = False
+
+    def flush() -> None:
+        nonlocal buf, collecting
+        if collecting and buf:
+            msgids.append("".join(buf))
+        buf, collecting = [], False
+
+    for line in path.read_text(encoding="utf-8").splitlines():
+        stripped = line.strip()
+        if stripped.startswith("msgid "):
+            flush()
+            collecting = True
+            buf = [stripped[6:].strip()[1:-1]]
+        elif stripped.startswith("msgstr"):
+            flush()
+        elif stripped.startswith('"') and collecting:
+            buf.append(stripped[1:-1])
+        elif not stripped:
+            flush()
+    flush()
+    return {_norm(mid.replace('\\"', '"').replace("\\n", " ")) for mid in msgids}
+
+
+def _template_msgids(text: str) -> set[str]:
+    out: set[str] = set()
+    for match in _TRANSLATE_RE.finditer(text):
+        out.add(_unquote(match.group(1)))
+    for match in _BLOCKTRANS_RE.finditer(text):
+        body = _VAR_RE.sub(_var_to_percent, match.group(1))
+        if "{{" in body:  # {{ value|filter }} cannot be mapped to %(…)s — skip
+            continue
+        out.add(body)
+    return out
+
+
+def _python_msgids(text: str) -> set[str]:
+    """``_("a" "b")`` is ONE msgid (implicit concatenation); gettext/ngettext
+    arguments count separately (singular + plural)."""
+    out: set[str] = set()
+    for match in _PY_FN_RE.finditer(text):
+        fn = match.group(0).split("(")[0].strip()
+        pos = match.end()
+        lits: list[str] = []
+        while True:
+            lit = _PY_LIT_RE.match(text, pos)
+            if lit:
+                lits.append(_unquote(lit.group("lit")))
+                pos = lit.end()
+                continue
+            rest = text[pos:]
+            if rest.lstrip().startswith(",") and fn != "_":
+                pos += rest.index(",") + 1
+                continue
+            break
+        if not lits:
+            continue
+        if fn == "_":
+            out.add("".join(lits))
+        else:
+            out.update(lits)
+    return out
+
+
+def test_every_source_msgid_is_covered_by_the_german_catalog():
+    """A msgid missing from the German catalog renders ENGLISH under de."""
+    catalog = _po_msgids(PO_DE)
+    missing: set[str] = set()
+
+    def record(msgid: str, path: Path) -> None:
+        key = _norm(msgid)
+        if key and key not in catalog:
+            missing.add(f"{path.relative_to(APP_DIR.parent)}: {msgid[:90]!r}")
+
+    sources = sorted(TEMPLATES_DIR.rglob("*.html")) + sorted(TEMPLATES_DIR.rglob("*.txt"))
+    for path in sources:
+        for msgid in _template_msgids(path.read_text(encoding="utf-8")):
+            record(msgid, path)
+    for path in sorted(APP_DIR.rglob("*.py")):
+        if "__pycache__" in path.parts:
+            continue
+        for msgid in _python_msgids(path.read_text(encoding="utf-8")):
+            record(msgid, path)
+
+    assert not missing, (
+        "German catalog misses msgids (pages would fall back to English):\n"
+        + "\n".join(sorted(missing))
+    )
+
+
+@needs_catalog
+def test_german_season_hint_on_team_list(admin_client, season, team):
+    """Regression: the season-scoped hint on Teams & Players showed ENGLISH
+    because the blocktranslate msgid in the hand-maintained catalog no longer
+    matched the reworded template (msgid drift)."""
+    season.teams.add(team)
+    _switch_language(admin_client, "de")
+    content = admin_client.get(reverse("teams:team_list")).content.decode()
+    assert "Die Tabelle unten listet alle Mannschaften" in content
+    assert "The table below lists every team" not in content

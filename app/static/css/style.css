@@ -1,6 +1,5 @@
-body {
-    font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-}
+/* Font stack: owned by Bootstrap (--bs-body-font-family on <body>) — do NOT
+   redeclare it here; one source of truth keeps every page on the same font. */
 
 /* Mobile polish: roomy touch targets for forms and primary buttons.
    Rule: page-level buttons (.btn) get a comfortable 2.75rem height, while

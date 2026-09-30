@@ -270,3 +270,33 @@ def test_logout_is_a_plain_nav_link_like_settings(admin_client):
     assert f'{logout_action} class="m-0"' in content  # block form, no inline strut
     assert '<button type="submit" class="nav-link text-start">' in content
     assert 'class="btn btn-link nav-link"' not in content  # .btn min-height = height mismatch
+
+
+# ---------------------------------------------------------------------------
+# Typography: ONE heading scale across every web template
+# ---------------------------------------------------------------------------
+def test_web_templates_share_one_heading_scale():
+    """h1 -> .h3, h2 -> .h5, h3 -> .h6 on every page template.
+
+    Guards the font audit (2026-09): imprint/privacy once rendered a bare
+    <h1> (browser default, ~2.5rem) while other pages used the .h3 scale and
+    the auth cards used .h4 — three different sizes for the same element.
+    E-mail templates are excluded: email clients get an explicit inline scale.
+    """
+    import re
+    from pathlib import Path
+
+    root = Path(__file__).resolve().parent.parent / "app" / "templates"
+    expected = {"h1": "h3", "h2": "h5", "h3": "h6"}
+    offenders = []
+    for path in sorted(root.rglob("*.html")):
+        if path.parent.name == "emails":
+            continue
+        text = path.read_text(encoding="utf-8")
+        for tag, scale in expected.items():
+            for match in re.finditer(rf"<{tag}(\s[^>]*)?>", text):
+                attrs = match.group(1) or ""
+                classes = re.search(r'class="([^"]*)"', attrs)
+                if classes is None or scale not in classes.group(1).split():
+                    offenders.append(f"{path.relative_to(root)}: <{tag}{attrs.strip()}>")
+    assert not offenders, "Heading outside the shared scale:\n" + "\n".join(offenders)

@@ -53,6 +53,10 @@ msgstr "Ihr Konto wurde noch nicht von einem Administrator freigegeben. Bitte ko
 msgid "Role"
 msgstr "Rolle"
 
+#: .\app\accounts\models.py:183
+msgid "role"
+msgstr "Rolle"
+
 #: .\app\accounts\forms.py:71 .\app\templates\account\login.html:18
 msgid "Password"
 msgstr "Passwort"
@@ -2434,7 +2438,7 @@ msgstr "Aktiviert die neue Mannschaft optional in einer bestehenden Saison."
 
 #: app\templates\teams\team_list.html
 #, python-format
-msgid "The table below lists every team — the ✓/✗ shows who is active in %(name)s. The assignment matrix only shows the teams active in this season; manage them on the seasons page."
+msgid "The table below lists every team — the ✓/✗ shows who is active in season %(name)s. The assignment matrix only shows the teams active in this season; manage them on the seasons page."
 msgstr "Die Tabelle unten listet alle Mannschaften — ✓/✗ zeigt, wer in der Saison %(name)s aktiv ist. Die Zuordnungsmatrix zeigt nur die in dieser Saison aktiven Mannschaften; diese verwaltet man auf den Seiten der Saisons."
 
 # --- New audit action labels (AuditAction, core app) ---
