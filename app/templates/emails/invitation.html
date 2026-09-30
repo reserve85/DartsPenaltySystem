@@ -1,0 +1,17 @@
+{% extends "emails/base_email.html" %}{% load i18n %}
+{% block subject %}{% translate "You have been invited" %}{% endblock %}
+{% block content %}
+<p>{% blocktranslate with email=invitee_email %}You have been invited to create your account on the Darts Penalty Manager:{% endblocktranslate %}</p>
+<ul>
+    <li><strong>{% translate "E-mail" %}:</strong> {{ invitee_email }}</li>
+    {% if invitation.player %}<li><strong>{% translate "Linked player" %}:</strong> {{ invitation.player.name }}</li>{% endif %}
+    <li><strong>{% translate "Role" %}:</strong> {{ invitation.get_role_display }}</li>
+    {% if invitation.team %}<li><strong>{% translate "Team" %}:</strong> {{ invitation.team.name }}</li>{% endif %}
+    <li><strong>{% translate "Invited by" %}:</strong> {{ invited_by.email|default:"–" }}</li>
+    <li><strong>{% translate "Valid until" %}:</strong> {{ expires_at|date:"d.m.Y H:i" }}</li>
+</ul>
+<p><a href="{{ accept_url }}" style="display:inline-block;background-color:#0d6efd;color:#ffffff;text-decoration:none;padding:10px 16px;border-radius:6px;">
+    {% translate "Accept invitation" %}
+</a></p>
+<p class="text-muted">{% translate "If you don't know this club, ignore this message." %}</p>
+{% endblock %}

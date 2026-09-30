@@ -72,6 +72,37 @@ def notify_new_approval_request(user) -> None:
         logger.exception("In-app notification for admins could not be created.")
 
 
+def notify_invitation_completed(user) -> None:
+    """An invited user completed registration -> one in-app notification per admin.
+
+    Mirrors ``notify_new_approval_request`` (actor + target = the user, so the
+    list links straight to the account; per-recipient language override;
+    failures logged never raised) — but level ``success`` and sent ONLY from
+    the acceptance path: allauth's ``user_signed_up`` never fires there, so
+    there is no "new approval request" bell and no "waiting for approval" mail
+    for invitations.
+    """
+    from notifications.signals import notify
+
+    recipients = admin_recipients()
+    if not recipients:
+        logger.info("In-app notification skipped: no active admin recipients.")
+        return
+    try:
+        for recipient in recipients:
+            language = getattr(recipient, "preferred_language", None) or settings.LANGUAGE_CODE
+            with translation.override(language):
+                notify.send(
+                    sender=user,
+                    recipient=recipient,
+                    verb=_("Invited user completed registration"),
+                    target=user,
+                    level="success",
+                )
+    except Exception:
+        logger.exception("In-app notification for admins could not be created.")
+
+
 def clear_approval_notifications(user) -> None:
     """Mark every in-app notification about ``user`` as read — the admin decided.
 

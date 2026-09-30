@@ -1,0 +1,13 @@
+{% extends "emails/base_email.html" %}{% load i18n %}
+{% block subject %}{% translate "Invitation completed" %}{% endblock %}
+{% block content %}
+<p>{% blocktranslate with email=new_user.email %}An invited user has completed their registration:{% endblocktranslate %}</p>
+<ul>
+    <li><strong>{% translate "E-mail" %}:</strong> {{ new_user.email }}</li>
+    <li><strong>{% translate "Completed at" %}:</strong> {{ completed_at|date:"d.m.Y H:i" }}</li>
+    <li><strong>{% translate "Status" %}:</strong> {% translate "Approved" %}</li>
+</ul>
+<p><a href="{{ users_url }}" style="display:inline-block;background-color:#0d6efd;color:#ffffff;text-decoration:none;padding:10px 16px;border-radius:6px;">
+    {% translate "Open user list" %}
+</a></p>
+{% endblock %}

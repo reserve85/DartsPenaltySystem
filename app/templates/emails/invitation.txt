@@ -1,0 +1,16 @@
+{% extends "emails/base_email.txt" %}{% load i18n %}
+{% block content %}
+{% blocktranslate with email=invitee_email %}You have been invited to create your account on the Darts Penalty Manager:{% endblocktranslate %}
+
+{% translate "E-mail" %}: {{ invitee_email }}
+{% if invitation.player %}{% translate "Linked player" %}: {{ invitation.player.name }}
+{% endif %}{% translate "Role" %}: {{ invitation.get_role_display }}
+{% if invitation.team %}{% translate "Team" %}: {{ invitation.team.name }}
+{% endif %}
+{% translate "Invited by" %}: {{ invited_by.email|default:"–" }}
+{% translate "Valid until" %}: {{ expires_at|date:"d.m.Y H:i" }}
+
+{% translate "Accept invitation" %}: {{ accept_url }}
+
+{% translate "If you don't know this club, ignore this message." %}
+{% endblock %}

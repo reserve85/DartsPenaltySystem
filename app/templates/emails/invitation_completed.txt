@@ -1,0 +1,10 @@
+{% extends "emails/base_email.txt" %}{% load i18n %}
+{% block content %}
+{% blocktranslate with email=new_user.email %}An invited user has completed their registration:{% endblocktranslate %}
+
+{% translate "E-mail" %}: {{ new_user.email }}
+{% translate "Completed at" %}: {{ completed_at|date:"d.m.Y H:i" }}
+{% translate "Status" %}: {% translate "Approved" %}
+
+{% translate "Open user list" %}: {{ users_url }}
+{% endblock %}

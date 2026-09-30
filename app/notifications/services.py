@@ -376,6 +376,76 @@ class NotificationService:
             language=getattr(user, "preferred_language", None),
         )
 
+    # -- invitations ------------------------------------------------------
+    def send_invitation(self, invitation, *, request: HttpRequest | None = None) -> int:
+        """Admin-sent invitation to the invitee: accept link, expiry, sender.
+
+        Content rules: prominent accept button, expiry date, who sent it, and
+        the anti-phishing line ("If you don't know this club, ignore this
+        message."). Delivery failures surface as the view's warning message —
+        this method returns the recipient count like every ``send_…``.
+        """
+        from django.urls import reverse
+
+        user = invitation.user
+        return self.send_templated(
+            recipients=[user],
+            template_base="emails/invitation",
+            subject=_("You have been invited to {site}").format(
+                site="Darts Penalty Manager"
+            ),
+            context={
+                "invitation": invitation,
+                "invitee_email": user.email,
+                "accept_url": absolute_url(
+                    reverse("accounts:invite_accept", args=[invitation.token]), request
+                ),
+                "expires_at": invitation.expires_at,
+                "invited_by": invitation.invited_by,
+            },
+            request=request,
+            language=getattr(user, "preferred_language", None),
+        )
+
+    def send_invitation_completed(self, user, *, request: HttpRequest | None = None) -> int:
+        """Round mail after acceptance — same pattern as ``send_registration_received``.
+
+        ``SUPPORT_EMAIL`` is the primary recipient; the admins go to BCC so
+        the round mail never exposes every admin's address to the others.
+        Never raises (delegates to ``send_templated``).
+        """
+        from django.urls import reverse
+
+        from app.accounts.models import User
+        from app.core.permissions import GROUP_ADMIN
+
+        admin_emails = list(
+            User.objects.filter(groups__name=GROUP_ADMIN, is_active=True)
+            .exclude(email="")
+            .values_list("email", flat=True)
+        )
+        if settings.SUPPORT_EMAIL:
+            recipients: list = [settings.SUPPORT_EMAIL]
+            bcc = [email for email in admin_emails if email != settings.SUPPORT_EMAIL]
+        else:  # no support mailbox configured -> admins are the primary target
+            recipients, bcc = admin_emails, []
+        invitation = user.pending_invitation
+        return self.send_templated(
+            recipients=recipients,
+            bcc=bcc,
+            template_base="emails/invitation_completed",
+            subject=_("Invited user completed registration: {email}").format(
+                email=user.email
+            ),
+            context={
+                "new_user": user,
+                "users_url": absolute_url(reverse("accounts:user_list"), request),
+                "completed_at": invitation.accepted_at if invitation else None,
+            },
+            request=request,
+            language=getattr(user, "preferred_language", None),
+        )
+
     # -- penalties / repayments ------------------------------------------
     def send_penalty_created(
         self, *, user, penalty: Penalty, request: HttpRequest | None = None
