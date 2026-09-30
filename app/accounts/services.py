@@ -199,7 +199,9 @@ def obsolete_invitations_for_player(player, *, exclude_user=None) -> None:
     qs = Invitation.objects.filter(player=player, accepted_at__isnull=True).select_related(
         "user", "invited_by"
     )
-    if exclude_user is not None:
+    if exclude_user is not None and exclude_user.pk is not None:
+        # An unsaved instance (fresh create) cannot own an invitation row —
+        # and Django would reject it as a related-filter value.
         qs = qs.exclude(user=exclude_user)
     # Fetch first, delete second — the cascade removes the invitations.
     rows = [(invitation.user_id, invitation.user.email, invitation.invited_by) for invitation in qs]

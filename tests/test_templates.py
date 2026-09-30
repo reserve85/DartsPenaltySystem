@@ -21,6 +21,8 @@ ADMIN_URLS = [
     "penalties:catalog_create",
     "accounts:user_list",
     "accounts:user_create",
+    "accounts:invite_list",
+    "accounts:invite_create",
     "accounts:settings",
     "account_change_password",
     "audit_list",

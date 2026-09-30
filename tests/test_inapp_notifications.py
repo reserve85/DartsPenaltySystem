@@ -148,6 +148,52 @@ def test_mark_all_as_read_clears_the_badge(db, admin_client, admin_user):
 
 
 # ---------------------------------------------------------------------------
+# Invitations: acceptance raises a SUCCESS bell (no approval-request bell)
+# ---------------------------------------------------------------------------
+INVITED_VERBS = (
+    "Invited user completed registration",
+    "Eingeladener Nutzer hat die Registrierung abgeschlossen",
+)  # language-tolerant
+
+
+def _accept_invitation(db, admin_user):
+    """Admin sends an invitation, the invitee accepts it (full view flow)."""
+    from app.accounts.models import Invitation
+    from app.accounts.services import create_invitation
+
+    invitation = create_invitation(
+        email="invitee@example.com",
+        role="Player",
+        team=None,
+        player=None,
+        language="de",
+        invited_by=admin_user,
+    )
+    assert Notification.objects.count() == 0  # sending an invite raises NO bell
+    response = Client().post(
+        reverse("accounts:invite_accept", args=[invitation.token]),
+        {"password1": "Strong-Pass-123!", "password2": "Strong-Pass-123!"},
+    )
+    assert response.status_code == 302
+    return Invitation.objects.get(pk=invitation.pk)
+
+
+def test_invited_user_completion_notifies_admin_in_app(db, admin_user):
+    invitation = _accept_invitation(db, admin_user)
+
+    notification = Notification.objects.get(recipient=admin_user)
+    assert notification.unread is True
+    assert notification.level == "success"
+    assert notification.target == invitation.user
+    assert notification.verb in INVITED_VERBS
+
+
+def test_invited_completion_never_notifies_captains(db, admin_user, captain_user):
+    _accept_invitation(db, admin_user)
+    assert not Notification.objects.filter(recipient=captain_user).exists()
+
+
+# ---------------------------------------------------------------------------
 # Regression: the {# … #} comment must never leak into the user table
 # ---------------------------------------------------------------------------
 def test_user_list_contains_no_raw_template_comment(admin_client, pending_user):
