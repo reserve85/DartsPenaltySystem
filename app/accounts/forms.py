@@ -17,20 +17,19 @@ from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.contrib.auth.models import Group
 from django.db.models import Q
+from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
 
 from app.accounts.models import ApprovalStatus
-from app.core.choices import ThemeChoice
+from app.core.choices import RoleChoice, ThemeChoice
 from app.core.permissions import GROUP_ADMIN, GROUP_CAPTAIN, GROUP_PLAYER
 from app.players.models import Player
 
 User = get_user_model()
 
-ROLE_CHOICES = [
-    (GROUP_ADMIN, _("Admin")),
-    (GROUP_CAPTAIN, _("Captain")),
-    (GROUP_PLAYER, _("Player")),
-]
+# Single source of truth: rebuilt from RoleChoice (labels unchanged) so the
+# model field choices and every form choice can never drift apart.
+ROLE_CHOICES = list(RoleChoice.choices)
 
 # Roles that may hold the optional captaincy (``User.team``) — the edit form
 # renders the team dropdown disabled for every other role (see UserUpdateForm).
@@ -49,6 +48,17 @@ class ApprovalLoginForm(AllauthLoginForm):
         if not self._errors:
             user = getattr(self, "user", None)
             if user is not None and not user.is_approved:
+                if user.approval_status == ApprovalStatus.REQUESTED:
+                    # Invitation not completed yet — the account holds no
+                    # usable password, but e.g. a password reset by an admin
+                    # could get this far; point at the e-mail link instead of
+                    # the generic "not approved" text.
+                    raise forms.ValidationError(
+                        _(
+                            "You have been invited but have not completed your registration"
+                            " yet. Please use the link in your invitation e-mail."
+                        )
+                    )
                 if user.approval_status == ApprovalStatus.REJECTED:
                     raise forms.ValidationError(
                         _("Your registration has been declined. Please contact the club.")
@@ -72,6 +82,25 @@ def unlinked_players_queryset(user=None):
     if user is not None and user.pk:
         queryset = Player.objects.filter(Q(user_account__isnull=True) | Q(user_account=user))
     return queryset.order_by("name")
+
+
+def inviteable_players_queryset():
+    """Players that are neither linked to a user nor reserved by an OPEN invitation.
+
+    The single-row ``exclude`` keeps both conditions tied to one invitation
+    row (reservation = ``accepted_at IS NULL AND expires_at > now``), so a
+    player stays selectable while their own invitation is merely expired.
+    Refreshed per request in ``InviteCreateForm.__init__`` — like
+    ``unlinked_players_queryset``.
+    """
+    return (
+        Player.objects.filter(user_account__isnull=True)
+        .exclude(
+            invitations__accepted_at__isnull=True,
+            invitations__expires_at__gt=timezone.now(),
+        )
+        .order_by("name")
+    )
 
 
 class UserCreateForm(forms.ModelForm):
@@ -142,6 +171,104 @@ class UserCreateForm(forms.ModelForm):
             role_group = Group.objects.get(name=self.cleaned_data["role"])
             user.groups.set([role_group])
         return user
+
+
+class InviteCreateForm(forms.ModelForm):
+    """Send an invitation: e-mail + pre-assignment payload, no passwords.
+
+    Mirrors ``UserCreateForm`` minus the password fields — the invitee sets
+    their own password on the acceptance page. The ``player`` field is an
+    ``Invitation`` field (the model spans two models, hence no ``CreateView``)
+    and only offers players that are neither linked nor reserved by another
+    OPEN invitation.
+    """
+
+    role = forms.ChoiceField(choices=ROLE_CHOICES, label=_("Role"))
+    player = forms.ModelChoiceField(
+        queryset=inviteable_players_queryset(),
+        required=False,
+        label=_("Linked player"),
+        help_text=_(
+            "Optional: pre-assigned player — linked to the account when the invitation is accepted."
+        ),
+    )
+
+    class Meta:
+        model = User
+        fields: ClassVar[list] = ["email", "role", "team", "preferred_language"]
+        widgets: ClassVar[dict] = {
+            "email": forms.EmailInput(attrs={"autocomplete": "email"}),
+        }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        # Refresh per request — players may have been linked since import time.
+        self.fields["player"].queryset = inviteable_players_queryset()
+        # Same captaincy toggle contract as UserUpdateForm: the marker lets
+        # user_form.html enable the dropdown for Admin/Captain only; the
+        # state lives on the WIDGET (field stays editable for crafted POSTs,
+        # clean() enforces the rule server-side).
+        effective_role = self.data.get("role") if self.is_bound else self.fields["role"].initial
+        attrs = self.fields["team"].widget.attrs
+        attrs["data-team-roles"] = ",".join(CAPTAINCY_ROLES)
+        if effective_role not in CAPTAINCY_ROLES:
+            attrs["disabled"] = True
+
+    def clean_email(self):
+        email = (self.cleaned_data.get("email") or "").strip().lower()
+        existing = User.objects.filter(email__iexact=email).first()
+        if existing is not None:
+            if existing.approval_status == ApprovalStatus.REQUESTED:
+                raise forms.ValidationError(
+                    _("Already invited — cancel or resend the existing invitation.")
+                )
+            raise forms.ValidationError(_("A user with this email address already exists."))
+        return email
+
+    def clean(self):
+        cleaned = super().clean()
+        # The team is a captaincy: optional for Captain, allowed for Admin,
+        # never valid for Player (same rule as UserCreateForm).
+        if cleaned.get("role") == GROUP_PLAYER and cleaned.get("team"):
+            self.add_error("team", _("A team can only be assigned to Admin or Captain accounts."))
+        # Server-side reservation guard (the field queryset already enforces
+        # it; this keeps the intent explicit if the queryset is ever relaxed).
+        player = cleaned.get("player")
+        if player is not None and not inviteable_players_queryset().filter(pk=player.pk).exists():
+            self.add_error(
+                "player",
+                _("This player is already reserved by another invitation."),
+            )
+        return cleaned
+
+
+class InvitationAcceptForm(forms.Form):
+    """Public set-password form of the acceptance link (no username, no e-mail —
+    the token fixes the account). Password handling mirrors ``UserCreateForm``:
+    match check in ``clean()``, Django's ``validate_password`` in ``_post_clean``.
+    """
+
+    password1 = forms.CharField(label=_("Password"), widget=forms.PasswordInput)
+    password2 = forms.CharField(label=_("Password confirmation"), widget=forms.PasswordInput)
+
+    def clean(self):
+        cleaned = super().clean()
+        password1 = cleaned.get("password1")
+        password2 = cleaned.get("password2")
+        if password1 and password2 and password1 != password2:
+            self.add_error("password2", _("The two password fields didn't match."))
+        return cleaned
+
+    def _post_clean(self):
+        super()._post_clean()
+        password = self.cleaned_data.get("password1")
+        if password:
+            from django.contrib.auth.password_validation import validate_password
+
+            try:
+                validate_password(password)
+            except forms.ValidationError as error:
+                self.add_error("password1", error)
 
 
 class UserApprovalForm(forms.Form):
