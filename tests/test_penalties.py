@@ -209,6 +209,44 @@ def test_soft_delete_single(matchday_with_players, catalog_normal, admin_user):
     )
 
 
+def test_soft_delete_single_scope_keeps_group_siblings(
+    matchday_with_players, catalog_group, admin_user
+):
+    """scope="single" removes ONLY the chosen row — the siblings stay (3.)."""
+    md, players = matchday_with_players(3)
+    assign_group_penalty(
+        matchday=md, trigger_player=players[0], catalog_item=catalog_group, actor=admin_user
+    )
+    rows = list(Penalty.objects.all())
+    assert len(rows) == 2
+
+    soft_delete_penalty(penalty=rows[0], actor=admin_user, scope="single")
+
+    assert Penalty.objects.count() == 1  # sibling still visible
+    assert Penalty.all_objects().count() == 2  # history survives
+    survivor = Penalty.objects.get()
+    assert survivor.pk == rows[1].pk
+    entries = list(AuditLog.objects.filter(action=AuditAction.PENALTY_DELETED))
+    assert len(entries) == 1
+    assert entries[0].target_id == rows[0].pk
+    assert entries[0].metadata["scope"] == "single"
+
+
+def test_soft_delete_rejects_unknown_scope(matchday_with_players, catalog_normal, admin_user):
+    md, players = matchday_with_players(2)
+    penalty = assign_penalty(
+        matchday=md,
+        player=players[0],
+        catalog_item=catalog_normal,
+        amount_eur=5,
+        description_snapshot="Late",
+        actor=admin_user,
+    )
+    with pytest.raises(DjangoValidationError):
+        soft_delete_penalty(penalty=penalty, actor=admin_user, scope="everything")
+    assert Penalty.objects.count() == 1  # nothing was deleted
+
+
 # ---------------------------------------------------------------------------
 # Permissions
 # ---------------------------------------------------------------------------

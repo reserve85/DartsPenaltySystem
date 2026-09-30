@@ -2104,9 +2104,9 @@ msgstr "Manuelle Strafe"
 msgid "manual"
 msgstr "manuell"
 
-#: .\app\templates\matchdays\matchday_detail.html:51
-msgid "Delete this penalty? All rows of the group will be deleted."
-msgstr "Diese Strafe löschen? Alle Zeilen der Gruppe werden gelöscht."
+#: .\app\templates\penalties\penalty_form.html
+msgid "Delete this penalty?"
+msgstr "Diese Strafe löschen?"
 
 #: .\app\templates\matchdays\matchday_form.html:6
 msgid "Edit matchday"
@@ -2192,16 +2192,14 @@ msgstr "Gebühr (EUR)"
 msgid "Penalty"
 msgstr "Strafe"
 
-#: .\app\templates\penalties\penalty_form.html:8
+#: .\app\templates\penalties\penalty_form.html
+msgid "Editing penalty"
+msgstr "Strafe bearbeiten"
+
+#: .\app\templates\penalties\penalty_form.html
 #, python-format
-msgid ""
-"\n"
-"            Editing penalty (group %(group)s).\n"
-"        "
-msgstr ""
-"\n"
-"            Strafe bearbeiten (Gruppe %(group)s).\n"
-"        "
+msgid "Editing group penalty (%(players)s)."
+msgstr "Gruppenstrafe bearbeiten (%(players)s)."
 
 #: .\app\templates\penalties\penalty_form.html:12
 msgid "Assign a penalty"
@@ -2701,3 +2699,33 @@ msgstr "Dieser Katalogeintrag betrifft nicht beide Doppelspieler."
 #: app\penalties\views.py (hand-added)
 msgid "Penalty assigned to both players."
 msgstr "Strafe für beide Spieler verhängt."
+
+# --- Group delete choice / group headline names / partner exclusion (hand-added) ---
+#: app\templates\penalties\penalty_form.html
+msgid "Delete only this single penalty? The other rows of the group stay."
+msgstr "Nur diese einzelne Strafe löschen? Die übrigen Zeilen der Gruppe bleiben erhalten."
+
+#: app\templates\penalties\penalty_form.html
+#, python-format
+msgid "Delete only the penalty of %(player)s"
+msgstr "Nur die Strafe von %(player)s löschen"
+
+#: app\templates\penalties\penalty_form.html
+msgid "Delete the penalty for ALL players of the group?"
+msgstr "Die Strafe für ALLE Spieler der Gruppe löschen?"
+
+#: app\templates\penalties\penalty_form.html
+msgid "Delete for the whole group"
+msgstr "Für die ganze Gruppe löschen"
+
+#: app\penalties\forms.py
+msgid "A penalty with this description already exists."
+msgstr "Eine Strafe mit dieser Beschreibung existiert bereits."
+
+#: app\penalties\services.py
+msgid "Invalid delete scope."
+msgstr "Ungültiger Löschumfang."
+
+#: app\penalties\views.py
+msgid "Penalty deleted for all players of the group."
+msgstr "Strafe für alle Spieler der Gruppe gelöscht."

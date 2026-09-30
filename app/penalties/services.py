@@ -310,14 +310,20 @@ def edit_penalty(
     return rows[0]
 
 
-def soft_delete_penalty(*, penalty, actor) -> None:
-    """Soft-delete a penalty and all rows sharing its ``group_id``.
+def soft_delete_penalty(*, penalty, actor, scope="group") -> None:
+    """Soft-delete a penalty row — or every row of its group.
 
+    ``scope="group"`` (default) soft-deletes ALL rows sharing the penalty's
+    ``group_id``; ``scope="single"`` ONLY the given row. The edit page asks
+    captains/admins which of the two applies (see ``PenaltyDeleteView``).
     History and financial aggregates survive (soft delete only); one
-    PENALTY_DELETED audit entry is written per affected row.
+    PENALTY_DELETED audit entry (incl. the chosen scope) is written per
+    affected row.
     """
+    if scope not in ("single", "group"):
+        raise ValidationError(_("Invalid delete scope."))
     group_id = penalty.group_id
-    rows = _group_rows(penalty)
+    rows = [penalty] if scope == "single" else _group_rows(penalty)
     now = timezone.now()
     with transaction.atomic():
         for row in rows:
@@ -328,7 +334,7 @@ def soft_delete_penalty(*, penalty, actor) -> None:
                 AuditAction.PENALTY_DELETED,
                 user=actor,
                 target=row,
-                metadata={"group_id": group_id},
+                metadata={"group_id": group_id, "scope": scope},
             )
 
 

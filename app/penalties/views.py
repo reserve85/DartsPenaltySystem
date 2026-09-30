@@ -273,14 +273,32 @@ class PenaltyUpdateView(LoginRequiredMixin, View):
         assert_can_manage_penalty(self.request.user, penalty)
         return penalty
 
+    @staticmethod
+    def _context(penalty, form) -> dict:
+        """Render context incl. the group headline data.
+
+        The template shows the NAMES of the affected group players — never the
+        raw ``group_id`` hex string (meaningless to captains/players).
+        ``group_count > 1`` is the template's "this is a group penalty with
+        siblings" flag and drives the single-vs-group delete choice.
+        """
+        rows = (
+            list(Penalty.objects.filter(group_id=penalty.group_id).select_related("player"))
+            if penalty.group_id
+            else [penalty]
+        )
+        return {
+            "form": form,
+            "matchday": penalty.matchday,
+            "editing": penalty,
+            "group_count": len(rows),
+            "group_players": ", ".join(sorted({row.player.name for row in rows})),
+        }
+
     def get(self, request, pk):
         penalty = self.get_penalty()
         form = PenaltyEditForm(instance=penalty)
-        return render(
-            request,
-            self.template_name,
-            {"form": form, "matchday": penalty.matchday, "editing": penalty},
-        )
+        return render(request, self.template_name, self._context(penalty, form))
 
     def post(self, request, pk):
         penalty = self.get_penalty()
@@ -294,21 +312,30 @@ class PenaltyUpdateView(LoginRequiredMixin, View):
             )
             messages.success(request, _("Penalty updated (all rows of the group, if any)."))
             return redirect("matchdays:matchday_detail", pk=penalty.matchday.pk)
-        return render(
-            request,
-            self.template_name,
-            {"form": form, "matchday": penalty.matchday, "editing": penalty},
-        )
+        return render(request, self.template_name, self._context(penalty, form))
 
 
 class PenaltyDeleteView(LoginRequiredMixin, View):
-    """POST-only soft delete — audit history is preserved (B2)."""
+    """POST-only soft delete — audit history is preserved (B2).
+
+    For a GROUP penalty the edit page asks which scope applies:
+    ``scope=single`` deletes only this player's row, ``scope=group`` (default)
+    every row sharing the ``group_id``. Guards: Admin or the matchday team's
+    captain (``assert_can_manage_penalty``); an unknown scope falls back to
+    the group semantics instead of failing.
+    """
 
     def post(self, request, pk):
         penalty = get_object_or_404(Penalty, pk=pk)
         assert_can_manage_penalty(self.request.user, penalty)
-        soft_delete_penalty(penalty=penalty, actor=request.user)
-        messages.success(request, _("Penalty deleted."))
+        scope = request.POST.get("scope", "group")
+        if scope not in ("single", "group"):
+            scope = "group"
+        soft_delete_penalty(penalty=penalty, actor=request.user, scope=scope)
+        if scope == "group" and penalty.group_id:
+            messages.success(request, _("Penalty deleted for all players of the group."))
+        else:
+            messages.success(request, _("Penalty deleted."))
         return redirect("matchdays:matchday_detail", pk=penalty.matchday.pk)
 
 

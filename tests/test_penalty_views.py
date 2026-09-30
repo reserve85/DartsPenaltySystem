@@ -502,3 +502,166 @@ def test_group_penalty_row_names_the_trigger_on_matchday_page(
     assert f"{catalog_group.description} — {players[0].name}" in content
     # ...while the thrower themself has NO penalty row.
     assert Penalty.objects.filter(player=players[0]).exists() is False
+
+
+# ---------------------------------------------------------------------------
+# Catalog: duplicate description guard (1. Strafkatalog)
+# ---------------------------------------------------------------------------
+def test_catalog_create_rejects_duplicate_description(admin_client, team, catalog_normal):
+    """Same description (trimmed, case-insensitive) -> form error, no 2nd row."""
+    response = admin_client.post(
+        reverse("penalties:catalog_create"),
+        {
+            "description": "  late arrival ",  # matches catalog_normal
+            "amount_eur": 7,
+            "type": "NORMAL",
+            f"team_active_{team.pk}": "on",
+            f"team_amount_{team.pk}": "7",
+        },
+    )
+    assert response.status_code == 200  # re-rendered with the error
+    assert "description" in response.context["form"].errors
+    assert PenaltyCatalogItem.objects.count() == 1
+
+
+def test_catalog_update_keeps_own_description(admin_client, team, catalog_normal):
+    """Renaming is optional: keeping the OWN description must save (no false hit)."""
+    response = admin_client.post(
+        reverse("penalties:catalog_update", args=[catalog_normal.pk]),
+        {
+            "description": catalog_normal.description,
+            "amount_eur": 6,
+            "type": "NORMAL",
+            f"team_amount_{team.pk}": "6",
+        },
+    )
+    assert response.status_code == 302
+    catalog_normal.refresh_from_db()
+    assert catalog_normal.amount_eur == Decimal(6)
+
+
+def test_catalog_update_rejects_description_of_other_item(
+    admin_client, team, catalog_manual, catalog_normal
+):
+    response = admin_client.post(
+        reverse("penalties:catalog_update", args=[catalog_manual.pk]),
+        {
+            "description": catalog_normal.description,  # owned by the OTHER item
+            "amount_eur": 1,
+            "type": "MANUAL",
+            f"team_amount_{team.pk}": "1",
+        },
+    )
+    assert response.status_code == 200
+    assert "description" in response.context["form"].errors
+    catalog_manual.refresh_from_db()
+    assert catalog_manual.description == "Manual"  # unchanged
+
+
+# ---------------------------------------------------------------------------
+# DOUBLES: the selected player is not offered in the other dropdown (2.)
+# ---------------------------------------------------------------------------
+def test_penalty_form_ships_mutual_partner_exclusion(
+    admin_client, matchday_with_players, catalog_doubles
+):
+    """Player -> partner AND partner -> player: the option is taken out of the offer."""
+    md, _players = matchday_with_players(3)
+    content = admin_client.get(reverse("penalties:penalty_create", args=[md.pk])).content.decode()
+
+    assert "function excludeOption" in content
+    assert "opt.disabled = excluded" in content
+    assert "opt.hidden = excluded" in content  # not shown, not selectable
+    # Both directions are wired (selected player out of the partner list and back).
+    assert "excludeOption(partner, player" in content
+    assert "excludeOption(player," in content
+
+
+# ---------------------------------------------------------------------------
+# Group penalty delete choice (3.) + readable group headline (4.)
+# ---------------------------------------------------------------------------
+def _assign_group(matchday_with_players, catalog_group, count=4):
+    md, players = matchday_with_players(count)
+    from app.penalties.services import assign_group_penalty
+
+    rows = assign_group_penalty(
+        matchday=md, trigger_player=players[0], catalog_item=catalog_group, actor=None
+    )
+    return md, players, rows
+
+
+def test_delete_group_penalty_single_scope_keeps_other_rows(
+    admin_client, matchday_with_players, catalog_group
+):
+    _md, _players, rows = _assign_group(matchday_with_players, catalog_group)
+    response = admin_client.post(
+        reverse("penalties:penalty_delete", args=[rows[0].pk]), {"scope": "single"}
+    )
+    assert response.status_code == 302
+    assert Penalty.objects.count() == 2  # siblings survive
+    assert Penalty.all_objects().count() == 3  # history survives
+    assert AuditLog.objects.filter(action=AuditAction.PENALTY_DELETED).count() == 1
+
+
+def test_delete_group_penalty_group_scope_removes_all_rows(
+    admin_client, matchday_with_players, catalog_group
+):
+    _md, _players, rows = _assign_group(matchday_with_players, catalog_group)
+    response = admin_client.post(
+        reverse("penalties:penalty_delete", args=[rows[0].pk]), {"scope": "group"}
+    )
+    assert response.status_code == 302
+    assert Penalty.objects.count() == 0
+    assert Penalty.all_objects().count() == 3
+    assert AuditLog.objects.filter(action=AuditAction.PENALTY_DELETED).count() == 3
+
+
+def test_delete_unknown_scope_falls_back_to_group(
+    admin_client, matchday_with_players, catalog_group
+):
+    _md, _players, rows = _assign_group(matchday_with_players, catalog_group)
+    response = admin_client.post(
+        reverse("penalties:penalty_delete", args=[rows[0].pk]), {"scope": "bogus"}
+    )
+    assert response.status_code == 302
+    assert Penalty.objects.count() == 0
+
+
+def test_group_penalty_edit_page_offers_delete_choice_and_names_players(
+    admin_client, matchday_with_players, catalog_group
+):
+    """Headline = affected player names (no raw hex id) + single/group choice."""
+    _md, _players, rows = _assign_group(matchday_with_players, catalog_group)
+    content = admin_client.get(
+        reverse("penalties:penalty_update", args=[rows[0].pk])
+    ).content.decode()
+
+    # The choice: ONLY this row vs. the WHOLE group (each with its own confirm).
+    assert 'name="scope" value="single"' in content
+    assert 'name="scope" value="group"' in content
+    # Readable headline: names of the charged players, never the group-id hex.
+    assert rows[0].group_id not in content
+    for row in rows:
+        assert row.player.name in content
+
+
+def test_single_penalty_edit_page_keeps_plain_delete(
+    admin_client, matchday_with_players, catalog_normal
+):
+    md, players = matchday_with_players(2)
+    from app.penalties.services import assign_penalty
+
+    penalty = assign_penalty(
+        matchday=md,
+        player=players[0],
+        catalog_item=catalog_normal,
+        amount_eur=5,
+        description_snapshot="Late",
+        actor=None,
+    )
+    content = admin_client.get(
+        reverse("penalties:penalty_update", args=[penalty.pk])
+    ).content.decode()
+
+    assert 'name="scope"' not in content  # no group choice without siblings
+    assert reverse("penalties:penalty_delete", args=[penalty.pk]) in content
+    assert "Editing penalty" in content or "Strafe bearbeiten" in content  # en / de catalog

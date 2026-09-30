@@ -111,6 +111,24 @@ class CatalogItemForm(forms.ModelForm):
             raise forms.ValidationError(_("The amount must be a positive number."))
         return amount
 
+    def clean_description(self):
+        """One catalog entry per description — a duplicate is rejected.
+
+        Compared trimmed and case-insensitively; editing an item may keep its
+        OWN description (the instance is excluded from the lookup).
+        """
+        description = (self.cleaned_data.get("description") or "").strip()
+        if description:
+            duplicates = PenaltyCatalogItem.objects.filter(description__iexact=description)
+            if self.instance.pk is not None:
+                duplicates = duplicates.exclude(pk=self.instance.pk)
+            if duplicates.exists():
+                raise forms.ValidationError(
+                    _("A penalty with this description already exists."),
+                    code="unique",
+                )
+        return description
+
     def clean(self):
         cleaned = super().clean()
         for team in self._teams:
