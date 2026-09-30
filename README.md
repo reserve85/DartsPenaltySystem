@@ -188,6 +188,36 @@ login form; a safety-net middleware also terminates stale sessions).
 Admin-created accounts are approved immediately. The workflow is also
 available in the Django admin (field + bulk actions).
 
+### Invitations (admin sends the account, no approval step)
+
+Instead of waiting for a self-registration, an admin can invite a person
+directly (**Administration → Users → Invitations**, `/accounts/users/invitations/`):
+
+1. **New invitation** — e-mail address plus pre-assignment: role, optional team
+   (captaincy, Captain/Admin only) and an optional existing player. The account
+   is created immediately with status **Invited** (`requested`) and an
+   *unusable* password — the address is reserved (a second invitation or a
+   self-signup with the same address is blocked).
+2. The invitee receives an e-mail with an acceptance link
+   (valid `INVITE_EXPIRE_DAYS` days, default **14**; anti-phishing note +
+   expiry date + sender included). On the invitations list an admin can
+   **Copy link** (hand it over via WhatsApp/phone), **Resend** (new token,
+   fresh timer — the old link dies) or **Cancel** (deletes the account again).
+3. Clicking the link lets the invitee **set a password** — the account becomes
+   *approved* with the pre-assigned player/role/team applied and the e-mail
+   marked verified. **No approval step follows**; all admins are notified by
+   e-mail (`Invited user completed registration: …`) and in-app bell.
+4. While the invitation is open, the pre-assigned player stays selectable in
+   every approval/create-user form. The moment the player is linked to any
+   other user, the invitation becomes obsolete and is **deleted automatically**
+   (audit log: `user_invite_obsoleted`).
+5. Requested users cannot be edited or deactivated in the user list — a wrong
+   entry is fixed with **Cancel** (the person may self-register later and then
+   goes through the normal approval flow above).
+
+Expiry/accepted states show as badges on the list (open / expires soon /
+expired / accepted); the invitation row is kept after acceptance for history.
+
 **Spam protection** (no external services, no JS):
 
 - **Honeypot** (`ACCOUNT_SIGNUP_FORM_HONEYPOT_FIELD`): an off-screen field on
@@ -221,6 +251,10 @@ See `.env.example` for the full list: `DJANGO_SECRET_KEY`, `DJANGO_DEBUG`,
 `SUPPORT_EMAIL`, `PUBLIC_SITE_URL` (absolute links inside e-mails),
 `ACCOUNT_EMAIL_VERIFICATION` (`mandatory`/`optional`/`none`). Tests use the
 in-memory e-mail backend automatically.
+
+**Invitations**: `INVITE_EXPIRE_DAYS` (default `14`) — days until an
+admin-sent invitation link expires; Resend regenerates the token and resets
+the timer.
 
 **HTTPS hardening** (enable behind a TLS reverse proxy / Portainer):
 `DJANGO_SECURE_SSL_REDIRECT=True` turns on HTTP→HTTPS redirects plus secure
