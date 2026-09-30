@@ -190,6 +190,10 @@ def assign_group_penalty(
     ``affects_both_players``) that player is EXCLUDED as well — every remaining
     participant pays. All rows share one ``group_id``; one PENALTY_ASSIGNED
     audit entry per generated row.
+
+    Every generated row names WHO caused the penalty in its
+    ``description_snapshot``: the catalog text plus the trigger player and —
+    when excluded too — the doubles partner, e.g. ``Highfinish Tag — MP1 & MP2``.
     """
     if catalog_item.type != PenaltyType.PER_ALL_OTHER_MATCHDAY_PLAYERS:
         raise ValidationError(_("A group penalty requires a group catalog item."))
@@ -223,6 +227,15 @@ def assign_group_penalty(
     metadata: dict = {"group_id": group_id, "trigger_player_pk": trigger_player.pk}
     if double_partner is not None:
         metadata["double_partner_pk"] = double_partner.pk
+    # Snapshot = catalog text + WHO caused it (thrower, plus the doubles
+    # partner when that one is excluded too) — language-neutral, so no extra UI
+    # column is needed. The base text is trimmed so the combined value always
+    # fits description_snapshot (255 chars) with the names intact.
+    causers = " & ".join(
+        [trigger_player.name] + ([double_partner.name] if double_partner is not None else [])
+    )
+    suffix = f" — {causers}"
+    description = f"{catalog_item.description[: max(0, 255 - len(suffix))]}{suffix}"
     created: list[Penalty] = []
     with transaction.atomic():
         for participation in other_participants:
@@ -230,7 +243,7 @@ def assign_group_penalty(
                 matchday=matchday,
                 player=participation.player,
                 catalog_item=catalog_item,
-                description_snapshot=catalog_item.description,
+                description_snapshot=description,
                 amount_eur=amount,
                 group_id=group_id,
                 created_by=actor,

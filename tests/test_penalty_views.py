@@ -411,6 +411,9 @@ def test_assign_group_with_partner_via_view(
     charged = {row.player_id for row in Penalty.objects.all()}
     assert len(charged) == 3
     assert players[0].pk not in charged and players[1].pk not in charged
+    # Both causing players are named in the rows.
+    expected = f"{catalog_group_doubles.description} — {players[0].name} & {players[1].name}"
+    assert all(row.description_snapshot == expected for row in Penalty.objects.all())
 
 
 def test_partner_ignored_for_unflagged_item_via_view(
@@ -480,3 +483,22 @@ def test_penalty_form_page_renders_partner_select(
     both_ids_line = next(line for line in content.splitlines() if "const bothIds" in line)
     assert str(catalog_doubles.pk) in both_ids_line
     assert str(catalog_normal.pk) not in both_ids_line
+
+
+def test_group_penalty_row_names_the_trigger_on_matchday_page(
+    admin_client, matchday_with_players, catalog_group
+):
+    """The matchday page shows WHO caused the group penalty (the thrower)."""
+    md, players = matchday_with_players(3)
+    response = admin_client.post(
+        reverse("penalties:penalty_create", args=[md.pk]),
+        {"catalog_item": catalog_group.pk, "player": players[0].pk},
+    )
+    assert response.status_code == 302
+    assert Penalty.objects.count() == 2
+
+    content = admin_client.get(reverse("matchdays:matchday_detail", args=[md.pk])).content.decode()
+    # "180 — MP1" (en / de catalog text is user data, the name is appended)
+    assert f"{catalog_group.description} — {players[0].name}" in content
+    # ...while the thrower themself has NO penalty row.
+    assert Penalty.objects.filter(player=players[0]).exists() is False

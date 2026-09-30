@@ -86,7 +86,8 @@ def test_group_180_expands_to_other_participants(matchday_with_players, catalog_
     assert len(created) == 5
     assert all(p.group_id == created[0].group_id for p in created)
     assert all(p.amount_eur == Decimal(1) for p in created)
-    assert all(p.description_snapshot == catalog_group.description for p in created)
+    expected = f"{catalog_group.description} — {trigger.name}"
+    assert all(p.description_snapshot == expected for p in created)
 
     created_players = {p.player_id for p in created}
     assert created_players == {player.pk for player in players[1:]}
@@ -334,6 +335,9 @@ def test_group_penalty_excludes_both_doubles_players(
     charged = {row.player_id for row in Penalty.objects.all()}
     assert charged == {player.pk for player in players[2:]}
     assert all(row.group_id == created[0].group_id for row in Penalty.objects.all())
+    # Every row names BOTH causing players (they are why the others pay).
+    expected = f"{catalog_group_doubles.description} — {players[0].name} & {players[1].name}"
+    assert all(row.description_snapshot == expected for row in Penalty.objects.all())
     entries = list(AuditLog.objects.filter(action=AuditAction.PENALTY_ASSIGNED))
     assert len(entries) == 4
     assert all(entry.metadata["double_partner_pk"] == players[1].pk for entry in entries)
@@ -353,6 +357,39 @@ def test_group_penalty_with_partner_needs_three_participants(
             actor=admin_user,
         )
     assert Penalty.objects.count() == 0
+
+
+def test_group_snapshot_names_the_causing_player(matchday_with_players, catalog_group, admin_user):
+    """The rows state WHO caused the penalty — the others pay because of them."""
+    md, players = matchday_with_players(3)
+    assign_group_penalty(
+        matchday=md, trigger_player=players[0], catalog_item=catalog_group, actor=admin_user
+    )
+    expected = f"{catalog_group.description} — {players[0].name}"
+    assert all(row.description_snapshot == expected for row in Penalty.objects.all())
+    # The thrower themself is NOT charged — only named.
+    assert not Penalty.objects.filter(player=players[0]).exists()
+
+
+def test_group_snapshot_keeps_names_when_catalog_text_is_long(matchday_with_players, admin_user):
+    """description_snapshot is CharField(255): trim the text, never the names."""
+    from app.penalties.models import PenaltyCatalogItem, PenaltyType
+
+    md, players = matchday_with_players(3)
+    item = PenaltyCatalogItem.objects.create(
+        description="H" * 250,
+        amount_eur=1,
+        type=PenaltyType.PER_ALL_OTHER_MATCHDAY_PLAYERS,
+    )
+    assign_group_penalty(
+        matchday=md, trigger_player=players[0], catalog_item=item, actor=admin_user
+    )
+
+    texts = set(Penalty.objects.values_list("description_snapshot", flat=True))
+    assert len(texts) == 1  # every row carries the same snapshot
+    text = texts.pop()
+    assert len(text) <= 255
+    assert text.endswith(f"— {players[0].name}")
 
 
 def test_doubles_pair_edit_and_delete_hit_both_rows(
