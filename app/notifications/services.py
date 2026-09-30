@@ -391,9 +391,7 @@ class NotificationService:
         return self.send_templated(
             recipients=[user],
             template_base="emails/invitation",
-            subject=_("You have been invited to {site}").format(
-                site="Darts Penalty Manager"
-            ),
+            subject=_("You have been invited to {site}").format(site="Darts Penalty Manager"),
             context={
                 "invitation": invitation,
                 "invitee_email": user.email,
@@ -434,9 +432,7 @@ class NotificationService:
             recipients=recipients,
             bcc=bcc,
             template_base="emails/invitation_completed",
-            subject=_("Invited user completed registration: {email}").format(
-                email=user.email
-            ),
+            subject=_("Invited user completed registration: {email}").format(email=user.email),
             context={
                 "new_user": user,
                 "users_url": absolute_url(reverse("accounts:user_list"), request),
