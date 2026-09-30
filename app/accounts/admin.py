@@ -2,7 +2,7 @@ from typing import ClassVar
 
 from django.contrib import admin, messages
 
-from app.accounts.models import ApprovalStatus, User
+from app.accounts.models import ApprovalStatus, Invitation, User
 from app.accounts.services import mark_emails_verified
 from app.core.models import AuditAction
 from app.core.services import log_action
@@ -50,7 +50,11 @@ class UserAdmin(admin.ModelAdmin):
     @admin.action(description="Approve selected users (e-mail is sent)")
     def approve_users(self, request, queryset):
         count = 0
-        for user in queryset.exclude(approval_status=ApprovalStatus.APPROVED):
+        # requested (invited) accounts have no password yet and are managed
+        # via Cancel/Resend on the invitations screen — never approved here.
+        for user in queryset.exclude(
+            approval_status__in=[ApprovalStatus.APPROVED, ApprovalStatus.REQUESTED]
+        ):
             user.approval_status = ApprovalStatus.APPROVED
             user.save(update_fields=["approval_status"])
             mark_emails_verified(user)
@@ -62,10 +66,34 @@ class UserAdmin(admin.ModelAdmin):
     @admin.action(description="Reject selected users (e-mail is sent)")
     def reject_users(self, request, queryset):
         count = 0
-        for user in queryset.exclude(approval_status=ApprovalStatus.REJECTED):
+        for user in queryset.exclude(
+            approval_status__in=[ApprovalStatus.REJECTED, ApprovalStatus.REQUESTED]
+        ):
             user.approval_status = ApprovalStatus.REJECTED
             user.save(update_fields=["approval_status"])
             log_action(AuditAction.USER_REJECTED, user=request.user, target=user)
             notification_service.send_account_rejected(user=user, request=request)
             count += 1
         self.message_user(request, f"{count} user(s) rejected.", messages.SUCCESS)
+
+
+@admin.register(Invitation)
+class InvitationAdmin(admin.ModelAdmin):
+    """Read-mostly overview — lifecycle management lives in the app UI."""
+
+    list_display: ClassVar[list] = [
+        "user_email",
+        "role",
+        "team",
+        "player",
+        "invited_by",
+        "created_at",
+        "expires_at",
+        "accepted_at",
+    ]
+    search_fields: ClassVar[list] = ["user__email"]
+    ordering: ClassVar[list] = ["-created_at"]
+
+    @admin.display(description="E-mail", ordering="user__email")
+    def user_email(self, obj):
+        return obj.user.email
