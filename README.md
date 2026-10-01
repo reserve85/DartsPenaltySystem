@@ -308,8 +308,10 @@ New penalties are **never** mailed row by row. Each penalty is written to
 `flush_outbox()` (`app/notifications/services.py`) claims due rows atomically
 (`WHERE sent_at IS NULL` → the scheduler thread and an external cron can never
 send twice) and groups everything **per user** into one message. Soft-deleted
-penalties drop out of the batch, a delivery failure is retried up to
-3 times and then abandoned with `last_error`. Two triggers:
+penalties drop out of the batch, a delivery failure **or a rendering crash** is
+retried up to 3 times and then abandoned with `last_error`. Delivered rows are
+pruned after 30 days (`SENT_RETENTION_DAYS`) by the same two triggers, so the
+outbox table stays bounded. Two triggers:
 
 - the **in-process scheduler** (daemon thread, every
   `NOTIFICATIONS_SCHEDULER_INTERVAL` seconds, default 30) — no cron needed;

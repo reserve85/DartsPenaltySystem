@@ -9,7 +9,6 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies: ClassVar[list] = [
         ("teams", "0001_initial"),
         migrations.swappable_dependency(settings.AUTH_USER_MODEL),
@@ -83,9 +82,7 @@ class Migration(migrations.Migration):
                 "verbose_name_plural": "cashier assignments",
                 "ordering": ["team__name", "-valid_from"],
                 "indexes": [
-                    models.Index(
-                        fields=["team", "valid_to"], name="teams_teamc_team_id_b453cf_idx"
-                    )
+                    models.Index(fields=["team", "valid_to"], name="teams_teamc_team_id_b453cf_idx")
                 ],
                 "constraints": [
                     models.UniqueConstraint(

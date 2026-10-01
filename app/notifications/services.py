@@ -121,6 +121,11 @@ def absolute_url(path: str, request: HttpRequest | None = None) -> str:
 # ---------------------------------------------------------------------------
 MAX_SEND_ATTEMPTS = 3
 
+# Delivered rows older than this are deleted by ``prune_outbox()`` (called by
+# the scheduler tick and ``manage.py flush_notification_outbox``) so the outbox
+# table stays bounded. PENDING/failed rows are never pruned.
+SENT_RETENTION_DAYS = 30
+
 
 def _parse_quiet_window(raw: str | None) -> tuple[dt_time, dt_time] | None:
     """``"22:00-07:00"`` -> ``(22:00, 07:00)``; anything unusable -> ``None``."""
@@ -223,6 +228,27 @@ def flush_outbox(*, now: datetime | None = None) -> int:
     return sent
 
 
+def prune_outbox(*, now: datetime | None = None) -> int:
+    """Delete DELIVERED rows older than ``SENT_RETENTION_DAYS`` (review L4).
+
+    Keeps the outbox table bounded without touching pending rows (they still
+    owe a delivery) or recently sent ones (useful as a short-term audit trail).
+    The returned count is the number of OUTBOX ROWS — counted explicitly,
+    because ``QuerySet.delete()`` would also count cascade-deleted M2M
+    through-rows of the attached penalties. Idempotent — called by the
+    scheduler tick and ``flush_notification_outbox``.
+    """
+    cutoff = (now or timezone.now()) - timedelta(days=SENT_RETENTION_DAYS)
+    stale = NotificationOutbox.objects.filter(sent_at__isnull=False, sent_at__lt=cutoff)
+    count = stale.count()
+    if count:
+        stale.delete()
+        logger.info(
+            "Pruned %s delivered outbox row(s) older than %s days.", count, SENT_RETENTION_DAYS
+        )
+    return count
+
+
 def _deliver_outbox_group(rows: list[NotificationOutbox], now: datetime) -> str:
     """Claim one user's due rows and turn them into ONE e-mail.
 
@@ -245,7 +271,19 @@ def _deliver_outbox_group(rows: list[NotificationOutbox], now: datetime) -> str:
             "penalty_id", flat=True
         )
     )
-    outcome = _send_outbox_group(user=user, penalty_ids=penalty_ids, language=rows[0].language)
+    try:
+        outcome = _send_outbox_group(user=user, penalty_ids=penalty_ids, language=rows[0].language)
+    except Exception:
+        # Review B4: a rendering/context crash AFTER the claim must follow the
+        # SAME path as a failed send — unclaim (retry up to MAX_SEND_ATTEMPTS)
+        # instead of leaving the rows marked "sent" forever. The traceback goes
+        # to the log; the row keeps the bounded generic last_error below.
+        logger.exception(
+            "Outbox delivery crashed for user pk=%s (rows %s) — retry path.",
+            user.pk,
+            row_ids,
+        )
+        outcome = "failed"
 
     if outcome != "failed":
         return outcome
@@ -705,8 +743,10 @@ class NotificationService:
     ) -> int:
         """Payment confirmation ("Bestätigung für die Zahlung") for ONE recipient.
 
-        Remaining balance and the full/partial verdict are scoped to the
-        payment's season — exactly what the financial overview shows.
+        Remaining balance and the full/partial verdict use the PLAYER's own
+        season balance (all teams) — the exact number the payer sees in the
+        "own penalties" section of the financial overview. The per-team table
+        of the overview is team-scoped; single-team clubs see identical numbers.
         """
         from app.penalties.services import player_balance
 
@@ -753,17 +793,19 @@ class NotificationService:
         """Payout confirmation ("Bestätigung für die Auszahlung") for ONE recipient.
 
         ``payout.amount_eur`` is negative by design — the mail shows the
-        paid-out amount as a positive number. The remaining credit is scoped
-        to the payment's season, exactly what the financial overview shows.
+        paid-out amount as a positive number. The remaining credit is
+        TEAM-scoped (``player_team_balance`` for the payout's own team/season),
+        exactly the pot the payout was capped against — credit the player
+        still holds with OTHER teams belongs to those pots and never appears
+        in this mail (review L2).
         """
-        from app.penalties.services import player_balance
+        from app.penalties.services import player_team_balance
 
         season = payout.season
-        remaining = player_balance(payout.player, season=season)
-        # Credit left after the payout; 0 (falsy) = fully paid out, so the
-        # template branches on ``credit`` alone (cross-team leftovers of the
-        # GLOBAL balance don't change the fact that THIS credit is gone).
-        credit = -remaining if remaining < 0 else Decimal(0)
+        team_credit = player_team_balance(payout.player, payout.team, season=season)
+        # Team credit left after the payout; 0 (falsy) = THIS pot's credit is
+        # fully paid out, so the template branches on ``credit`` alone.
+        credit = -team_credit if team_credit < 0 else Decimal(0)
         return self.send_templated(
             recipients=[user],
             template_base="emails/penalty_payout",

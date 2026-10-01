@@ -6,7 +6,6 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies: ClassVar[list] = [
         ("core", "0008_alter_auditlog_action"),
     ]

@@ -368,7 +368,13 @@ class InviteCancelView(GroupRequiredMixin, LoginRequiredMixin, View):
 
     def post(self, request, pk):
         invitation = get_object_or_404(Invitation, pk=pk)
-        cancel_invitation(invitation, actor=request.user)
+        try:
+            cancel_invitation(invitation, actor=request.user)
+        except ValidationError as error:
+            # e.g. crafted POST against an already ACCEPTED invitation —
+            # refused server-side (review B3), never a 500 or a silent delete.
+            messages.error(request, _invite_error_text(error))
+            return redirect("accounts:invite_list")
         messages.success(request, _("Invitation cancelled — the account was deleted."))
         return redirect("accounts:invite_list")
 

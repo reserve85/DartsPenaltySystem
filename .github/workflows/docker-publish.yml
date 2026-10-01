@@ -15,7 +15,14 @@ env:
   IMAGE_NAME: ${{ github.repository_owner }}/darts_penalty_system
 
 jobs:
+  # Gate (review L3): the image is only built/pushed when lint, formatting,
+  # compilemessages and the test suite all pass — reuses the canonical
+  # Tests workflow instead of duplicating its steps.
+  test:
+    uses: ./.github/workflows/test.yml
+
   build-and-push:
+    needs: [test]
     runs-on: ubuntu-latest
     permissions:
       contents: read

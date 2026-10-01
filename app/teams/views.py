@@ -293,15 +293,11 @@ class CashierListView(GroupRequiredMixin, LoginRequiredMixin, ListView):
         # ONE query for the open rows, ONE for the history (review L6: the
         # page reads open rows directly — no second lookup helper).
         open_rows = list(
-            TeamCashier.objects.filter(valid_to__isnull=True).select_related(
-                "user__player_link"
-            )
+            TeamCashier.objects.filter(valid_to__isnull=True).select_related("user__player_link")
         )
         current = {row.team_id: row.user for row in open_rows}
         history_by_team: dict = {team.pk: [] for team in teams}
-        for row in TeamCashier.objects.select_related(
-            "user__player_link", "created_by", "team"
-        ):
+        for row in TeamCashier.objects.select_related("user__player_link", "created_by", "team"):
             history_by_team.setdefault(row.team_id, []).append(row)
 
         is_admin = user_is_admin(user)

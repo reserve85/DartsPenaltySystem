@@ -65,11 +65,14 @@ def _run() -> None:
     while True:
         time.sleep(interval)
         try:
-            from app.notifications.services import flush_outbox
+            from app.notifications.services import flush_outbox, prune_outbox
 
             sent = flush_outbox()
             if sent:
                 logger.info("Outbox scheduler delivered %s notification(s).", sent)
+            # Bounded table (L4): delivered rows older than the retention
+            # window are dropped on the same tick — never pending ones.
+            prune_outbox()
         except Exception:  # pragma: no cover — a dead thread must never be silent
             logger.exception("Outbox flush failed.")
         finally:

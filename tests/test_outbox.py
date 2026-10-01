@@ -9,7 +9,10 @@ pin the whole contract:
 * opt-out, soft-deleted rows and inactive recipients never mail,
 * the atomic claim makes the scheduler thread and the management command
   idempotent (never a second copy),
-* a dead SMTP retries and is abandoned after ``MAX_SEND_ATTEMPTS``.
+* a dead SMTP retries and is abandoned after ``MAX_SEND_ATTEMPTS`` — and a
+  rendering crash AFTER the claim follows the very same retry path (B4),
+* ``prune_outbox()`` bounds the table: delivered rows are dropped after
+  ``SENT_RETENTION_DAYS``, pending ones never (L4).
 
 ``test_notifications.py`` / ``test_email_audit.py`` keep covering the delivery
 CONTENT of a single penalty (they link users as ``immediate``); this module
@@ -35,10 +38,12 @@ from django.utils import timezone
 from app.core.choices import PenaltyNotifyChoice
 from app.notifications.models import NotificationOutbox
 from app.notifications.services import (
+    SENT_RETENTION_DAYS,
     _quiet_window_end,
     _send_after_for,
     flush_outbox,
     notification_service,
+    prune_outbox,
 )
 from app.penalties.services import assign_penalty, record_payment, soft_delete_penalty
 
@@ -417,3 +422,83 @@ def test_malformed_quiet_window_is_ignored(settings, caplog):
     assert _quiet_window_end() is None
     settings.NOTIFICATION_QUIET_HOURS = ""
     assert _quiet_window_end() is None
+
+
+def test_rendering_crash_after_claim_is_retried_not_lost(
+    settings, caplog, matchday_with_players, catalog_normal, admin_user
+):
+    """Review B4: an exception AFTER the claim must unclaim like a failed send.
+
+    The row may never stay marked ``sent_at`` forever — a rendering/context
+    bug would otherwise silently eat the notification instead of retrying it
+    up to ``MAX_SEND_ATTEMPTS``.
+    """
+    settings.NOTIFICATION_COALESCE_SECONDS = 90
+    md, players = matchday_with_players(2)
+    _link(players[0], mode="immediate")
+    _assign(md, players[0], catalog_normal, admin_user)
+    NotificationOutbox.objects.update(send_after=timezone.now())  # due now
+
+    with (
+        mock.patch(
+            "app.notifications.services.notification_service.send_penalty_created",
+            side_effect=RuntimeError("context exploded"),
+        ),
+        caplog.at_level(logging.ERROR, logger="app.notifications"),
+    ):
+        assert flush_outbox() == 0
+
+    assert any("crashed" in record.message for record in caplog.records)
+    row = NotificationOutbox.objects.get()
+    assert row.sent_at is None  # unclaimed -> the next flush retries
+    assert row.attempts == 1
+    assert len(mail.outbox) == 0
+
+    # the next flush delivers normally (same contract as the SMTP-failure path)
+    assert flush_outbox() == 1
+    row.refresh_from_db()
+    assert row.sent_at is not None
+    assert row.attempts == 2
+    assert len(mail.outbox) == 1
+
+
+def test_prune_outbox_drops_only_old_delivered_rows(
+    db, matchday_with_players, catalog_normal, admin_user
+):
+    """Review L4: delivered rows age out, pending and fresh ones never do.
+
+    The returned count is the number of OUTBOX ROWS even when the stale row
+    carries attached penalties (whose M2M through-rows cascade-delete too).
+    """
+    user = User.objects.create_user(email="prune@example.com", password="pw")
+    # Assign BEFORE the rows exist — the flush inside _assign must not claim
+    # the pending row we want to keep untouched.
+    md, players = matchday_with_players(2)
+    penalty = _assign(md, players[1], catalog_normal, admin_user)
+    now = timezone.now()
+    old_sent = NotificationOutbox.objects.create(
+        user=user,
+        email=user.email,
+        send_after=now - timedelta(days=SENT_RETENTION_DAYS + 5),
+        sent_at=now - timedelta(days=SENT_RETENTION_DAYS + 1),
+    )
+    fresh_sent = NotificationOutbox.objects.create(
+        user=user,
+        email=user.email,
+        send_after=now - timedelta(hours=1),
+        sent_at=now - timedelta(hours=1),
+    )
+    pending_old = NotificationOutbox.objects.create(
+        user=user,
+        email=user.email,
+        send_after=now - timedelta(days=99),  # never claimed -> must survive
+    )
+    old_sent.penalties.set([penalty])
+
+    assert prune_outbox() == 1  # ONE row, not row + M2M through-rows
+    assert set(NotificationOutbox.objects.values_list("pk", flat=True)) == {
+        fresh_sent.pk,
+        pending_old.pk,
+    }
+    assert old_sent.pk not in NotificationOutbox.objects.values_list("pk", flat=True)
+    assert prune_outbox() == 0  # idempotent

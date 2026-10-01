@@ -137,7 +137,14 @@ def cancel_invitation(invitation: Invitation, *, actor) -> None:
 
     The person may self-register later and then goes through the normal
     pending → approval flow.
+
+    Accepted invitations are REFUSED (review B3): the account behind them is a
+    regular member with history — cancelling is a request-level action only,
+    the template already hides the button and the service enforces it for
+    crafted POSTs (same rule as ``resend_invitation``).
     """
+    if invitation.accepted_at is not None:
+        raise ValidationError(_("This invitation has already been used."))
     with transaction.atomic():
         log_action(
             AuditAction.USER_INVITE_CANCELLED,

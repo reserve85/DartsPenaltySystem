@@ -63,7 +63,9 @@ class TeamCashier(models.Model):
         verbose_name=_("cashier (snapshot)"),
         help_text=_("Display name at assignment time — survives account deletion."),
     )
-    valid_from = models.DateTimeField(default=timezone.now, db_index=True, verbose_name=_("valid from"))
+    valid_from = models.DateTimeField(
+        default=timezone.now, db_index=True, verbose_name=_("valid from")
+    )
     valid_to = models.DateTimeField(
         null=True, blank=True, db_index=True, verbose_name=_("valid to")
     )

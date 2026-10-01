@@ -14,7 +14,12 @@ env:
   IMAGE_NAME: ${{ github.repository_owner }}/darts_penalty_system
 
 jobs:
+  # Gate (review L3): a published release must pass the same checks as main.
+  test:
+    uses: ./.github/workflows/test.yml
+
   build-and-publish:
+    needs: [test]
     runs-on: ubuntu-latest
     permissions:
       contents: read

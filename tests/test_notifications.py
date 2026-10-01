@@ -363,6 +363,60 @@ def test_partial_payout_email_shows_remaining_credit(
     assert re.search(r"(Remaining credit|Verbleibendes Guthaben): 4[.,]00", body)
 
 
+def test_payout_email_credit_is_team_scoped(
+    matchday_with_players, catalog_normal, admin_user, cashier, other_team
+):
+    """Review L2: leftover credit with ANOTHER team never shows up in this mail.
+
+    The payout drains team A's pot completely — the confirmation must say
+    "Full payout" even though the player still holds credit with team B
+    (a different pot, capped against a different balance).
+    """
+    from datetime import date
+
+    from app.matchdays.models import Matchday, MatchdayPlayer
+    from app.teams.services import set_cashier
+
+    md_a, players = matchday_with_players(2)
+    player = players[0]
+    _link_user(player)
+    # Team A: 5.00 € owed, 7.00 € paid -> 2.00 € credit in THIS pot.
+    assign_penalty(
+        matchday=md_a,
+        player=player,
+        catalog_item=catalog_normal,
+        amount_eur=5,
+        description_snapshot="Late arrival",
+        actor=admin_user,
+    )
+    record_payment(player=player, team=md_a.team, amount_eur=7, actor=admin_user)
+    # Team B: its own cashier, 5.00 € owed, 6.00 € paid -> 1.00 € credit.
+    set_cashier(team=other_team, user=admin_user, actor=admin_user)
+    md_b = Matchday.objects.create(
+        team=other_team, opponent="SV Beispiel", venue="home", date=date(2026, 9, 25)
+    )
+    MatchdayPlayer.objects.create(matchday=md_b, player=player)
+    assign_penalty(
+        matchday=md_b,
+        player=player,
+        catalog_item=catalog_normal,
+        amount_eur=5,
+        description_snapshot="Late arrival",
+        actor=admin_user,
+    )
+    record_payment(player=player, team=other_team, amount_eur=6, actor=admin_user)
+    mail.outbox.clear()
+
+    # Full payout of team A's 2.00 € credit …
+    record_payout(player=player, team=md_a.team, amount_eur=2, actor=admin_user)
+
+    body = next(m for m in mail.outbox if m.to == ["member@example.com"]).body
+    # … team A's pot is empty -> FULL payout, even though 1.00 € credit
+    # remains with team B (which this mail does not talk about).
+    assert "Full payout" in body or "Vollständige Auszahlung" in body
+    assert "Partial payout" not in body and "Teilauszahlung" not in body
+
+
 # ---------------------------------------------------------------------------
 # Fault tolerance / configuration
 # ---------------------------------------------------------------------------

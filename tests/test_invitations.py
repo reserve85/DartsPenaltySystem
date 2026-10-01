@@ -389,6 +389,34 @@ def test_cancel_deletes_user_frees_player_and_allows_later_signup(
     assert user.approval_status == ApprovalStatus.PENDING
 
 
+def test_cancel_is_refused_for_an_accepted_invitation(
+    admin_client, admin_user, player, role_groups
+):
+    """Review B3: the cancel guard lives SERVER-SIDE, not only in the template.
+
+    A crafted POST against an already ACCEPTED invitation must never hard-delete
+    the registered account — the view answers with a message and the row and
+    user both survive (same rule as resend).
+    """
+    invitation = _invite(player=player, invited_by=admin_user)
+    response = _accept(Client(), invitation)
+    assert response.status_code == 302  # acceptance worked
+    invitation.refresh_from_db()
+    assert invitation.accepted_at is not None
+
+    response = admin_client.post(
+        reverse("accounts:invite_cancel", args=[invitation.pk]), follow=True
+    )
+
+    assert response.status_code == 200
+    assert User.objects.filter(email=INVITEE).exists()  # account survived
+    assert Invitation.objects.filter(pk=invitation.pk).exists()  # row survived
+    assert not AuditLog.objects.filter(action=AuditAction.USER_INVITE_CANCELLED).exists()
+    # the admin is told WHY nothing happened (language-tolerant)
+    content = response.content.decode()
+    assert "already been used" in content or "bereits verwendet" in content
+
+
 # ---------------------------------------------------------------------------
 # 6) Obsolete rule
 # ---------------------------------------------------------------------------

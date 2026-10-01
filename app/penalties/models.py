@@ -150,8 +150,9 @@ class Payment(models.Model):
     """A (partial) payment from a player towards ONE team's club pot — or a PAYOUT.
 
     Balances are ``Σ penalties − Σ payments`` per team (M3): a player owing
-    25.00 € may pay e.g. 20.00 € — recorded by an Admin or the Captain of
-    that team — and still owes the remaining 5.00 €. There is no per-row
+    25.00 € may pay e.g. 20.00 € — recorded by the team's current cashier
+    (Kasse, snapshotted in ``received_by``) — and still owes the remaining
+    5.00 €. There is no per-row
     "paid" state on ``Penalty`` anymore.
 
     A NEGATIVE ``amount_eur`` is a **payout** (Auszahlung): real money leaves

@@ -369,8 +369,9 @@ class PaymentForm(forms.Form):
 
     Cross-team pairs are ALLOWED by design (see ``test_payment_is_team_scoped``):
     a player may settle a debt owed to another team's pot — the global player
-    balance nets penalties and payments across teams. The permission check
-    (Admin / Captain of THAT team) happens in the view.
+    balance nets penalties and payments across teams. The permission check —
+    STRICTLY the team's current cashier, admins included (decision 7) — happens
+    in the view (``PaymentCreateView``).
     """
 
     team = forms.ModelChoiceField(queryset=Team.objects.all(), label=_("Team"))

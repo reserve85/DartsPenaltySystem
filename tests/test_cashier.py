@@ -237,9 +237,7 @@ def test_cashier_list_option_labels_are_privacy_aware(
     )
     linked.player_link = Player.objects.create(name="Public Name", team=team)
     linked.save(update_fields=["player_link"])
-    User.objects.create_user(
-        email="plain@example.com", password="pw", approval_status="approved"
-    )
+    User.objects.create_user(email="plain@example.com", password="pw", approval_status="approved")
 
     captain_html = other_captain_client.get(reverse("teams:cashier_list")).content.decode()
     assert "Public Name" in captain_html  # the player name is the label …

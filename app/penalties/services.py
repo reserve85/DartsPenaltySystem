@@ -191,15 +191,20 @@ def record_payout(*, player, team, amount_eur, actor, season=None) -> Payment:
     amount = Decimal(amount_eur)
     if amount <= 0:
         raise ValidationError(_("The amount must be a positive number."))
-    credit = player_team_balance(player, team, season=season)
-    if credit >= 0:
-        raise ValidationError(_("This player has no credit to pay out."))
-    if amount > -credit:
-        raise ValidationError(_("The payout exceeds the available credit."))
-    received = cashier_user_for(team)
-    if received is None:
-        raise ValidationError(_("No usable cashier is set for this team yet."))
     with transaction.atomic():
+        # Guards + insert share ONE unit of work (review L5): the credit is
+        # re-read inside the transaction, so two payouts can never both pass
+        # the "credit exists" check and drain the pot twice. Raising here
+        # rolls back cleanly — nothing was written yet. Original guard order
+        # (amount → credit → cashier) is preserved.
+        credit = player_team_balance(player, team, season=season)
+        if credit >= 0:
+            raise ValidationError(_("This player has no credit to pay out."))
+        if amount > -credit:
+            raise ValidationError(_("The payout exceeds the available credit."))
+        received = cashier_user_for(team)
+        if received is None:
+            raise ValidationError(_("No usable cashier is set for this team yet."))
         payment = Payment.objects.create(
             player=player,
             team=team,

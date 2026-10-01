@@ -6,6 +6,7 @@ recorded payments (both channels), approval decisions, reverted payments and
 changed/deleted penalties — always language-tolerant (the local ``.mo`` is
 stale for every new msgid).
 """
+
 from decimal import Decimal
 
 import pytest
@@ -111,7 +112,7 @@ def test_tabs_render_and_split_read_rows(admin_client, admin_user):
     assert "Still unread bell" in all_html
     assert "Already read bell" in all_html
     # active tab highlighting
-    assert 'nav-link active' in unread_html and 'nav-link active' in all_html
+    assert "nav-link active" in unread_html and "nav-link active" in all_html
 
 
 def test_mark_as_read_link_carries_next_and_returns_to_unread_tab(admin_client, admin_user):
@@ -126,8 +127,6 @@ def test_mark_as_read_link_carries_next_and_returns_to_unread_tab(admin_client, 
     assert response.url == list_url
     row.refresh_from_db()
     assert row.unread is False
-
-
 
 
 # ---------------------------------------------------------------------------
@@ -149,9 +148,7 @@ def test_delete_one_removes_only_the_callers_row(admin_client, admin_user, capta
 
 def test_delete_one_rejects_a_foreign_row(admin_client, captain_user):
     theirs = _make(captain_user, verb="Foreign row")
-    response = admin_client.post(
-        reverse("notifications_manage:delete_one", args=[theirs.pk])
-    )
+    response = admin_client.post(reverse("notifications_manage:delete_one", args=[theirs.pk]))
     assert response.status_code == 404
     assert Notification.objects.filter(pk=theirs.pk).exists()
 
@@ -195,9 +192,7 @@ def test_delete_read_keeps_unread_and_foreign_rows(admin_client, admin_user, cap
     Notification.objects.filter(pk=foreign_read.pk).update(unread=False)
     next_url = reverse("notifications:unread")
 
-    response = admin_client.post(
-        reverse("notifications_manage:delete_read"), {"next": next_url}
-    )
+    response = admin_client.post(reverse("notifications_manage:delete_read"), {"next": next_url})
     assert response.status_code == 302
     assert response.url == next_url
     assert not Notification.objects.filter(pk=read_row.pk).exists()
@@ -247,9 +242,7 @@ def test_new_penalty_creates_warning_row_for_the_player(
     assert "New penalty" in row.verb or "Neue Strafe" in row.verb
 
 
-def test_new_penalty_needs_no_e_mail_address(
-    matchday_with_players, catalog_normal, admin_user
-):
+def test_new_penalty_needs_no_e_mail_address(matchday_with_players, catalog_normal, admin_user):
     """In-app rule: an active account WITHOUT an e-mail still gets a row."""
     md, players = matchday_with_players(2)
     payer = User.objects.create_user(
@@ -380,7 +373,6 @@ def test_edit_penalty_notifies_with_the_new_amount(
     assert Notification.objects.count() == before + 1
 
 
-
 def test_group_edit_notifies_one_row_per_affected_player(
     matchday_with_players, catalog_group, admin_user
 ):
@@ -485,7 +477,6 @@ def test_received_by_survives_a_cashier_change(
     assert entry.metadata["received_by_email"] == admin_user.email
 
 
-
 # ---------------------------------------------------------------------------
 # 8. Live pending-approvals badge (admin-only, count from User rows)
 # ---------------------------------------------------------------------------
@@ -516,4 +507,3 @@ def test_live_pending_approval_badge(admin_client, captain_client, admin_user):
     admin_html = admin_client.get(reverse("dashboard:index")).content.decode()
     assert f'<span class="{danger}">1</span>' in admin_html
     assert f'<span class="{danger}">2</span>' not in admin_html
-
