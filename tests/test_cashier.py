@@ -296,6 +296,16 @@ def test_cashier_is_a_list_entry_under_its_own_label(admin_client, team, admin_u
     assert label_line and admin_user.email not in label_line  # never "Cashier: name"
 
 
+def test_recorded_by_cashier_hint_is_removed(admin_client, team, admin_user, captain_user):
+    """The redundant "Payments are recorded by the cashier: …" hint is gone —
+    the dedicated Cashier block above already names the cashier."""
+    set_cashier(team=team, user=captain_user, actor=admin_user)  # captain is the cashier
+    content = admin_client.get(reverse("dashboard:financial_overview")).content.decode()
+    assert "recorded by the cashier" not in content  # msgid (en)
+    assert "vom Kassier erfasst" not in content  # msgstr (de)
+    assert re.search(r"(Cashier|Kassier):</span>\s*<ul", content)  # the block stays
+
+
 def test_invalid_form_redirects_with_message(admin_client):
     response = admin_client.post(reverse("teams:cashier_set"), {"team": "", "user": ""})
     assert response.status_code == 302

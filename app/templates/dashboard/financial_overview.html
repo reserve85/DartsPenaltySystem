@@ -85,12 +85,6 @@
                 <a href="{% url 'teams:cashier_list' %}">{% translate "Set the cashier" %}</a>
             </div>
         {% endif %}
-        {% if can_manage and not is_cashier and cashier %}
-            <p class="text-muted mb-2">
-                {% translate "Payments are recorded by the cashier" %}:
-                {{ cashier.player_link.name|default:cashier.email }} <span aria-hidden="true">💲</span>
-            </p>
-        {% endif %}
         <p class="mb-2">
             <strong class="text-danger">{% translate "Penalties total" %}:</strong> <span class="text-danger">{{ team_penalties|floatformat:2 }} €</span>
             &middot; <strong class="text-success">{% translate "Penalties settled" %}:</strong> <span class="text-success">{{ team_paid|floatformat:2 }} €</span>

@@ -2970,10 +2970,6 @@ msgid "Set the cashier"
 msgstr "Kassier festlegen"
 
 #: app\templates\dashboard\financial_overview.html
-msgid "Payments are recorded by the cashier"
-msgstr "Zahlungen werden vom Kassier erfasst"
-
-#: app\templates\dashboard\financial_overview.html
 msgid "Received by"
 msgstr "Empfangen von"
 
