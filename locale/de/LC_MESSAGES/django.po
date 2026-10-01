@@ -3044,4 +3044,28 @@ msgstr "Strafe geändert: {amount} €"
 msgid "Penalty deleted: {amount} €"
 msgstr "Strafe gelöscht: {amount} €"
 
+#: app\templates\notifications\list.html
+msgid "All"
+msgstr "Alle"
+
+#: app\templates\notifications\list.html
+msgid "Mark as read"
+msgstr "Als gelesen markieren"
+
+#: app\templates\notifications\list.html
+msgid "Mark as unread"
+msgstr "Ungelesen markieren"
+
+#: app\templates\notifications\list.html
+msgid "Delete this message?"
+msgstr "Diese Nachricht löschen?"
+
+#: app\templates\notifications\list.html
+msgid "Delete read messages"
+msgstr "Gelesene Nachrichten löschen"
+
+#: app\templates\notifications\list.html
+msgid "Delete all read messages?"
+msgstr "Alle gelesenen Nachrichten löschen?"
+
 

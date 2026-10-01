@@ -2,28 +2,64 @@
 {% load i18n %}
 {% block title %}{% translate "Notifications" %} – {% translate "Darts Penalty Manager" %}{% endblock %}
 {% block content %}
-<div class="d-flex justify-content-between align-items-center mb-3">
+<div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
     <h1 class="h3 mb-0">{% translate "Notifications" %}</h1>
     <div class="d-flex gap-2">
-        <a class="btn btn-sm btn-outline-secondary" href="{% url 'notifications:mark_all_as_read' %}">
+        <a class="btn btn-sm btn-outline-secondary" href="{% url 'notifications:mark_all_as_read' %}?next={{ request.get_full_path|urlencode }}">
             {% translate "Mark all as read" %}
         </a>
+        <form method="post" action="{% url 'notifications_manage:delete_read' %}"
+              data-confirm="{% translate 'Delete all read messages?' %}">
+            {% csrf_token %}
+            <input type="hidden" name="next" value="{{ request.get_full_path }}">
+            <button type="submit" class="btn btn-sm btn-outline-danger">{% translate "Delete read messages" %}</button>
+        </form>
     </div>
 </div>
-{# Override of django-notifications-hq's bare <ul>: Bootstrap list with a "Review" shortcut for approval requests that are still pending. #}
+
+{# Mailbox tabs: Unread | All — the active tab follows the resolved view. #}
+<ul class="nav nav-tabs mb-3">
+    <li class="nav-item">
+        <a class="nav-link{% if request.resolver_match.url_name == 'unread' %} active{% endif %}"
+           href="{% url 'notifications:unread' %}">{% translate "Unread" %}</a>
+    </li>
+    <li class="nav-item">
+        <a class="nav-link{% if request.resolver_match.url_name == 'all' %} active{% endif %}"
+           href="{% url 'notifications:all' %}">{% translate "All" %}</a>
+    </li>
+</ul>
+
+{# Override of django-notifications-hq's bare <ul>: Bootstrap list with per-row #}
+{# mailbox actions (mark read/unread + POST delete) and a "Review" shortcut   #}
+{# for approval requests that are still pending.                              #}
 <ul class="list-group mb-3">
     {% for notice in notifications %}
-        <li class="list-group-item d-flex justify-content-between align-items-center">
+        <li class="list-group-item d-flex justify-content-between align-items-center flex-wrap gap-2">
             <div>
                 {% if notice.unread %}<span class="badge text-bg-warning">{% translate "Unread" %}</span>{% endif %}
                 <strong>{{ notice.verb }}</strong>
                 {% if notice.actor %} – {{ notice.actor }}{% endif %}
                 <div class="text-muted small">{{ notice.timestamp|date:"SHORT_DATETIME_FORMAT" }}</div>
             </div>
-            {% if notice.actor.approval_status == "pending" %}
-                <a class="btn btn-sm btn-outline-warning"
-                   href="{% url 'accounts:approval' notice.actor.pk %}">{% translate "Review" %}</a>
-            {% endif %}
+            <div class="d-flex gap-2 align-items-center">
+                {% if notice.unread %}
+                    <a class="btn btn-sm btn-outline-secondary"
+                       href="{% url 'notifications:mark_as_read' notice.slug %}?next={{ request.get_full_path|urlencode }}">{% translate "Mark as read" %}</a>
+                {% else %}
+                    <a class="btn btn-sm btn-outline-secondary"
+                       href="{% url 'notifications:mark_as_unread' notice.slug %}?next={{ request.get_full_path|urlencode }}">{% translate "Mark as unread" %}</a>
+                {% endif %}
+                {% if notice.actor.approval_status == "pending" %}
+                    <a class="btn btn-sm btn-outline-warning"
+                       href="{% url 'accounts:approval' notice.actor.pk %}">{% translate "Review" %}</a>
+                {% endif %}
+                <form method="post" action="{% url 'notifications_manage:delete_one' notice.pk %}"
+                      data-confirm="{% translate 'Delete this message?' %}">
+                    {% csrf_token %}
+                    <input type="hidden" name="next" value="{{ request.get_full_path }}">
+                    <button type="submit" class="btn btn-sm btn-outline-danger">{% translate "Delete" %}</button>
+                </form>
+            </div>
         </li>
     {% empty %}
         <li class="list-group-item text-center text-muted py-4">{% translate "No notifications yet." %}</li>

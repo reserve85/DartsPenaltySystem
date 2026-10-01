@@ -34,6 +34,9 @@ urlpatterns += i18n_patterns(
     path("accounts/", include("app.accounts.urls")),
     # django-notifications-hq: list/unread/mark-as-read of in-app notifications
     path("notifications/", include("notifications.urls")),
+    # Custom mailbox actions (delete one / delete read) — mounted AFTER the
+    # package include so the package keeps owning every notifications:* name.
+    path("notifications/actions/", include("app.notifications.urls")),
     path("", include("app.dashboard.urls")),
     path("teams/", include("app.teams.urls")),
     path("players/", include("app.players.urls")),
