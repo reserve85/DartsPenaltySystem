@@ -374,6 +374,78 @@ def test_non_captain_cashier_renders_only_the_kassier_line(
 
 
 # ---------------------------------------------------------------------------
+# Marker rule: EVERY emoji shows ALL roles (captain and/or cashier)
+# ---------------------------------------------------------------------------
+def test_cashier_entry_and_modal_carry_all_roles(captain_client, team, captain_user, admin_user):
+    """The cashier entry and the modal's 'Received by' stack the captain's
+    crown when one account is BOTH — captain and cashier of that team."""
+    set_cashier(team=team, user=captain_user, actor=admin_user)
+    content = captain_client.get(reverse("dashboard:financial_overview")).content.decode()
+
+    block = re.search(r"(Cashier|Kassier):</span>(.*?)</ul>", content, flags=re.DOTALL)
+    assert block, "cashier block not rendered"
+    assert "👑" in block.group(2) and "💲" in block.group(2)
+
+    modal = re.search(r'id="paymentReceivedBy">(.*?)</p>', content, flags=re.DOTALL)
+    assert modal, "payment modal not rendered"
+    assert "👑" in modal.group(1) and "💲" in modal.group(1)
+    assert "$" not in content  # NEVER the ASCII character
+
+
+def test_player_row_shows_all_roles_of_its_account(
+    admin_client, team, captain_user, admin_user, player
+):
+    """The roster row of a player linked to the captain-cashier shows 👑 AND 💲."""
+    captain_user.player_link = player
+    captain_user.save(update_fields=["player_link"])
+    set_cashier(team=team, user=captain_user, actor=admin_user)
+
+    content = admin_client.get(
+        reverse("dashboard:financial_overview"), {"team": team.pk}
+    ).content.decode()
+    row = next(r for r in re.findall(r"<tr.*?</tr>", content, flags=re.DOTALL) if player.name in r)
+    assert "👑" in row and "💲" in row
+    assert "$" not in row
+
+
+def test_cashier_player_row_shows_the_dollar_without_crown(admin_client, team, admin_user, player):
+    """A cashier who does NOT captain the team gets the 💲 alone in the row."""
+    admin_user.player_link = player
+    admin_user.save(update_fields=["player_link"])
+    set_cashier(team=team, user=admin_user, actor=admin_user)
+
+    content = admin_client.get(
+        reverse("dashboard:financial_overview"), {"team": team.pk}
+    ).content.decode()
+    row = next(r for r in re.findall(r"<tr.*?</tr>", content, flags=re.DOTALL) if player.name in r)
+    assert "💲" in row
+    assert "👑" not in row
+
+
+def test_cashier_list_stacks_crown_for_captain_cashier(
+    admin_client, team, captain_user, admin_user
+):
+    """On the Kasse page the current cell AND the open history row of a
+    captain-cashier carry both markers."""
+    set_cashier(team=team, user=captain_user, actor=admin_user)
+    content = admin_client.get(reverse("teams:cashier_list")).content.decode()
+
+    marked = re.findall(rf"{re.escape(captain_user.email)}\s*👑", content)
+    assert len(marked) == 2  # current cashier cell + open history row
+    assert "$" not in content
+
+
+def test_cashier_list_marks_non_captain_cashier_with_dollar_only(admin_client, team, admin_user):
+    """No crown without a captaincy — the Kasse page stays 💲-only then."""
+    set_cashier(team=team, user=admin_user, actor=admin_user)
+    content = admin_client.get(reverse("teams:cashier_list")).content.decode()
+
+    assert admin_user.email in content
+    assert "👑" not in content
+    assert "$" not in content
+
+
+# ---------------------------------------------------------------------------
 # cashier_label_for
 # ---------------------------------------------------------------------------
 def test_cashier_label_for_prefers_player_name(db, team):

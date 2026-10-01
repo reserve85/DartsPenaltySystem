@@ -30,7 +30,12 @@ from app.players.models import Player
 from app.players.services import assign_teams, player_count_annotation, prefetch_season_assignments
 from app.teams.forms import CashierForm, TeamForm, approved_active_users_queryset
 from app.teams.models import Team, TeamCashier
-from app.teams.services import clear_cashier, set_cashier, teams_for_season
+from app.teams.services import (
+    captains_for_teams,
+    clear_cashier,
+    set_cashier,
+    teams_for_season,
+)
 
 
 class TeamListView(GroupRequiredMixin, LoginRequiredMixin, ListView):
@@ -300,12 +305,16 @@ class CashierListView(GroupRequiredMixin, LoginRequiredMixin, ListView):
             history_by_team.setdefault(row.team_id, []).append(row)
 
         is_admin = user_is_admin(user)
+        captains_by_team = captains_for_teams(teams)
         # Template convenience attributes (DTL cannot subscript dicts with a
         # variable key) — the named context dicts stay the contract for tests.
         for team in teams:
             team.current_cashier = current.get(team.pk)
             team.can_edit = is_admin or user.team_id == team.pk
             team.history = history_by_team.get(team.pk, [])
+            # Marker rule (👑/💲): ids of THIS team's captains, so the template
+            # can stack the crown whenever an account holds BOTH roles.
+            team.captain_ids = {captain.pk for captain in captains_by_team.get(team.pk, [])}
         context.update(
             {
                 "current_cashier_by_team": current,

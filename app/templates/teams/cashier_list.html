@@ -22,7 +22,9 @@
                     <td>{{ team.name }}</td>
                     <td>
                         {% if team.current_cashier %}
-                            {{ team.current_cashier.player_link.name|default:team.current_cashier.email }}
+                            {# Marker rule: ALL roles of that account — the crown      #}
+                            {# appears when the cashier also captains THIS team.       #}
+                            {{ team.current_cashier.player_link.name|default:team.current_cashier.email }}{% if team.current_cashier.pk in team.captain_ids %} 👑{% endif %}
                             <span aria-hidden="true">💲</span>
                         {% else %}–{% endif %}
                     </td>
@@ -77,7 +79,7 @@
                         <td>{{ team.name }}</td>
                         <td>
                             {{ row.user_label }}
-                            {% if row.is_open %}<span aria-hidden="true">💲</span>{% endif %}
+                            {% if row.is_open %}{% if row.user_id and row.user_id in team.captain_ids %} 👑{% endif %} <span aria-hidden="true">💲</span>{% endif %}
                         </td>
                         <td>{{ row.valid_from|date:"d.m.Y H:i" }}</td>
                         <td>{% if row.valid_to %}{{ row.valid_to|date:"d.m.Y H:i" }}{% else %}–{% endif %}</td>

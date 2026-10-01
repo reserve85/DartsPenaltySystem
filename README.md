@@ -157,14 +157,16 @@ teams to inactive).
 The team link (`User.team`) is an **optional captaincy assignment**,
 decoupled from the role: a Captain can be created *without* a team (such an
 account then manages nothing), an Admin may additionally be assigned as
-captain of one team, and the Player role never gets a team. The financial
-overview marks the captains assigned to the selected team with a **👑 crown**
-— under the team heading and in the roster row of a player linked to a
-captain account (the team selector stays unmarked); the team's **cashier**
-is marked with the **💲 emoji** (an emoji, **not** the ASCII character `$`)
-— stacked behind the crown when one account is both (`Kapt. X 👑 💲`) plus a
-dedicated `Cashier:` block below the captains, shaped like that list: the label
-on its own line and the cashier's name as the list entry underneath.
+captain of one team, and the Player role never gets a team. Roles are
+visualised with two emojis — the **👑 crown** for the captaincy of the
+selected team and the **💲 emoji** (an emoji, **not** the ASCII character
+`$`) for the team's cashier. **Every marker always shows ALL roles of that
+account**: wherever one of the two appears, the other is added as well when
+it applies — in the captains list under the team heading, in the dedicated
+`Cashier:` block below it (label on its own line, the name as the list entry
+underneath), in the roster row of a linked player, in the payment modal's
+"Received by" line and on the Kasse page → `Kapt. X 👑 💲`. The team selector
+stays unmarked.
 
 ### Kasse (cash box)
 

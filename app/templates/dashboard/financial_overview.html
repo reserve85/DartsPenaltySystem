@@ -73,7 +73,9 @@
             <span class="text-muted">{% translate "Cashier" %}:</span>
             <ul class="mb-0">
                 {% if cashier %}
-                <li>{{ cashier.player_link.name|default:cashier.email }} <span aria-hidden="true">💲</span></li>
+                {# Marker rule: EVERY emoji brings ALL roles of that account — #}
+                {# the crown appears here when the cashier captains this team. #}
+                <li>{{ cashier.player_link.name|default:cashier.email }}{% if cashier in team_captains %} 👑{% endif %} <span aria-hidden="true">💲</span></li>
                 {% else %}
                 <li>–</li>
                 {% endif %}
@@ -104,7 +106,7 @@
                 <tbody>
                 {% for row in team_balances %}
                     <tr>
-                        <td><a href="{% url 'players:player_detail' row.pk %}">{{ row.name }}</a>{% if row.pk in captain_player_ids %} <span title="{% translate 'Captain' %}">👑</span>{% endif %}</td>
+                        <td><a href="{% url 'players:player_detail' row.pk %}">{{ row.name }}</a>{% if row.pk in captain_player_ids %} <span title="{% translate 'Captain' %}">👑</span>{% endif %}{% if cashier and cashier.player_link_id == row.pk %} <span aria-hidden="true" title="{% translate 'Cashier' %}">💲</span>{% endif %}</td>
                         <td class="text-end text-danger">{{ row.total|floatformat:2 }} €</td>
                         <td class="text-end text-success">{{ row.paid|floatformat:2 }} €</td>
                         <td class="text-end text-danger">{{ row.balance|floatformat:2 }} €</td>
@@ -282,7 +284,7 @@
                             </p>
                             <p class="mb-3 small" id="paymentReceivedBy">
                                 <span class="text-muted">{% translate "Received by" %}:</span>
-                                {{ cashier.player_link.name|default:cashier.email }} <span aria-hidden="true">💲</span>
+                                {{ cashier.player_link.name|default:cashier.email }}{% if cashier in team_captains %} 👑{% endif %} <span aria-hidden="true">💲</span>
                             </p>
 
                             <label class="form-label" for="paymentAmount">{% translate "Amount (EUR)" %}</label>
