@@ -9,9 +9,16 @@ on:
   # exact workflow (review L3) instead of duplicating the steps.
   workflow_call:
 
-# Cancel in-progress runs for same branch/PR
+# Cancel in-progress runs for same branch/PR.
+# This workflow is ALSO called via `workflow_call` (docker-publish.yml,
+# release.yml) — and inside a called workflow `github.workflow` resolves to the
+# CALLER's name, so the plain `${{ github.workflow }}-${{ github.ref }}` group
+# would be identical to the caller's own top-level concurrency group. GitHub
+# then cancels the run: "deadlock was detected for concurrency group … between
+# a top level workflow and 'test'". The fixed `tests-` prefix keeps this group
+# unique no matter who calls it.
 concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
+  group: tests-${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
