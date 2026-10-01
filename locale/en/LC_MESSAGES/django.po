@@ -1551,6 +1551,7 @@ msgstr ""
 
 #: app\templates\emails\penalty_digest.html
 msgid "New penalties"
+msgstr ""
 
 #: app\core\models.py
 msgid "Cashier assigned"
@@ -1742,6 +1743,4 @@ msgstr ""
 
 #: app\templates\notifications\list.html
 msgid "Delete all read messages?"
-msgstr ""
-
 msgstr ""

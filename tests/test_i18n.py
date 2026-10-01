@@ -385,6 +385,73 @@ def test_every_source_msgid_is_covered_by_the_german_catalog():
     )
 
 
+# ---------------------------------------------------------------------------
+# Structural .po validation — msgfmt cannot run on this host, so a BROKEN
+# catalog only surfaces inside the Docker/CI image build (`compilemessages`
+# there aborts the whole build). Fail fast locally instead: every fatal error
+# msgfmt reports (missing 'msgstr' section, stray msgstr, duplicate msgid) is
+# reproduced here without needing the gettext binaries.
+# ---------------------------------------------------------------------------
+LOCALES_DIR = Path(__file__).resolve().parent.parent / "locale"
+
+
+def _po_structural_errors(path: Path) -> list[str]:
+    """Every syntax error msgfmt would abort on, as ``file:line: reason``."""
+    errors: list[str] = []
+    lines = path.read_text(encoding="utf-8").splitlines()
+    target: str | None = None  # inside an entry: 'msgid' or 'msgstr'
+    parts: list[str] = []  # concatenated pieces of the current msgid
+    entry_line = 0
+    seen: dict[str, int] = {}
+
+    def finish(line_no: int) -> None:
+        """Close the open entry — complete it or report what is missing."""
+        nonlocal target, parts, entry_line
+        if target == "msgid":
+            errors.append(f"{path.name}:{entry_line}: msgid {''.join(parts)!r} has no msgstr")
+        elif target == "msgstr":
+            key = "".join(parts)
+            if key in seen:
+                errors.append(
+                    f"{path.name}:{entry_line}: duplicate msgid {key!r} (first at line {seen[key]})"
+                )
+            else:
+                seen[key] = entry_line
+        target, parts, entry_line = None, [], 0
+
+    for number, raw in enumerate(lines, 1):
+        line = raw.strip()
+        if not line:
+            finish(number)
+        elif line.startswith("#"):
+            continue
+        elif line.startswith("msgid "):  # NOT msgid_plural (unsupported here)
+            finish(number)
+            target, parts, entry_line = "msgid", [line[6:].strip()[1:-1]], number
+        elif line.startswith("msgstr"):
+            if target is None:
+                errors.append(f"{path.name}:{number}: msgstr without msgid")
+            else:
+                target = "msgstr"
+        elif line.startswith('"'):
+            if target is None:
+                errors.append(f"{path.name}:{number}: orphan string {line[:40]!r}")
+            elif target == "msgid":
+                parts.append(line[1:-1])
+        else:
+            errors.append(f"{path.name}:{number}: unparsable line {line[:60]!r}")
+    finish(len(lines) + 1)
+    return errors
+
+
+def test_po_files_have_no_structural_errors():
+    """A hand-edited catalog with a stray/missing msgstr breaks the Docker build."""
+    catalogs = sorted(LOCALES_DIR.glob("*/LC_MESSAGES/*.po"))
+    assert catalogs, "no .po catalogs found next to the tests"
+    problems = [msg for catalog in catalogs for msg in _po_structural_errors(catalog)]
+    assert not problems, "broken .po catalog(s):\n" + "\n".join(problems)
+
+
 @needs_catalog
 def test_german_season_hint_on_team_list(admin_client, season, team):
     """Regression: the season-scoped hint on Teams & Players showed ENGLISH
