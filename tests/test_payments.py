@@ -18,6 +18,7 @@ from app.penalties.services import (
     player_team_balance,
     player_total_paid,
     record_payment,
+    record_payout,
     team_balances,
 )
 
@@ -56,18 +57,14 @@ def test_partial_payment_reduces_balance(
     assert entry.metadata["received_by_id"] == cashier.pk
 
 
-def test_full_payment_clears_balance(
-    matchday_with_players, catalog_normal, admin_user, cashier
-):
+def test_full_payment_clears_balance(matchday_with_players, catalog_normal, admin_user, cashier):
     md, players = matchday_with_players(2)
     _make_penalty(md, players[0], catalog_normal, admin_user)
     record_payment(player=players[0], team=md.team, amount_eur=5, actor=admin_user)
     assert player_balance(players[0]) == Decimal(0)
 
 
-def test_several_partial_payments_stack(
-    matchday_with_players, catalog_normal, admin_user, cashier
-):
+def test_several_partial_payments_stack(matchday_with_players, catalog_normal, admin_user, cashier):
     md, players = matchday_with_players(2)
     _make_penalty(md, players[0], catalog_normal, admin_user)  # 5 €
     record_payment(player=players[0], team=md.team, amount_eur=2, actor=admin_user)
@@ -146,9 +143,7 @@ def test_team_balances_carry_paid_attribute(
     assert rows[players[0].pk].paid == Decimal(2)
 
 
-def test_matchday_totals_stay_gross(
-    matchday_with_players, catalog_normal, admin_user, cashier
-):
+def test_matchday_totals_stay_gross(matchday_with_players, catalog_normal, admin_user, cashier):
     """Matchday totals are historical gross sums — payments do not shrink them."""
     md, players = matchday_with_players(2)
     _make_penalty(md, players[0], catalog_normal, admin_user)
@@ -360,8 +355,11 @@ def test_financial_overview_uses_one_payment_modal(
 
     assert 'id="paymentModal"' in content
     assert 'data-bs-target="#paymentModal"' in content
-    # exactly ONE amount field for all rows (the row forms are gone)
-    assert content.count('name="amount_eur"') == 1
+    # exactly ONE amount field per shared modal — payment + payout, no row forms
+    assert content.count('name="amount_eur"') == 2
+    # both modals render for the cashier (row TRIGGERS only exist on credit
+    # rows — covered by test_financial_overview_shows_credit_and_payout_action)
+    assert 'id="payoutModal"' in content
     # every row opens the modal for ITS player, carrying the open balance
     for player in players:
         assert f'data-player="{player.pk}"' in content
@@ -404,3 +402,183 @@ def test_player_financial_view_shows_total_paid(
     assert response.status_code == 200
     assert response.context["own_balance"] == Decimal(3)
     assert response.context["own_paid"] == Decimal(2)
+
+
+# ---------------------------------------------------------------------------
+# Payouts — paying out a credit (stored as a negative Payment row)
+# ---------------------------------------------------------------------------
+def test_payout_clears_credit(matchday_with_players, catalog_normal, admin_user, cashier):
+    md, players = matchday_with_players(2)
+    _make_penalty(md, players[0], catalog_normal, admin_user)  # 5.00 € owed
+    record_payment(player=players[0], team=md.team, amount_eur=7, actor=admin_user)
+    assert player_balance(players[0]) == Decimal(-2)  # 2.00 € credit
+
+    payment = record_payout(player=players[0], team=md.team, amount_eur=2, actor=admin_user)
+
+    assert payment.amount_eur == Decimal(-2)  # stored NEGATIVE = money left the pot
+    assert player_balance(players[0]) == Decimal(0)
+    assert player_total_paid(players[0]) == Decimal(5)  # 7 paid − 2 paid out
+    assert payment.received_by == cashier  # snapshot: the team's cashier
+    entry = AuditLog.objects.get(action=AuditAction.PAYOUT_RECORDED, target_id=payment.pk)
+    assert entry.user == admin_user
+    assert entry.metadata["amount_eur"] == "2"  # the entered (positive) amount
+    assert entry.metadata["kind"] == "payout"
+
+
+def test_payout_exceeding_credit_is_refused(
+    matchday_with_players, catalog_normal, admin_user, cashier
+):
+    """Real money leaves the pot — never more than the available credit."""
+    md, players = matchday_with_players(2)
+    _make_penalty(md, players[0], catalog_normal, admin_user)  # 5.00 € owed
+    record_payment(player=players[0], team=md.team, amount_eur=7, actor=admin_user)  # 2.00 € credit
+
+    with pytest.raises(ValidationError, match="exceeds|übersteigt"):
+        record_payout(player=players[0], team=md.team, amount_eur=3, actor=admin_user)
+
+    assert not Payment.objects.filter(amount_eur__lt=0).exists()
+    assert player_balance(players[0]) == Decimal(-2)  # unchanged
+
+
+def test_payout_without_credit_is_refused(
+    matchday_with_players, catalog_normal, admin_user, cashier
+):
+    """A debt (or a settled balance) can not be paid out."""
+    md, players = matchday_with_players(2)
+    _make_penalty(md, players[0], catalog_normal, admin_user)  # 5.00 € owed, nothing paid
+
+    with pytest.raises(ValidationError, match="credit|Guthaben"):
+        record_payout(player=players[0], team=md.team, amount_eur=1, actor=admin_user)
+
+    assert Payment.objects.count() == 0
+
+
+def test_record_payout_requires_positive_amount(team, admin_user, cashier):
+    from app.players.models import Player
+
+    player = Player.objects.create(name="P", team=team)
+    for bad in (0, -1):
+        with pytest.raises(ValidationError):
+            record_payout(player=player, team=team, amount_eur=bad, actor=admin_user)
+    assert Payment.objects.count() == 0
+
+
+def test_delete_payout_restores_credit(matchday_with_players, catalog_normal, admin_user, cashier):
+    """Reverting a mis-recorded payout brings the credit back (audited)."""
+    md, players = matchday_with_players(2)
+    _make_penalty(md, players[0], catalog_normal, admin_user)  # 5.00 € owed
+    record_payment(player=players[0], team=md.team, amount_eur=7, actor=admin_user)  # 2.00 € credit
+    payout = record_payout(player=players[0], team=md.team, amount_eur=2, actor=admin_user)
+    assert player_balance(players[0]) == Decimal(0)
+
+    delete_payment(payment=payout, actor=admin_user)
+
+    assert player_balance(players[0]) == Decimal(-2)  # credit restored
+    assert AuditLog.objects.filter(action=AuditAction.PAYMENT_DELETED).count() == 1
+
+
+# ---------------------------------------------------------------------------
+# Payout views — STRICTLY the team's cashier (same rules as payments)
+# ---------------------------------------------------------------------------
+def test_payout_view_records_for_cashier(
+    cashier_client, matchday_with_players, catalog_normal, admin_user, cashier
+):
+    md, players = matchday_with_players(2)
+    _make_penalty(md, players[0], catalog_normal, admin_user)  # 5.00 € owed
+    record_payment(player=players[0], team=md.team, amount_eur=7, actor=admin_user)  # 2.00 € credit
+
+    response = cashier_client.post(
+        reverse("penalties:payout_create"),
+        {"team": md.team.pk, "player": players[0].pk, "amount_eur": "2"},
+    )
+
+    assert response.status_code == 302
+    assert player_balance(players[0]) == Decimal(0)
+    assert Payment.objects.get(amount_eur__lt=0).amount_eur == Decimal(-2)
+
+
+def test_payout_view_denied_for_admin_who_is_not_cashier(
+    admin_client, matchday_with_players, catalog_normal, admin_user, captain_user
+):
+    """Only the CURRENT cashier may pay out — the admin needs the role too."""
+    from app.teams.services import set_cashier
+
+    md, players = matchday_with_players(2)
+    set_cashier(team=md.team, user=captain_user, actor=captain_user)
+    _make_penalty(md, players[0], catalog_normal, admin_user)
+    record_payment(player=players[0], team=md.team, amount_eur=7, actor=admin_user)  # 2.00 € credit
+
+    response = admin_client.post(
+        reverse("penalties:payout_create"),
+        {"team": md.team.pk, "player": players[0].pk, "amount_eur": "2"},
+    )
+
+    assert response.status_code == 403
+    assert player_balance(players[0]) == Decimal(-2)  # unchanged
+
+
+def test_payout_view_refuses_amount_over_credit(
+    cashier_client, matchday_with_players, catalog_normal, admin_user, cashier
+):
+    """A stale modal posting too much gets a friendly redirect, never a 500."""
+    md, players = matchday_with_players(2)
+    _make_penalty(md, players[0], catalog_normal, admin_user)  # 5.00 € owed
+    record_payment(player=players[0], team=md.team, amount_eur=7, actor=admin_user)  # 2.00 € credit
+
+    response = cashier_client.post(
+        reverse("penalties:payout_create"),
+        {"team": md.team.pk, "player": players[0].pk, "amount_eur": "5"},
+    )
+
+    assert response.status_code == 302
+    assert player_balance(players[0]) == Decimal(-2)  # unchanged
+    assert not Payment.objects.filter(amount_eur__lt=0).exists()
+
+
+# ---------------------------------------------------------------------------
+# Credit UI — green balances, payout action, payout modal
+# ---------------------------------------------------------------------------
+def test_financial_overview_shows_credit_and_payout_action(
+    admin_client, matchday_with_players, catalog_normal, admin_user, cashier
+):
+    """A credit row turns green, gains a payout trigger and states the CREDIT."""
+    md, players = matchday_with_players(2)
+    _make_penalty(md, players[0], catalog_normal, admin_user)  # 5.00 € owed
+    record_payment(
+        player=players[0], team=md.team, amount_eur=11, actor=admin_user
+    )  # 6.00 € credit
+
+    content = admin_client.get(reverse("dashboard:financial_overview")).content.decode()
+
+    # The payout endpoint + the shared payout modal are wired up …
+    assert reverse("penalties:payout_create") in content
+    assert 'id="payoutModal"' in content
+    # … and its cashier line flips with the direction (no "Received by").
+    assert "Paid out by" in content or "Ausgezahlt von" in content
+    trigger = re.search(
+        rf'data-bs-target="#payoutModal"\s+data-player="{players[0].pk}"'
+        r'\s+data-player-name="[^"]*"\s+data-balance="([^\"]+)"',
+        content,
+    )
+    assert trigger is not None  # … and the credit row opens it with ITS balance
+    assert Decimal(trigger.group(1)) == Decimal(-6)
+    # The team summary says CREDIT (absolute value, green) instead of
+    # "Penalties open: -6.00 €" in red.
+    assert re.search(r"(Credit|Guthaben):</strong> <strong class=\"text-success\">6[.,]00", content)
+    # The row balance itself stays signed but turns green.
+    assert re.search(r'class="text-end text-success">-6[.,]00 €', content)
+
+
+def test_financial_overview_hides_payout_action_for_debt_rows(
+    admin_client, matchday_with_players, catalog_normal, admin_user, cashier
+):
+    """Only credit rows (balance < 0) offer the payout button."""
+    md, players = matchday_with_players(2)
+    _make_penalty(md, players[0], catalog_normal, admin_user)  # 5.00 € owed, nothing paid
+
+    content = admin_client.get(reverse("dashboard:financial_overview")).content.decode()
+
+    assert 'id="payoutModal"' in content  # the modal itself always renders …
+    assert not re.search(  # … but no row trigger points at it
+        rf'data-bs-target="#payoutModal"\s+data-player="{players[0].pk}"', content
+    )

@@ -1,0 +1,17 @@
+{% extends "emails/base_email.txt" %}{% load i18n %}
+{% block content %}
+{% blocktranslate with name=player.name %}Hi {{ name }}, your payout has been recorded:{% endblocktranslate %}
+
+{% translate "Amount paid out" %}: {{ amount|floatformat:2 }} €
+{% translate "Date" %}: {{ payout_date|date:"d.m.Y" }}
+{% translate "Team" %}: {{ team.name }}
+{% translate "Season" %}: {% if season %}{{ season.name }}{% else %}–{% endif %}
+{% translate "Paid out by" %}: {{ received_by_label }}
+{% translate "Recorded by" %}: {{ recorded_by_label }}
+{% if credit %}
+{% translate "Status" %}: {% translate "Partial payout" %}
+{% translate "Remaining credit" %}: {{ credit|floatformat:2 }} €
+{% else %}
+{% translate "Status" %}: {% translate "Full payout — the credit has been paid out." %}
+{% endif %}
+{% endblock %}

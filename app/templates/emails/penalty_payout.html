@@ -1,0 +1,48 @@
+{% extends "emails/base_email.html" %}{% load i18n %}
+{% block subject %}{% translate "Payout confirmation" %}: {{ amount|floatformat:2 }} €{% endblock %}
+{% block content %}
+<p>{% blocktranslate with name=player.name %}Hi {{ name }}, your payout has been recorded:{% endblocktranslate %}</p>
+<table role="presentation" cellpadding="0" cellspacing="0" style="width:100%;border-collapse:collapse;">
+    <tr>
+        <td style="padding:6px 0;"><strong>{% translate "Amount paid out" %}</strong></td>
+        <td style="padding:6px 0;text-align:right;">{{ amount|floatformat:2 }} €</td>
+    </tr>
+    <tr>
+        <td style="padding:6px 0;border-top:1px solid #e9ecef;"><strong>{% translate "Date" %}</strong></td>
+        <td style="padding:6px 0;border-top:1px solid #e9ecef;text-align:right;">{{ payout_date|date:"d.m.Y" }}</td>
+    </tr>
+    <tr>
+        <td style="padding:6px 0;border-top:1px solid #e9ecef;"><strong>{% translate "Team" %}</strong></td>
+        <td style="padding:6px 0;border-top:1px solid #e9ecef;text-align:right;">{{ team.name }}</td>
+    </tr>
+    <tr>
+        <td style="padding:6px 0;border-top:1px solid #e9ecef;"><strong>{% translate "Season" %}</strong></td>
+        <td style="padding:6px 0;border-top:1px solid #e9ecef;text-align:right;">{% if season %}{{ season.name }}{% else %}–{% endif %}</td>
+    </tr>
+    <tr>
+        <td style="padding:6px 0;border-top:1px solid #e9ecef;"><strong>{% translate "Paid out by" %}</strong></td>
+        <td style="padding:6px 0;border-top:1px solid #e9ecef;text-align:right;">{{ received_by_label }}</td>
+    </tr>
+    <tr>
+        <td style="padding:6px 0;border-top:1px solid #e9ecef;"><strong>{% translate "Recorded by" %}</strong></td>
+        <td style="padding:6px 0;border-top:1px solid #e9ecef;text-align:right;">{{ recorded_by_label }}</td>
+    </tr>
+    {% if credit %}
+    <tr>
+        <td style="padding:6px 0;border-top:1px solid #e9ecef;"><strong>{% translate "Status" %}</strong></td>
+        <td style="padding:6px 0;border-top:1px solid #e9ecef;text-align:right;">{% translate "Partial payout" %}</td>
+    </tr>
+    <tr>
+        <td style="padding:6px 0;border-top:2px solid #dee2e6;"><strong>{% translate "Remaining credit" %}</strong></td>
+        <td style="padding:6px 0;border-top:2px solid #dee2e6;text-align:right;"><strong>{{ credit|floatformat:2 }} €</strong></td>
+    </tr>
+    {% else %}
+    <tr>
+        <td style="padding:6px 0;border-top:2px solid #dee2e6;"><strong>{% translate "Status" %}</strong></td>
+        <td style="padding:6px 0;border-top:2px solid #dee2e6;text-align:right;color:#198754;">
+            <strong>{% translate "Full payout — the credit has been paid out." %}</strong>
+        </td>
+    </tr>
+    {% endif %}
+</table>
+{% endblock %}

@@ -34,6 +34,7 @@ class AuditAction(models.TextChoices):
     PENALTY_PAID = "penalty_paid", _("Penalty paid")
     PENALTY_PAYMENT_REVERTED = "penalty_payment_reverted", _("Penalty payment reverted")
     PAYMENT_RECORDED = "payment_recorded", _("Payment recorded")
+    PAYOUT_RECORDED = "payout_recorded", _("Payout recorded")
     PAYMENT_DELETED = "payment_deleted", _("Payment reverted")
     USER_CREATED = "user_created", _("User created")
     USER_UPDATED = "user_updated", _("User updated")

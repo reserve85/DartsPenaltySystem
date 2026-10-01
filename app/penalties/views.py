@@ -29,6 +29,7 @@ from app.matchdays.services import season_for_request
 from app.penalties.forms import (
     CatalogItemForm,
     PaymentForm,
+    PayoutForm,
     PenaltyAssignForm,
     PenaltyEditForm,
 )
@@ -46,6 +47,7 @@ from app.penalties.services import (
     delete_payment,
     edit_penalty,
     record_payment,
+    record_payout,
     soft_delete_penalty,
 )
 from app.teams.models import Team
@@ -376,6 +378,47 @@ class PaymentCreateView(LoginRequiredMixin, View):
             season=season_for_request(request),
         )
         messages.success(request, _("Payment recorded."))
+        return redirect(fallback)
+
+
+class PayoutCreateView(LoginRequiredMixin, View):
+    """POST: pay out a player's credit — STRICTLY the team's cashier.
+
+    Same two-step guard as ``PaymentCreateView`` (review M1): a POST without
+    any usable cashier gets a friendly message + redirect, only then is the
+    strict cashier rule enforced (admins included). Unlike a payment, the
+    service can still refuse (credit missing / exceeded — e.g. from a stale
+    modal); that ValidationError becomes a friendly message + redirect too,
+    never a bare 500.
+    """
+
+    def post(self, request):
+        fallback = safe_next_url(request, reverse("dashboard:financial_overview"))
+        form = PayoutForm(request.POST)
+        if not form.is_valid():
+            for errors in form.errors.values():
+                for error in errors:
+                    messages.error(request, error)
+            return redirect(fallback)
+        team = form.cleaned_data["team"]
+        if cashier_user_for(team) is None:
+            messages.error(request, _("No usable cashier is set for this team yet."))
+            return redirect(fallback)
+        if not user_is_cashier(request.user, team):
+            raise PermissionDenied
+        try:
+            record_payout(
+                player=form.cleaned_data["player"],
+                team=team,
+                amount_eur=form.cleaned_data["amount_eur"],
+                actor=request.user,
+                season=season_for_request(request),
+            )
+        except ValidationError as exc:
+            for error in exc.messages:
+                messages.error(request, error)
+            return redirect(fallback)
+        messages.success(request, _("Payout recorded."))
         return redirect(fallback)
 
 

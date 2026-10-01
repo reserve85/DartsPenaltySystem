@@ -253,13 +253,15 @@ input[type="date"], input[type="search"], input[type="url"], select, textarea {
     box-shadow: 0 -0.25rem 0.5rem rgba(0, 0, 0, 0.08);
 }
 
-/* Payment modal (financial overview): the amount field is THE input of the
-   page, so it is rendered large and the quick-amount buttons stretch over
-   the full row width on phones (one-thumb operation). */
-#paymentModal .form-control {
+/* Payment/payout modals (financial overview): the amount field is THE input
+   of the page, so it is rendered large and the quick-amount buttons stretch
+   over the full row width on phones (one-thumb operation). */
+#paymentModal .form-control,
+#payoutModal .form-control {
     font-size: 1.25rem;
 }
-#paymentModal .payment-quick-amount {
+#paymentModal .payment-quick-amount,
+#payoutModal .payment-quick-amount {
     flex: 1 1 auto;
     min-width: 5rem;
 }

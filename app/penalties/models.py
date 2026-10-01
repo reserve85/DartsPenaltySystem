@@ -147,12 +147,19 @@ class TeamCatalogAmount(models.Model):
 
 
 class Payment(models.Model):
-    """A (partial) payment from a player towards ONE team's club pot.
+    """A (partial) payment from a player towards ONE team's club pot — or a PAYOUT.
 
     Balances are ``Σ penalties − Σ payments`` per team (M3): a player owing
     25.00 € may pay e.g. 20.00 € — recorded by an Admin or the Captain of
     that team — and still owes the remaining 5.00 €. There is no per-row
     "paid" state on ``Penalty`` anymore.
+
+    A NEGATIVE ``amount_eur`` is a **payout** (Auszahlung): real money leaves
+    the club pot and reduces an existing credit (negative balance). Keeping
+    the sign ON the row means every aggregate keeps working unchanged — a
+    payout simply lowers Σ payments. Payments and payouts are recorded by
+    their own service functions (``record_payment`` / ``record_payout``);
+    ``amount_eur`` must never be 0.
     """
 
     player = models.ForeignKey(
@@ -190,7 +197,7 @@ class Payment(models.Model):
         related_name="received_payments",
         verbose_name=_("received by"),
         help_text=_(
-            "The cashier who physically received the money (snapshot at record time)."
+            "The cashier who physically received or paid out the money (snapshot at record time)."
         ),
     )
     created_at = models.DateTimeField(
@@ -203,8 +210,10 @@ class Payment(models.Model):
     class Meta:
         ordering: ClassVar[list] = ["-created_at"]
         constraints: ClassVar[list] = [
+            # > 0 = payment into the pot, < 0 = payout of credit, never 0.
             models.CheckConstraint(
-                condition=models.Q(amount_eur__gt=0), name="payment_amount_eur_positive"
+                condition=models.Q(amount_eur__gt=0) | models.Q(amount_eur__lt=0),
+                name="payment_amount_eur_not_zero",
             )
         ]
         verbose_name = _("payment")

@@ -184,9 +184,7 @@ def _inapp_recipient_for(player):
         return None
     user = player.user  # property: None when no account is linked
     if user is None:
-        logger.info(
-            "In-app notification skipped: player '%s' has no linked user account.", player
-        )
+        logger.info("In-app notification skipped: player '%s' has no linked user account.", player)
         return None
     if not user.is_active:
         logger.info("In-app notification skipped: user %s is inactive.", user.email or user.pk)
@@ -214,34 +212,57 @@ def notify_penalties_assigned(penalties) -> None:
 def notify_payment_recorded(payment) -> None:
     """Payer AND cashier learn about a recorded payment (always, in-app).
 
-    Deduplicated when both are the same account; the payment row (with
-    ``received_by``) resolves through ``_base_manager`` on the target side.
+    A NEGATIVE ``amount_eur`` is a payout — the wording switches to the
+    payout verbs and shows the absolute amount. Deduplicated when both are
+    the same account; the payment row (with ``received_by``) resolves
+    through ``_base_manager`` on the target side.
     """
     payer = _inapp_recipient_for(payment.player)
     cashier = payment.received_by
-    amount = f"{payment.amount_eur:.2f}"
+    is_payout = payment.amount_eur < 0
+    amount = f"{abs(payment.amount_eur):.2f}"
     player_name = payment.player.name
     sender = payment.created_by
     seen: set = set()
     if payer is not None:
         seen.add(payer.pk)
-        notify_user(
-            recipient=payer,
-            verb=lambda: _("Your payment has been recorded: {amount} €").format(amount=amount),
-            sender=sender,
-            target=payment,
-            level="success",
-        )
+        if is_payout:
+            notify_user(
+                recipient=payer,
+                verb=lambda: _("Your payout has been recorded: {amount} €").format(amount=amount),
+                sender=sender,
+                target=payment,
+                level="success",
+            )
+        else:
+            notify_user(
+                recipient=payer,
+                verb=lambda: _("Your payment has been recorded: {amount} €").format(amount=amount),
+                sender=sender,
+                target=payment,
+                level="success",
+            )
     if cashier is not None and cashier.is_active and cashier.pk not in seen:
-        notify_user(
-            recipient=cashier,
-            verb=lambda: _("Payment from {player}: {amount} €").format(
-                player=player_name, amount=amount
-            ),
-            sender=sender,
-            target=payment,
-            level="success",
-        )
+        if is_payout:
+            notify_user(
+                recipient=cashier,
+                verb=lambda: _("Payout for {player}: {amount} €").format(
+                    player=player_name, amount=amount
+                ),
+                sender=sender,
+                target=payment,
+                level="success",
+            )
+        else:
+            notify_user(
+                recipient=cashier,
+                verb=lambda: _("Payment from {player}: {amount} €").format(
+                    player=player_name, amount=amount
+                ),
+                sender=sender,
+                target=payment,
+                level="success",
+            )
 
 
 def notify_approval_decided(user, *, approved: bool) -> None:
@@ -265,33 +286,49 @@ def notify_approval_decided(user, *, approved: bool) -> None:
 
 
 def notify_payment_reverted(*, payer, cashier_user, player, amount, team) -> None:
-    """In-app trace of a REVERTED payment (decision 10 — in-app only, no e-mail).
+    """In-app trace of a REVERTED payment or payout (decision 10 — in-app only).
 
     Called with the SNAPSHOT captured BEFORE the hard delete of the Payment:
     the row is gone afterwards, so there is NO target (a GenericForeignKey
-    would resolve to None). Deduplicated when payer == cashier; inactive
-    accounts are skipped by ``notify_user``.
+    would resolve to None). A negative ``amount`` was a payout — the wording
+    switches accordingly (the absolute amount is shown). Deduplicated when
+    payer == cashier; inactive accounts are skipped by ``notify_user``.
     """
-    amount_text = f"{amount:.2f}"
+    is_payout = amount < 0
+    amount_text = f"{abs(amount):.2f}"
     player_name = player.name
     seen: set = set()
     if payer is not None:
         seen.add(payer.pk)
-        notify_user(
-            recipient=payer,
-            verb=lambda: _("Your payment was reverted: {amount} €").format(
-                amount=amount_text
-            ),
-            level="warning",
-        )
+        if is_payout:
+            notify_user(
+                recipient=payer,
+                verb=lambda: _("Your payout was reverted: {amount} €").format(amount=amount_text),
+                level="warning",
+            )
+        else:
+            notify_user(
+                recipient=payer,
+                verb=lambda: _("Your payment was reverted: {amount} €").format(amount=amount_text),
+                level="warning",
+            )
     if cashier_user is not None and cashier_user.pk not in seen:
-        notify_user(
-            recipient=cashier_user,
-            verb=lambda: _("Reverted payment from {player}: {amount} €").format(
-                player=player_name, amount=amount_text
-            ),
-            level="warning",
-        )
+        if is_payout:
+            notify_user(
+                recipient=cashier_user,
+                verb=lambda: _("Reverted payout for {player}: {amount} €").format(
+                    player=player_name, amount=amount_text
+                ),
+                level="warning",
+            )
+        else:
+            notify_user(
+                recipient=cashier_user,
+                verb=lambda: _("Reverted payment from {player}: {amount} €").format(
+                    player=player_name, amount=amount_text
+                ),
+                level="warning",
+            )
 
 
 def notify_penalties_changed(penalties, *, action) -> None:

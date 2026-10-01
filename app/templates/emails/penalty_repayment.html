@@ -34,6 +34,12 @@
             <strong>{% translate "Full repayment — nothing is owed anymore." %}</strong>
         </td>
     </tr>
+    {% if credit %}
+    <tr>
+        <td style="padding:6px 0;border-top:1px solid #e9ecef;"><strong>{% translate "Credit" %}</strong></td>
+        <td style="padding:6px 0;border-top:1px solid #e9ecef;text-align:right;color:#198754;"><strong>{{ credit|floatformat:2 }} €</strong></td>
+    </tr>
+    {% endif %}
     {% else %}
     <tr>
         <td style="padding:6px 0;border-top:1px solid #e9ecef;"><strong>{% translate "Status" %}</strong></td>

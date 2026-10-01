@@ -173,10 +173,15 @@ def test_german_cash_box_menu_entry(admin_client, team):
     assert "💲" not in content  # no marker in the navigation
 
 
-def test_received_by_column_is_language_tolerant(
+def test_cashier_column_is_language_tolerant(
     admin_client, matchday_with_players, catalog_normal, admin_user, cashier
 ):
-    """Payments table column: 'Received by' (en) / 'Empfangen von' (de)."""
+    """Payments table column: 'Cashier' (en) / 'Kassier' (de).
+
+    Direction-neutral on purpose: the row's cashier snapshot is correct for
+    BOTH a payment (money in) and a payout (money out) — "Received by"
+    would be wrong for payout rows.
+    """
     from app.penalties.services import assign_penalty, record_payment
 
     md, players = matchday_with_players(2)
@@ -191,8 +196,8 @@ def test_received_by_column_is_language_tolerant(
 
     _switch_language(admin_client, "de")
     content = admin_client.get(reverse("dashboard:financial_overview")).content.decode()
-    assert "Received by" in content or "Empfangen von" in content
-    assert admin_user.email in content  # the receiver of THAT payment
+    assert "<th>Cashier</th>" in content or "<th>Kassier</th>" in content
+    assert admin_user.email in content  # the cashier of THAT payment
 
 
 @needs_catalog

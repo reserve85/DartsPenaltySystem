@@ -23,5 +23,6 @@ urlpatterns = [
     path("penalties/<int:pk>/edit/", views.PenaltyUpdateView.as_view(), name="penalty_update"),
     path("penalties/<int:pk>/delete/", views.PenaltyDeleteView.as_view(), name="penalty_delete"),
     path("payments/add/", views.PaymentCreateView.as_view(), name="payment_create"),
+    path("payments/payout/", views.PayoutCreateView.as_view(), name="payout_create"),
     path("payments/<int:pk>/delete/", views.PaymentDeleteView.as_view(), name="payment_delete"),
 ]

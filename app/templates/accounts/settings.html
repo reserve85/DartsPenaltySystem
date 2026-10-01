@@ -43,7 +43,7 @@
                 <span class="form-label d-block">{{ form.repayment_notify.label }}</span>
                 <div class="radio-group">{{ form.repayment_notify }}</div>
                 {% for error in form.repayment_notify.errors %}<div class="text-danger small">{{ error }}</div>{% endfor %}
-                <div class="form-text">{% translate "One e-mail per recorded payment — the confirmation for the payment." %}</div>
+                <div class="form-text">{% translate "One e-mail per recorded payment or payout — the confirmation for the money movement." %}</div>
             </div>
 
             {# 3) Round mails / club information #}

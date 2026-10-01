@@ -389,6 +389,33 @@ class PaymentForm(forms.Form):
         return amount
 
 
+class PayoutForm(forms.Form):
+    """Pay out a credit — the negative twin of ``PaymentForm``.
+
+    The amount is entered POSITIVE (how much leaves the club pot);
+    ``record_payout`` stores it as a negative ``Payment`` row. The cap (the
+    player's credit for that team + season) is enforced server-side in the
+    service — a stale modal may post more than what is available. Just like
+    a payment, the permission check (STRICTLY the team's cashier) happens in
+    the view.
+    """
+
+    team = forms.ModelChoiceField(queryset=Team.objects.all(), label=_("Team"))
+    player = forms.ModelChoiceField(queryset=Player.objects.all(), label=_("Player"))
+    amount_eur = forms.DecimalField(
+        max_digits=8,
+        decimal_places=2,
+        label=_("Amount (EUR)"),
+        help_text=_("Payout of the credit — any amount up to the available credit."),
+    )
+
+    def clean_amount_eur(self):
+        amount = self.cleaned_data.get("amount_eur")
+        if amount is not None and amount <= 0:
+            raise forms.ValidationError(_("The amount must be a positive number."))
+        return amount
+
+
 class PenaltyEditForm(forms.ModelForm):
     class Meta:
         model = Penalty

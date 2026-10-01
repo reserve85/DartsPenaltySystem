@@ -29,14 +29,19 @@ mobile-first responsive design and one-club/multi-team support.
   player and team** ("Bezahlen" in the financial overview — e.g. 25 € owed,
   20 € paid → 5 € left), fully audited and revertible; balances are
   **Σ penalties − Σ payments**. Recording *and* reverting is the cashier's
-  sole right — admins included (see *Kasse* below).
+  sole right — admins included (see *Kasse* below). Paying **more than owed**
+  is allowed and creates a **credit** (negative balance); the cashier can pay
+  that credit out again ("Auszahlung", capped at the available credit, same
+  rules + a separate confirmation e-mail).
 - **Seasons** (global dropdown in the navbar, admin manages them at
   `/seasons/`): every season is a **closed cash box** — matchdays and
   payments belong to exactly one season, all tables/money views follow the
   selected season, and **open amounts are never carried over** to the next
   season. Fresh installs start with `YYYY/YYYY` automatically; existing
   data is migrated into one initial season.
-- **Money model**: a positive balance = **debt owed to the club pot**; totals
+- **Money model**: a positive balance = **debt owed to the club pot**, a
+  negative balance = **credit** (shown green and labelled *Guthaben* /
+  *Credit*, netted against future penalties of the same season); totals
   are scoped by the matchday's team **and the active season**; soft-deleted
   penalties are excluded from aggregates but preserved for audit (hard delete
   of matchdays with penalty history is blocked). Every balance is shown as a
@@ -278,11 +283,13 @@ information, round mails, reminders, dunning, newsletter) are added as a
 | 5 | `emails/invitation_completed` | invitation accepted | `SUPPORT_EMAIL` + admins (Bcc) + 🔔 in-app |
 | 6 | `emails/penalty_created` / `emails/penalty_digest` | new penalty(s) — **collected** (outbox) | the player |
 | 7 | `emails/penalty_repayment` | payment confirmation ("Bestätigung für die Zahlung") | the player + the cashier (one mail per recipient) |
-| 8 | `emails/support_request` | support form | `SUPPORT_EMAIL` |
+| 8 | `emails/penalty_payout` | payout confirmation ("Bestätigung für die Auszahlung") | the player + the cashier (one mail per recipient) |
+| 9 | `emails/support_request` | support form | `SUPPORT_EMAIL` |
 | – | allauth (`allauth:account/…`) | e-mail verification, password reset, password changed | the user |
 
 Per-user switches live on **Settings → Notifications**: penalties
-(*Off* / *Quick* / *daily digest* + time), payment confirmations and club news.
+(*Off* / *Quick* / *daily digest* + time), payment/payout confirmations and
+club news.
 Transactional mails (invitation, approval/rejection, password, verification)
 are **always** delivered — they are not part of any opt-out.
 

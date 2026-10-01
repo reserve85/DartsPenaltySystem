@@ -2865,8 +2865,8 @@ msgid "Invitations, approval decisions, password and verification mails are alwa
 msgstr "Einladungen, Freigabe-Entscheidungen sowie Passwort- und Bestätigungs-Mails werden immer zugestellt."
 
 #: app\templates\accounts\settings.html
-msgid "One e-mail per recorded payment — the confirmation for the payment."
-msgstr "Eine E-Mail pro erfasste Zahlung — die Bestätigung für die Zahlung."
+msgid "One e-mail per recorded payment or payout — the confirmation for the money movement."
+msgstr "Eine E-Mail pro erfasster Zahlung oder Auszahlung — die Bestätigung für den Geldfluss."
 
 #: app\templates\accounts\settings.html
 msgid "Round mails and information from your club."
@@ -2898,8 +2898,8 @@ msgid "received by"
 msgstr "empfangen von"
 
 #: app\penalties\models.py
-msgid "The cashier who physically received the money (snapshot at record time)."
-msgstr "Der Kassier, der das Geld tatsächlich erhalten hat (Stand im Zeitpunkt der Erfassung)."
+msgid "The cashier who physically received or paid out the money (snapshot at record time)."
+msgstr "Der Kassier, der das Geld tatsächlich erhalten oder ausgezahlt hat (Stand im Zeitpunkt der Erfassung)."
 
 #: app\teams\models.py
 msgid "cashier"
@@ -3064,5 +3064,87 @@ msgstr "Gelesene Nachrichten löschen"
 #: app\templates\notifications\list.html
 msgid "Delete all read messages?"
 msgstr "Alle gelesenen Nachrichten löschen?"
+
+#: app\core\models.py
+msgid "Payout recorded"
+msgstr "Auszahlung erfasst"
+
+#: app\penalties\views.py
+msgid "Payout recorded."
+msgstr "Auszahlung erfasst."
+
+#: app\penalties\services.py
+msgid "This player has no credit to pay out."
+msgstr "Dieser Spieler hat kein Guthaben zur Auszahlung."
+
+#: app\penalties\services.py app\templates\dashboard\financial_overview.html
+msgid "The payout exceeds the available credit."
+msgstr "Die Auszahlung übersteigt das verfügbare Guthaben."
+
+#: app\penalties\forms.py app\templates\dashboard\financial_overview.html
+msgid "Payout of the credit — any amount up to the available credit."
+msgstr "Auszahlung des Guthabens — jeder positive Betrag bis zum verfügbaren Guthaben."
+
+#: app\notifications\services.py
+msgid "Payout confirmation: {amount} €"
+msgstr "Bestätigung für die Auszahlung: {amount} €"
+
+#: app\templates\emails\penalty_payout.html
+msgid "Payout confirmation"
+msgstr "Bestätigung für die Auszahlung"
+
+#: app\notifications\inapp.py
+msgid "Your payout has been recorded: {amount} €"
+msgstr "Deine Auszahlung wurde erfasst: {amount} €"
+
+#: app\notifications\inapp.py
+msgid "Payout for {player}: {amount} €"
+msgstr "Auszahlung für {player}: {amount} €"
+
+#: app\notifications\inapp.py
+msgid "Your payout was reverted: {amount} €"
+msgstr "Deine Auszahlung wurde storniert: {amount} €"
+
+#: app\notifications\inapp.py
+msgid "Reverted payout for {player}: {amount} €"
+msgstr "Stornierte Auszahlung für {player}: {amount} €"
+
+#: app\templates\dashboard\financial_overview.html app\templates\players\player_detail.html app\templates\emails\penalty_repayment.html app\templates\emails\penalty_repayment.txt
+msgid "Credit"
+msgstr "Guthaben"
+
+#: app\templates\dashboard\financial_overview.html
+msgid "Paid out by"
+msgstr "Ausgezahlt von"
+
+#: app\templates\dashboard\financial_overview.html
+msgid "Payout"
+msgstr "Auszahlung"
+
+#: app\templates\dashboard\financial_overview.html
+msgid "Record payout"
+msgstr "Auszahlung erfassen"
+
+#: app\templates\emails\penalty_payout.html app\templates\emails\penalty_payout.txt
+msgid "Amount paid out"
+msgstr "Ausgezahlter Betrag"
+
+#. first line of the payout status pair (partial vs. full)
+#: app\templates\emails\penalty_payout.html app\templates\emails\penalty_payout.txt
+msgid "Partial payout"
+msgstr "Teilauszahlung"
+
+#: app\templates\emails\penalty_payout.html app\templates\emails\penalty_payout.txt
+msgid "Remaining credit"
+msgstr "Verbleibendes Guthaben"
+
+#: app\templates\emails\penalty_payout.html app\templates\emails\penalty_payout.txt
+msgid "Full payout — the credit has been paid out."
+msgstr "Vollständige Auszahlung — das Guthaben wurde ausgezahlt."
+
+#: app\templates\emails\penalty_payout.html app\templates\emails\penalty_payout.txt
+#, python-format
+msgid "Hi %(name)s, your payout has been recorded:"
+msgstr "Hallo %(name)s, Ihre Auszahlung wurde erfasst:"
 
 

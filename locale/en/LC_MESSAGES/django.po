@@ -1533,7 +1533,7 @@ msgid "Invitations, approval decisions, password and verification mails are alwa
 msgstr ""
 
 #: app\templates\accounts\settings.html
-msgid "One e-mail per recorded payment — the confirmation for the payment."
+msgid "One e-mail per recorded payment or payout — the confirmation for the money movement."
 msgstr ""
 
 #: app\templates\accounts\settings.html

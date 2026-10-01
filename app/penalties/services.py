@@ -4,7 +4,9 @@ All state-changing operations for penalties and their audit entries go through
 these functions; views never manipulate ``Penalty`` rows directly.
 
 Money model (B1): every penalty row is a debt row with ``amount_eur > 0``;
-a positive balance means the player owes that amount to the club pot.
+a positive balance means the player owes that amount to the club pot, a
+negative balance is a credit. Payment rows are positive (money in), payout
+rows negative (money out) — see ``record_payment`` / ``record_payout``.
 """
 
 import logging
@@ -89,6 +91,35 @@ def _notify_repayment(payment) -> None:
     notify_payment_recorded(payment)
 
 
+def _notify_payout(payment) -> None:
+    """E-mail payer AND cashier about a payout — same rules as a payment.
+
+    Both confirmations are gated by the SAME per-user switch (Settings →
+    "Payment confirmation"): it governs every money-movement receipt and is
+    evaluated SEPARATELY per recipient (decision 3). The in-app rows are
+    always created — ``notify_payment_recorded`` switches to the payout
+    wording for a negative amount.
+    """
+    payer = eligible_user_for(payment.player)
+    if payer is not None and getattr(payer, "repayment_notify", True):
+        notification_service.send_penalty_payout(user=payer, payout=payment, recipient_role="payer")
+    elif payer is not None:
+        logger.info("Payout e-mail skipped: %s opted out.", payer.email)
+
+    cashier = payment.received_by  # NOT NULL — the cashier of record time
+    if (
+        cashier.is_active
+        and cashier.email
+        and getattr(cashier, "repayment_notify", True)
+        and (payer is None or cashier.pk != payer.pk)
+    ):
+        notification_service.send_penalty_payout(
+            user=cashier, payout=payment, recipient_role="cashier"
+        )
+    # In-app is NEVER switchable off (decision 5) — payer + cashier, always:
+    notify_payment_recorded(payment)
+
+
 def assert_can_manage_penalty(user, penalty) -> None:
     """Raises PermissionDenied unless the user manages the matchday's team."""
     if (
@@ -139,6 +170,58 @@ def record_payment(*, player, team, amount_eur, actor, season=None) -> Payment:
             },
         )
     _notify_repayment(payment)
+    return payment
+
+
+def record_payout(*, player, team, amount_eur, actor, season=None) -> Payment:
+    """Pay out an existing credit (negative balance) from THIS team's pot.
+
+    Example: 6.00 € credit, 4.00 € paid out → the balance rises to −2.00 €.
+    The amount is entered POSITIVE and stored NEGATIVE on the ``Payment``
+    row, so every aggregate (Σ penalties − Σ payments) keeps working without
+    special cases: a payout simply lowers Σ payments.
+
+    Real money leaves the club pot, so two guards apply (same scope the
+    financial overview shows — the team's pot in the given season): there
+    must be credit at all, and the amount may never exceed it. The receiver
+    invariant of ``record_payment`` holds as well — the team's current
+    cashier is snapshotted on ``Payment.received_by``. One PAYOUT_RECORDED
+    audit entry; payer + cashier get the payout confirmation e-mail.
+    """
+    amount = Decimal(amount_eur)
+    if amount <= 0:
+        raise ValidationError(_("The amount must be a positive number."))
+    credit = player_team_balance(player, team, season=season)
+    if credit >= 0:
+        raise ValidationError(_("This player has no credit to pay out."))
+    if amount > -credit:
+        raise ValidationError(_("The payout exceeds the available credit."))
+    received = cashier_user_for(team)
+    if received is None:
+        raise ValidationError(_("No usable cashier is set for this team yet."))
+    with transaction.atomic():
+        payment = Payment.objects.create(
+            player=player,
+            team=team,
+            amount_eur=-amount,
+            created_by=actor,
+            received_by=received,
+            season=season,
+        )
+        log_action(
+            AuditAction.PAYOUT_RECORDED,
+            user=actor,
+            target=payment,
+            metadata={
+                "amount_eur": str(amount),
+                "player_id": player.pk,
+                "team_id": team.pk,
+                "received_by_id": received.pk,
+                "received_by_email": received.email,
+                "kind": "payout",
+            },
+        )
+    _notify_payout(payment)
     return payment
 
 

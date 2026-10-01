@@ -712,10 +712,16 @@ class NotificationService:
 
         season = repayment.season
         remaining = player_balance(repayment.player, season=season)
+        # remaining < 0 = the player paid more than they owed — the mail then
+        # shows the credit next to the "nothing is owed anymore" status
+        # instead of hiding the negative remainder entirely.
+        credit = -remaining if remaining < 0 else Decimal(0)
         return self.send_templated(
             recipients=[user],
             template_base="emails/penalty_repayment",
-            subject=_("Payment confirmation: {amount} €").format(amount=f"{repayment.amount_eur:.2f}"),
+            subject=_("Payment confirmation: {amount} €").format(
+                amount=f"{repayment.amount_eur:.2f}"
+            ),
             context={
                 "recipient_user": user,
                 "repayment": repayment,
@@ -725,11 +731,56 @@ class NotificationService:
                 "team": repayment.team,
                 "season": season,
                 "remaining": remaining,
+                "credit": credit,
                 "is_full_repayment": remaining <= 0,
                 "recipient_role": recipient_role,
                 "is_payer": recipient_role == "payer",
                 "received_by_label": _user_display(repayment.received_by),
                 "recorded_by_label": _user_display(repayment.created_by),
+            },
+            request=request,
+            language=getattr(user, "preferred_language", None),
+        )
+
+    def send_penalty_payout(
+        self,
+        *,
+        user,
+        payout: Payment,
+        request: HttpRequest | None = None,
+        recipient_role: str = "payer",
+    ) -> int:
+        """Payout confirmation ("Bestätigung für die Auszahlung") for ONE recipient.
+
+        ``payout.amount_eur`` is negative by design — the mail shows the
+        paid-out amount as a positive number. The remaining credit is scoped
+        to the payment's season, exactly what the financial overview shows.
+        """
+        from app.penalties.services import player_balance
+
+        season = payout.season
+        remaining = player_balance(payout.player, season=season)
+        # Credit left after the payout; 0 (falsy) = fully paid out, so the
+        # template branches on ``credit`` alone (cross-team leftovers of the
+        # GLOBAL balance don't change the fact that THIS credit is gone).
+        credit = -remaining if remaining < 0 else Decimal(0)
+        return self.send_templated(
+            recipients=[user],
+            template_base="emails/penalty_payout",
+            subject=_("Payout confirmation: {amount} €").format(amount=f"{-payout.amount_eur:.2f}"),
+            context={
+                "recipient_user": user,
+                "payout": payout,
+                "player": payout.player,
+                "amount": -payout.amount_eur,
+                "payout_date": payout.created_at,
+                "team": payout.team,
+                "season": season,
+                "credit": credit,
+                "recipient_role": recipient_role,
+                "is_payer": recipient_role == "payer",
+                "received_by_label": _user_display(payout.received_by),
+                "recorded_by_label": _user_display(payout.created_by),
             },
             request=request,
             language=getattr(user, "preferred_language", None),

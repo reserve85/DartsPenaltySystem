@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% load static i18n matchday_tags %}
+{% load static i18n matchday_tags balance_tags %}
 {% block title %}{% translate "Financial overview" %} – {% translate "Darts Penalty Manager" %}{% endblock %}
 {% block content %}
 <h1 class="h3 mb-3">{% translate "Financial overview" %}</h1>
@@ -12,7 +12,11 @@
         <p>
             <strong class="text-danger">{% translate "Penalties total" %}:</strong> <span class="text-danger">{{ own_total|floatformat:2 }} €</span>
             &middot; <strong class="text-success">{% translate "Penalties settled" %}:</strong> <span class="text-success">{{ own_paid|floatformat:2 }} €</span>
+            {% if own_balance < 0 %}
+            &middot; <strong class="text-success">{% translate "Credit" %}:</strong> <strong class="text-success">{{ own_balance|abs|floatformat:2 }} €</strong>
+            {% else %}
             &middot; <strong class="text-danger">{% translate "Penalties open" %}:</strong> <strong class="text-danger">{{ own_balance|floatformat:2 }} €</strong>
+            {% endif %}
         </p>
         <div class="table-responsive">
             <table class="table table-striped align-middle">
@@ -90,7 +94,11 @@
         <p class="mb-2">
             <strong class="text-danger">{% translate "Penalties total" %}:</strong> <span class="text-danger">{{ team_penalties|floatformat:2 }} €</span>
             &middot; <strong class="text-success">{% translate "Penalties settled" %}:</strong> <span class="text-success">{{ team_paid|floatformat:2 }} €</span>
+            {% if team_total < 0 %}
+            &middot; <strong class="text-success">{% translate "Credit" %}:</strong> <strong class="text-success">{{ team_total|abs|floatformat:2 }} €</strong>
+            {% else %}
             &middot; <strong class="text-danger">{% translate "Penalties open" %}:</strong> <strong class="text-danger">{{ team_total|floatformat:2 }} €</strong>
+            {% endif %}
         </p>
 
         <h3 class="h6 mt-4">{% translate "Players (active)" %}</h3>
@@ -109,7 +117,8 @@
                         <td><a href="{% url 'players:player_detail' row.pk %}">{{ row.name }}</a>{% if row.pk in captain_player_ids %} <span title="{% translate 'Captain' %}">👑</span>{% endif %}{% if cashier and cashier.player_link_id == row.pk %} <span aria-hidden="true" title="{% translate 'Cashier' %}">💲</span>{% endif %}</td>
                         <td class="text-end text-danger">{{ row.total|floatformat:2 }} €</td>
                         <td class="text-end text-success">{{ row.paid|floatformat:2 }} €</td>
-                        <td class="text-end text-danger">{{ row.balance|floatformat:2 }} €</td>
+                        {# Green = credit (overpayment), red = debt — see balance_tags. #}
+                        <td class="text-end {{ row.balance|balance_class }}">{{ row.balance|floatformat:2 }} €</td>
                         {% if is_cashier %}
                         <td class="text-end text-nowrap">
                             {# Opens the shared payment modal — the amount is entered there (big field, mobile-friendly). #}
@@ -119,6 +128,15 @@
                                     data-balance="{{ row.balance }}">
                                 {% translate "Record payment" %}
                             </button>
+                            {% if row.balance < 0 %}
+                            {# Credit row: pay it out — capped at the credit server-side. #}
+                            <button type="button" class="btn btn-sm btn-outline-success"
+                                    data-bs-toggle="modal" data-bs-target="#payoutModal"
+                                    data-player="{{ row.pk }}" data-player-name="{{ row.name }}"
+                                    data-balance="{{ row.balance }}">
+                                {% translate "Payout" %}
+                            </button>
+                            {% endif %}
                         </td>
                         {% endif %}
                     </tr>
@@ -145,7 +163,8 @@
                         <td>{{ row.name }} <span class="badge text-bg-secondary">{% translate "inactive" %}</span></td>
                         <td class="text-end text-danger">{{ row.total|floatformat:2 }} €</td>
                         <td class="text-end text-success">{{ row.paid|floatformat:2 }} €</td>
-                        <td class="text-end text-danger">{{ row.balance|floatformat:2 }} €</td>
+                        {# Green = credit (overpayment), red = debt — see balance_tags. #}
+                        <td class="text-end {{ row.balance|balance_class }}">{{ row.balance|floatformat:2 }} €</td>
                         {% if is_cashier %}
                         <td class="text-end text-nowrap">
                             {# Same shared modal as in the active table (see payment-modal.js). #}
@@ -155,6 +174,15 @@
                                     data-balance="{{ row.balance }}">
                                 {% translate "Record payment" %}
                             </button>
+                            {% if row.balance < 0 %}
+                            {# Credit row: pay it out — capped at the credit server-side. #}
+                            <button type="button" class="btn btn-sm btn-outline-success"
+                                    data-bs-toggle="modal" data-bs-target="#payoutModal"
+                                    data-player="{{ row.pk }}" data-player-name="{{ row.name }}"
+                                    data-balance="{{ row.balance }}">
+                                {% translate "Payout" %}
+                            </button>
+                            {% endif %}
                         </td>
                         {% endif %}
                     </tr>
@@ -172,7 +200,9 @@
                     <th>{% translate "Date" %}</th>
                     <th>{% translate "Player" %}</th>
                     <th class="text-end">{% translate "Amount" %}</th>
-                    <th>{% translate "Received by" %}</th>
+                    {# The person of record is the cashier in BOTH directions — #}
+                    {# "Received by" would be wrong for payout rows.            #}
+                    <th>{% translate "Cashier" %}</th>
                     {% if is_cashier %}<th></th>{% endif %}
                 </tr></thead>
                 <tbody>
@@ -180,7 +210,12 @@
                     <tr>
                         <td>{{ payment.created_at|date:"d.m.Y H:i" }}</td>
                         <td>{{ payment.player.name }}</td>
+                        {% if payment.amount_eur < 0 %}
+                        {# Negative amount = payout (money left the pot) — badge + red. #}
+                        <td class="text-end text-danger">{{ payment.amount_eur|abs|floatformat:2 }} € <span class="badge text-bg-warning">{% translate "Payout" %}</span></td>
+                        {% else %}
                         <td class="text-end text-success">{{ payment.amount_eur|floatformat:2 }} €</td>
+                        {% endif %}
                         <td>{{ payment.received_by.player_link.name|default:payment.received_by.email }}</td>
                         {% if is_cashier %}
                         <td class="text-end">
@@ -262,12 +297,13 @@
         {# into it before it opens (large field + quick amounts = mobile).    #}
         {# ------------------------------------------------------------------ #}
         <div class="modal fade" id="paymentModal" tabindex="-1"
-             aria-labelledby="paymentModalTitle" aria-hidden="true">
+             aria-labelledby="paymentModalTitle" aria-hidden="true"
+             data-money-modal="payment">
             <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
                 <form method="post" action="{% url 'penalties:payment_create' %}">
                     {% csrf_token %}
                     <input type="hidden" name="team" value="{{ selected_team.pk }}">
-                    <input type="hidden" name="player" id="paymentPlayerId">
+                    <input type="hidden" name="player" id="paymentPlayerId" data-money-player>
                     <input type="hidden" name="next" value="{{ request.get_full_path }}">
                     <div class="modal-content">
                         <div class="modal-header">
@@ -277,10 +313,10 @@
                         </div>
                         <div class="modal-body">
                             <p class="mb-1 small text-muted">{% translate "Player" %}</p>
-                            <p class="fs-5 fw-semibold mb-2" id="paymentPlayerName"></p>
+                            <p class="fs-5 fw-semibold mb-2" id="paymentPlayerName" data-money-player-name></p>
                             <p class="mb-3">
                                 <span class="text-muted">{% translate "Penalties open" %}:</span>
-                                <strong class="text-danger" id="paymentOpenBalance"></strong>
+                                <strong class="text-danger" id="paymentOpenBalance" data-money-balance></strong>
                             </p>
                             <p class="mb-3 small" id="paymentReceivedBy">
                                 <span class="text-muted">{% translate "Received by" %}:</span>
@@ -291,7 +327,7 @@
                             <div class="input-group input-group-lg">
                                 <input type="number" class="form-control" id="paymentAmount"
                                        name="amount_eur" min="0.01" step="0.01" inputmode="decimal"
-                                       autocomplete="off" required>
+                                       autocomplete="off" required data-money-amount>
                                 <span class="input-group-text">€</span>
                             </div>
                             <div class="form-text">{% translate "Partial payment — any positive amount up to the full debt." %}</div>
@@ -301,7 +337,7 @@
                                 <button type="button" class="btn btn-outline-secondary payment-quick-amount" data-amount="10">10 €</button>
                                 <button type="button" class="btn btn-outline-secondary payment-quick-amount" data-amount="20">20 €</button>
                                 <button type="button" class="btn btn-outline-secondary payment-quick-amount"
-                                        id="paymentFullAmount" data-full
+                                        id="paymentFullAmount" data-full data-money-full
                                         data-label="{% translate 'Full amount' %}"
                                         hidden>{% translate "Full amount" %}</button>
                             </div>
@@ -309,6 +345,66 @@
                         <div class="modal-footer">
                             <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">{% translate "Cancel" %}</button>
                             <button type="submit" class="btn btn-success">{% translate "Record payment" %}</button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+        {# ------------------------------------------------------------------ #}
+        {# "Record payout" — the negative twin of the payment modal, ONE       #}
+        {# shared modal for every CREDIT row (js/payment-modal.js wires both   #}
+        {# via [data-money-modal]). The server caps the amount at the credit.   #}
+        {# ------------------------------------------------------------------ #}
+        <div class="modal fade" id="payoutModal" tabindex="-1"
+             aria-labelledby="payoutModalTitle" aria-hidden="true"
+             data-money-modal="payout">
+            <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
+                <form method="post" action="{% url 'penalties:payout_create' %}"
+                      data-cap-error="{% translate 'The payout exceeds the available credit.' %}">
+                    {% csrf_token %}
+                    <input type="hidden" name="team" value="{{ selected_team.pk }}">
+                    <input type="hidden" name="player" id="payoutPlayerId" data-money-player>
+                    <input type="hidden" name="next" value="{{ request.get_full_path }}">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h2 class="modal-title h5" id="payoutModalTitle">{% translate "Record payout" %}</h2>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal"
+                                    aria-label="{% translate 'Close' %}"></button>
+                        </div>
+                        <div class="modal-body">
+                            <p class="mb-1 small text-muted">{% translate "Player" %}</p>
+                            <p class="fs-5 fw-semibold mb-2" id="payoutPlayerName" data-money-player-name></p>
+                            <p class="mb-3">
+                                <span class="text-muted">{% translate "Credit" %}:</span>
+                                <strong class="text-success" id="payoutCredit" data-money-balance></strong>
+                            </p>
+                            <p class="mb-3 small" id="payoutPaidOutBy">
+                                <span class="text-muted">{% translate "Paid out by" %}:</span>
+                                {{ cashier.player_link.name|default:cashier.email }}{% if cashier in team_captains %} 👑{% endif %} <span aria-hidden="true">💲</span>
+                            </p>
+
+                            <label class="form-label" for="payoutAmount">{% translate "Amount (EUR)" %}</label>
+                            <div class="input-group input-group-lg">
+                                <input type="number" class="form-control" id="payoutAmount"
+                                       name="amount_eur" min="0.01" step="0.01" inputmode="decimal"
+                                       autocomplete="off" required data-money-amount>
+                                <span class="input-group-text">€</span>
+                            </div>
+                            <div class="form-text">{% translate "Payout of the credit — any amount up to the available credit." %}</div>
+
+                            <div class="d-flex flex-wrap gap-2 mt-3">
+                                <button type="button" class="btn btn-outline-secondary payment-quick-amount" data-amount="5">5 €</button>
+                                <button type="button" class="btn btn-outline-secondary payment-quick-amount" data-amount="10">10 €</button>
+                                <button type="button" class="btn btn-outline-secondary payment-quick-amount" data-amount="20">20 €</button>
+                                <button type="button" class="btn btn-outline-secondary payment-quick-amount"
+                                        id="payoutFullAmount" data-full data-money-full
+                                        data-label="{% translate 'Full amount' %}"
+                                        hidden>{% translate "Full amount" %}</button>
+                            </div>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">{% translate "Cancel" %}</button>
+                            <button type="submit" class="btn btn-success">{% translate "Record payout" %}</button>
                         </div>
                     </div>
                 </form>

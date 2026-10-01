@@ -10,6 +10,7 @@
 {% translate "Recorded by" %}: {{ recorded_by_label }}
 {% if is_full_repayment %}
 {% translate "Status" %}: {% translate "Full repayment — nothing is owed anymore." %}
+{% if credit %}{% translate "Credit" %}: {{ credit|floatformat:2 }} €{% endif %}
 {% else %}
 {% translate "Status" %}: {% translate "Partial repayment" %}
 {% translate "Remaining balance" %}: {{ remaining|floatformat:2 }} €

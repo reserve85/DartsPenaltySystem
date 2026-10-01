@@ -22,7 +22,7 @@ from app.notifications.services import (
     eligible_user_for,
     notification_service,
 )
-from app.penalties.services import assign_penalty, record_payment
+from app.penalties.services import assign_penalty, record_payment, record_payout
 from app.players.models import Player
 
 pytestmark = pytest.mark.django_db
@@ -204,9 +204,7 @@ def test_partial_repayment_email_content(
     assert "24.09.2026" not in body  # date of the payment, not of the matchday
 
 
-def test_full_repayment_email_content(
-    matchday_with_players, catalog_normal, admin_user, cashier
-):
+def test_full_repayment_email_content(matchday_with_players, catalog_normal, admin_user, cashier):
     md, players = matchday_with_players(2)
     _link_user(players[0])
     assign_penalty(
@@ -272,6 +270,97 @@ def test_cashier_gets_own_payment_confirmation(
     # review L5c: the cashier's copy names receiver + recorder
     assert "Received by" in cashier_mail.body or "Empfangen von" in cashier_mail.body
     assert "Recorded by" in cashier_mail.body or "Erfasst von" in cashier_mail.body
+
+
+def test_repayment_email_shows_credit_when_overpaid(
+    matchday_with_players, catalog_normal, admin_user, cashier
+):
+    """Overpayment: the mail says 'fully settled' AND names the CREDIT.
+
+    Regression (Alessandro case): the status row used to hide the negative
+    remainder entirely — "nothing is owed anymore" without mentioning that
+    the player has money on account.
+    """
+    md, players = matchday_with_players(2)
+    _link_user(players[0])
+    assign_penalty(
+        matchday=md,
+        player=players[0],
+        catalog_item=catalog_normal,
+        amount_eur=5,
+        description_snapshot="Late arrival",
+        actor=admin_user,
+    )  # 5.00 € owed
+    mail.outbox.clear()
+
+    record_payment(
+        player=players[0], team=md.team, amount_eur=11, actor=admin_user
+    )  # 6.00 € credit
+
+    body = next(m for m in mail.outbox if m.to == ["member@example.com"]).body
+    assert "Full repayment" in body or "Vollständig beglichen" in body
+    assert re.search(r"(Credit|Guthaben): 6[.,]00", body)  # the credit is stated
+    assert "Partial repayment" not in body and "Teilzahlung" not in body
+
+
+def test_payout_email_content(matchday_with_players, catalog_normal, admin_user, cashier):
+    """A fully paid-out credit mails 'Payout confirmation' to payer + cashier."""
+    md, players = matchday_with_players(2)
+    _link_user(players[0])
+    assign_penalty(
+        matchday=md,
+        player=players[0],
+        catalog_item=catalog_normal,
+        amount_eur=5,
+        description_snapshot="Late arrival",
+        actor=admin_user,
+    )
+    record_payment(player=players[0], team=md.team, amount_eur=7, actor=admin_user)  # 2.00 € credit
+    mail.outbox.clear()
+
+    record_payout(player=players[0], team=md.team, amount_eur=2, actor=admin_user)
+
+    assert len(mail.outbox) == 2  # payer + cashier — one confirmation each
+    message = next(m for m in mail.outbox if m.to == ["member@example.com"])
+    assert (
+        "Payout confirmation: 2.00 €" in message.subject
+        or "Bestätigung für die Auszahlung: 2.00 €" in message.subject
+    )
+    body = message.body
+    assert re.search(r"2[.,]00", body)  # ausgezahlter Betrag
+    assert "Amount paid out" in body or "Ausgezahlter Betrag" in body
+    # The receiver label flips with the direction — a payout is PAID OUT,
+    # nothing was "received by" the cashier.
+    assert "Paid out by" in body or "Ausgezahlt von" in body
+    assert "Received by" not in body and "Empfangen von" not in body
+    assert "Full payout" in body or "Vollständige Auszahlung" in body
+    assert "Partial payout" not in body and "Teilauszahlung" not in body
+
+
+def test_partial_payout_email_shows_remaining_credit(
+    matchday_with_players, catalog_normal, admin_user, cashier
+):
+    """Paying out only PART of the credit names what is left on account."""
+    md, players = matchday_with_players(2)
+    _link_user(players[0])
+    assign_penalty(
+        matchday=md,
+        player=players[0],
+        catalog_item=catalog_normal,
+        amount_eur=5,
+        description_snapshot="Late arrival",
+        actor=admin_user,
+    )  # 5.00 € owed
+    record_payment(
+        player=players[0], team=md.team, amount_eur=11, actor=admin_user
+    )  # 6.00 € credit
+    mail.outbox.clear()
+
+    record_payout(player=players[0], team=md.team, amount_eur=2, actor=admin_user)  # 4.00 € left
+
+    body = next(m for m in mail.outbox if m.to == ["member@example.com"]).body
+    assert "Partial payout" in body or "Teilauszahlung" in body
+    assert re.search(r"(Remaining credit|Verbleibendes Guthaben): 4[.,]00", body)
 
 
 # ---------------------------------------------------------------------------
