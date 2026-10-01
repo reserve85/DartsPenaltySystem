@@ -1555,4 +1555,129 @@ msgstr ""
 
 #: app\templates\emails\penalty_digest.html
 msgid "New penalties"
+
+#: app\core\models.py
+msgid "Cashier assigned"
+msgstr ""
+
+#: app\core\models.py
+msgid "Cashier removed"
+msgstr ""
+
+#: app\penalties\models.py
+msgid "received by"
+msgstr ""
+
+#: app\penalties\models.py
+msgid "The cashier who physically received the money (snapshot at record time)."
+msgstr ""
+
+#: app\teams\models.py
+msgid "cashier"
+msgstr ""
+
+#: app\teams\models.py
+msgid "cashier (snapshot)"
+msgstr ""
+
+#: app\teams\models.py
+msgid "Display name at assignment time — survives account deletion."
+msgstr ""
+
+#: app\teams\models.py
+msgid "valid from"
+msgstr ""
+
+#: app\teams\models.py
+msgid "valid to"
+msgstr ""
+
+#: app\teams\models.py
+msgid "cashier assignment"
+msgstr ""
+
+#: app\teams\models.py
+msgid "cashier assignments"
+msgstr ""
+
+#: app\teams\services.py
+msgid "Please select a cashier."
+msgstr ""
+
+#: app\teams\services.py
+msgid "Only active, approved accounts may be assigned as cashier."
+msgstr ""
+
+#: app\teams\services.py
+msgid "The cashier was just changed by someone else — please reload the page."
+msgstr ""
+
+#: app\teams\views.py
+msgid "Cashier updated."
+msgstr ""
+
+#: app\teams\views.py
+msgid "Cashier removed."
+msgstr ""
+
+#: app\penalties\services.py app\penalties\views.py
+msgid "No usable cashier is set for this team yet."
+msgstr ""
+
+#: app\templates\base.html app\templates\teams\cashier_list.html
+msgid "Cash box"
+msgstr ""
+
+#: app\templates\dashboard\financial_overview.html app\templates\teams\cashier_list.html
+msgid "Cashier"
+msgstr ""
+
+#: app\templates\dashboard\financial_overview.html
+msgid "For this team no cashier has been set yet."
+msgstr ""
+
+#: app\templates\dashboard\financial_overview.html
+msgid "Set the cashier"
+msgstr ""
+
+#: app\templates\dashboard\financial_overview.html
+msgid "Payments are recorded by the cashier"
+msgstr ""
+
+#: app\templates\dashboard\financial_overview.html
+msgid "Received by"
+msgstr ""
+
+#: app\templates\teams\cashier_list.html
+msgid "The cashier of a team is the only account that may record or revert payments for that team."
+msgstr ""
+
+#: app\templates\teams\cashier_list.html
+msgid "Assign"
+msgstr ""
+
+#: app\templates\teams\cashier_list.html
+msgid "— no cashier —"
+msgstr ""
+
+#: app\templates\teams\cashier_list.html
+msgid "History"
+msgstr ""
+
+#: app\templates\teams\cashier_list.html
+msgid "Valid from"
+msgstr ""
+
+#: app\templates\teams\cashier_list.html
+msgid "Valid to"
+msgstr ""
+
+#: app\templates\teams\cashier_list.html
+msgid "Assigned by"
+msgstr ""
+
+#: app\templates\teams\cashier_list.html
+msgid "No entries yet."
+msgstr ""
+
 msgstr ""

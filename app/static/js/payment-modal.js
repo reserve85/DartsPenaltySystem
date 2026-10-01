@@ -22,6 +22,10 @@
         var amountInput = document.getElementById("paymentAmount");
         var fullAmountBtn = document.getElementById("paymentFullAmount");
         var form = modalEl.querySelector("form");
+        if (!form) {
+            // Defensive: without the cashier the modal never renders — nothing to wire.
+            return;
+        }
 
         // Open balance of the row the modal was opened for — needed for the
         // "full amount" quick button.

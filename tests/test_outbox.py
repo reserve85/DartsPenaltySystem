@@ -332,7 +332,7 @@ def test_management_command_flushes_due_rows_and_is_idempotent(
 # Payment receipts + club news subscriptions
 # ---------------------------------------------------------------------------
 def test_payment_confirmation_can_be_switched_off(
-    matchday_with_players, catalog_normal, admin_user
+    matchday_with_players, catalog_normal, admin_user, cashier
 ):
     md, players = matchday_with_players(2)
     user = _link(players[0], mode="immediate")
@@ -347,7 +347,7 @@ def test_payment_confirmation_can_be_switched_off(
 
 
 def test_payment_confirmation_is_sent_when_subscribed(
-    matchday_with_players, catalog_normal, admin_user
+    matchday_with_players, catalog_normal, admin_user, cashier
 ):
     md, players = matchday_with_players(2)
     _link(players[0], mode="daily")  # the digest does NOT delay a receipt

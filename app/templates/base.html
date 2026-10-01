@@ -73,6 +73,9 @@
                                 <li>
                                     <a class="dropdown-item" href="{% url 'penalties:catalog_list' %}">{% translate "Penalty catalog" %}</a>
                                 </li>
+                                <li>
+                                    <a class="dropdown-item" href="{% url 'teams:cashier_list' %}">{% translate "Cash box" %}</a>
+                                </li>
                                 {% if request.user.is_admin %}
                                     <li><hr class="dropdown-divider"></li>
                                     <li>

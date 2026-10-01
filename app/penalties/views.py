@@ -49,6 +49,7 @@ from app.penalties.services import (
     soft_delete_penalty,
 )
 from app.teams.models import Team
+from app.teams.services import cashier_user_for, user_is_cashier
 
 
 # ---------------------------------------------------------------------------
@@ -345,7 +346,13 @@ class PenaltyDeleteView(LoginRequiredMixin, View):
 
 
 class PaymentCreateView(LoginRequiredMixin, View):
-    """POST: record a (partial) payment — Admin or Captain of THAT team."""
+    """POST: record a (partial) payment — STRICTLY the team's cashier.
+
+    Two-step guard (review M1): a POST without any usable cashier gets a
+    friendly message + redirect (crafted/stale submissions never see a bare
+    403 and the service-level ValidationError stays unreachable via HTTP);
+    only then is the strict cashier rule enforced (admins included).
+    """
 
     def post(self, request):
         fallback = safe_next_url(request, reverse("dashboard:financial_overview"))
@@ -356,7 +363,10 @@ class PaymentCreateView(LoginRequiredMixin, View):
                     messages.error(request, error)
             return redirect(fallback)
         team = form.cleaned_data["team"]
-        if not user_can_manage_team(request.user, team):
+        if cashier_user_for(team) is None:
+            messages.error(request, _("No usable cashier is set for this team yet."))
+            return redirect(fallback)
+        if not user_is_cashier(request.user, team):
             raise PermissionDenied
         record_payment(
             player=form.cleaned_data["player"],
@@ -370,11 +380,16 @@ class PaymentCreateView(LoginRequiredMixin, View):
 
 
 class PaymentDeleteView(LoginRequiredMixin, View):
-    """POST: revert a mis-recorded payment (Admin / Captain of the team)."""
+    """POST: revert a mis-recorded payment — STRICTLY the team's current cashier.
+
+    Only the CURRENT cashier may revert (deliberate tradeoff of decision 7:
+    after a cashier change the new cashier fixes old rows, or an admin
+    switches the cashier back).
+    """
 
     def post(self, request, pk):
         payment = get_object_or_404(Payment, pk=pk)
-        if not user_can_manage_team(request.user, payment.team):
+        if not user_is_cashier(request.user, payment.team):
             raise PermissionDenied
         delete_payment(payment=payment, actor=request.user)
         messages.success(request, _("Payment reverted."))

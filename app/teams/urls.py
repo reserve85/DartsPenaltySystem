@@ -7,6 +7,9 @@ app_name = "teams"
 urlpatterns = [
     path("", views.TeamListView.as_view(), name="team_list"),
     path("create/", views.TeamCreateView.as_view(), name="team_create"),
+    # Kasse: who may record payments for which team (history preserved).
+    path("cashier/", views.CashierListView.as_view(), name="cashier_list"),
+    path("cashier/set/", views.CashierUpdateView.as_view(), name="cashier_set"),
     # Old team page -> financial overview (which now shows the roster/balances).
     path("<int:pk>/", views.TeamDetailRedirectView.as_view(), name="team_detail"),
     path("<int:pk>/edit/", views.TeamUpdateView.as_view(), name="team_update"),

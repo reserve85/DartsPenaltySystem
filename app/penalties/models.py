@@ -184,6 +184,15 @@ class Payment(models.Model):
         related_name="+",
         verbose_name=_("recorded by"),
     )
+    received_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.PROTECT,
+        related_name="received_payments",
+        verbose_name=_("received by"),
+        help_text=_(
+            "The cashier who physically received the money (snapshot at record time)."
+        ),
+    )
     created_at = models.DateTimeField(
         auto_now_add=True, db_index=True, verbose_name=_("created at")
     )

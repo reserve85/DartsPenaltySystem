@@ -205,6 +205,21 @@ def admin_client(db, admin_user):
 
 
 @pytest.fixture
+def cashier(db, team, admin_user):
+    """admin_user is the active cashier of the default ``team``."""
+    from app.teams.services import set_cashier
+
+    set_cashier(team=team, user=admin_user, actor=admin_user)
+    return admin_user
+
+
+@pytest.fixture
+def cashier_client(db, cashier):
+    """Logged-in client of the default team's cashier (the admin_user)."""
+    return _login_client(cashier)
+
+
+@pytest.fixture
 def captain_client(db, captain_user):
     return _login_client(captain_user)
 

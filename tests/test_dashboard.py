@@ -170,12 +170,15 @@ def test_financial_captain_reads_all_teams_manages_own(
     assert {t.pk for t in response.context["teams"]} == {team.pk, other_team.pk}
     assert response.context["team_total"] == Decimal(5)
     assert response.context["can_manage"] is True  # … while WRITE stays own-team
+    # … but the STRICT payment gate stays closed: the captain is not the cashier.
+    assert response.context["is_cashier"] is False
 
     # … and a foreign team can be opened read-only (no payment affordances).
     response = captain_client.get(reverse("dashboard:financial_overview"), {"team": other_team.pk})
     assert response.status_code == 200
     assert response.context["selected_team"] == other_team
     assert response.context["can_manage"] is False
+    assert response.context["is_cashier"] is False
     assert reverse("penalties:payment_create") not in response.content.decode()
 
 
@@ -190,6 +193,7 @@ def test_financial_captain_without_team_can_read(db, role_groups):
     response = client.get(reverse("dashboard:financial_overview"))
     assert response.status_code == 200
     assert response.context["can_manage"] is False
+    assert response.context["is_cashier"] is False
 
 
 def test_financial_roleless_user_can_read(db, role_groups, team):
@@ -202,6 +206,7 @@ def test_financial_roleless_user_can_read(db, role_groups, team):
     response = client.get(reverse("dashboard:financial_overview"))
     assert response.status_code == 200
     assert response.context["can_manage"] is False
+    assert response.context["is_cashier"] is False
     # never write affordances
     assert reverse("penalties:payment_create") not in response.content.decode()
 
@@ -237,6 +242,7 @@ def test_financial_player_sees_own_penalties_and_all_teams_read_only(
     # Team section: read-only, first team by default.
     assert response.context["selected_team"] == team
     assert response.context["can_manage"] is False  # no payment forms/buttons
+    assert response.context["is_cashier"] is False
     content = response.content.decode()
     assert "Keks" in content
     assert reverse("penalties:payment_create") not in content
@@ -245,6 +251,40 @@ def test_financial_player_sees_own_penalties_and_all_teams_read_only(
     assert response.status_code == 200
     assert response.context["selected_team"] == other_team
     assert response.context["can_manage"] is False
+    assert response.context["is_cashier"] is False
+
+
+def test_financial_overview_cashier_gets_payment_ui(
+    admin_client, admin_user, team, matchday_with_players, catalog_normal, cashier
+):
+    """The team's cashier (admin here) opens the strict payment gate."""
+    md, players = matchday_with_players(2)
+    assign_penalty(
+        matchday=md,
+        player=players[0],
+        catalog_item=catalog_normal,
+        amount_eur=5,
+        description_snapshot="Late arrival",
+        actor=admin_user,
+    )
+    response = admin_client.get(reverse("dashboard:financial_overview"))
+    assert response.context["cashier"] == admin_user
+    assert response.context["is_cashier"] is True
+    content = response.content.decode()
+    assert reverse("penalties:payment_create") in content
+    assert 'id="paymentModal"' in content
+    assert "Cashier" in content or "Kassier" in content  # the dedicated line
+
+
+def test_financial_overview_shows_no_cashier_hint(admin_client, team, admin_user):
+    """No cashier yet -> managers get the hint, never a silent missing button."""
+    response = admin_client.get(reverse("dashboard:financial_overview"))
+    assert response.context["cashier"] is None
+    assert response.context["can_manage"] is True
+    assert response.context["is_cashier"] is False
+    content = response.content.decode()
+    assert reverse("penalties:payment_create") not in content
+    assert reverse("teams:cashier_list") in content  # link to the Kasse page
 
 
 def test_financial_player_team_param_must_be_numeric(player_client, player_user, team):

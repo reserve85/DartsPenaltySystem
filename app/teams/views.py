@@ -1,9 +1,10 @@
-"""Team views — combined Teams & Players page (matrix) + admin CRUD + guarded delete."""
+"""Team views — combined Teams & Players page (matrix) + admin CRUD + guarded delete + Kasse."""
 
 from typing import ClassVar
 
 from django.contrib import messages
 from django.contrib.auth.mixins import LoginRequiredMixin
+from django.core.exceptions import PermissionDenied, ValidationError
 from django.core.paginator import Paginator
 from django.db.models import Count, Exists, OuterRef, Value
 from django.shortcuts import get_object_or_404, redirect, render
@@ -19,6 +20,7 @@ from app.core.permissions import (
     GROUP_CAPTAIN,
     GroupRequiredMixin,
     user_can_edit_player,
+    user_can_manage_team,
     user_is_admin,
 )
 from app.core.services import log_action
@@ -26,9 +28,9 @@ from app.matchdays.services import season_for_request
 from app.penalties.models import PenaltyCatalogItem, TeamCatalogAmount
 from app.players.models import Player
 from app.players.services import assign_teams, player_count_annotation, prefetch_season_assignments
-from app.teams.forms import TeamForm
-from app.teams.models import Team
-from app.teams.services import teams_for_season
+from app.teams.forms import CashierForm, TeamForm, approved_active_users_queryset
+from app.teams.models import Team, TeamCashier
+from app.teams.services import clear_cashier, set_cashier, teams_for_season
 
 
 class TeamListView(GroupRequiredMixin, LoginRequiredMixin, ListView):
@@ -258,3 +260,103 @@ class TeamDeleteView(GroupRequiredMixin, LoginRequiredMixin, View):
         team.delete()
         messages.success(request, _("Team '%(name)s' deleted.") % {"name": name})
         return redirect("teams:team_list")
+
+
+# ---------------------------------------------------------------------------
+# Kasse — cashier assignment (admin + captain of the respective team)
+# ---------------------------------------------------------------------------
+class CashierListView(GroupRequiredMixin, LoginRequiredMixin, ListView):
+    """Cash box page: current cashier + full history + assign form per team.
+
+    Admins may edit every team, captains only their own (decision 8,
+    enforced server-side in ``CashierUpdateView``); everyone else gets 403.
+    Option labels are privacy-aware (review L4): captains never see the
+    plain e-mail of an account that has a ``player_link``.
+    """
+
+    groups: ClassVar[list] = [GROUP_ADMIN, GROUP_CAPTAIN]
+    model = Team
+    template_name = "teams/cashier_list.html"
+    context_object_name = "teams"
+    queryset = Team.objects.all()
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        user = self.request.user
+        teams = list(context["teams"])
+
+        # ONE query for the open rows, ONE for the history (review L6: the
+        # page reads open rows directly — no second lookup helper).
+        open_rows = list(
+            TeamCashier.objects.filter(valid_to__isnull=True).select_related(
+                "user__player_link"
+            )
+        )
+        current = {row.team_id: row.user for row in open_rows}
+        history_by_team: dict = {team.pk: [] for team in teams}
+        for row in TeamCashier.objects.select_related(
+            "user__player_link", "created_by", "team"
+        ):
+            history_by_team.setdefault(row.team_id, []).append(row)
+
+        is_admin = user_is_admin(user)
+        # Template convenience attributes (DTL cannot subscript dicts with a
+        # variable key) — the named context dicts stay the contract for tests.
+        for team in teams:
+            team.current_cashier = current.get(team.pk)
+            team.can_edit = is_admin or user.team_id == team.pk
+            team.history = history_by_team.get(team.pk, [])
+        context.update(
+            {
+                "current_cashier_by_team": current,
+                "history_by_team": history_by_team,
+                "assignable_users": list(approved_active_users_queryset()),
+                "can_edit_by_team": {
+                    team.pk: is_admin or user.team_id == team.pk for team in teams
+                },
+                "is_admin": is_admin,
+                "form": CashierForm(user=user),
+            }
+        )
+        return context
+
+
+class CashierUpdateView(LoginRequiredMixin, View):
+    """POST-only: assign (or clear) the cashier of one team.
+
+    Permission: ``user_can_manage_team`` (admins any team, captains their
+    own) — HTTP 403 otherwise. The unique-constraint race is surfaced as a
+    validation message, never a 500 (review M5).
+    """
+
+    http_method_names: ClassVar[list] = ["post"]
+
+    def post(self, request):
+        # Permission FIRST on the RAW team id: a captain posting a foreign
+        # team gets 403 (the narrowed form queryset would only yield a
+        # validation message for the same crafted POST).
+        raw_team = request.POST.get("team") or ""
+        if raw_team.isdigit():
+            team_obj = Team.objects.filter(pk=int(raw_team)).first()
+            if team_obj is not None and not user_can_manage_team(request.user, team_obj):
+                raise PermissionDenied
+        form = CashierForm(request.POST, user=request.user)
+        if not form.is_valid():
+            for errors in form.errors.values():
+                for error in errors:
+                    messages.error(request, error)
+            return redirect("teams:cashier_list")
+        team = form.cleaned_data["team"]
+        cashier = form.cleaned_data["user"]
+        if not user_can_manage_team(request.user, team):
+            raise PermissionDenied
+        try:
+            if cashier is None:
+                clear_cashier(team=team, actor=request.user)
+                messages.success(request, _("Cashier removed."))
+            else:
+                set_cashier(team=team, user=cashier, actor=request.user)
+                messages.success(request, _("Cashier updated."))
+        except ValidationError as error:
+            messages.error(request, "; ".join(error.messages))
+        return redirect("teams:cashier_list")

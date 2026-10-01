@@ -23,6 +23,7 @@ from app.matchdays.models import Matchday, MatchdayPlayer
 from app.notifications.services import eligible_user_for, flush_outbox, notification_service
 from app.penalties.models import Payment, Penalty, PenaltyType
 from app.players.models import Player
+from app.teams.services import cashier_user_for
 
 logger = logging.getLogger("app.penalties")
 
@@ -80,19 +81,37 @@ def record_payment(*, player, team, amount_eur, actor, season=None) -> Payment:
     Any positive amount is allowed (overpayment → credit / negative balance).
     The payment belongs to ``season`` (the globally active season) — it only
     reduces debt of that same season. One PAYMENT_RECORDED audit entry.
+
+    No payment without a receiver (invariant): the team's current cashier is
+    resolved here and stored on ``Payment.received_by`` (PROTECT, snapshot);
+    without a usable cashier the recording is refused.
     """
     amount = Decimal(amount_eur)
     if amount <= 0:
         raise ValidationError(_("The amount must be a positive number."))
+    received = cashier_user_for(team)
+    if received is None:
+        raise ValidationError(_("No usable cashier is set for this team yet."))
     with transaction.atomic():
         payment = Payment.objects.create(
-            player=player, team=team, amount_eur=amount, created_by=actor, season=season
+            player=player,
+            team=team,
+            amount_eur=amount,
+            created_by=actor,
+            received_by=received,
+            season=season,
         )
         log_action(
             AuditAction.PAYMENT_RECORDED,
             user=actor,
             target=payment,
-            metadata={"amount_eur": str(amount), "player_id": player.pk, "team_id": team.pk},
+            metadata={
+                "amount_eur": str(amount),
+                "player_id": player.pk,
+                "team_id": team.pk,
+                "received_by_id": received.pk,
+                "received_by_email": received.email,
+            },
         )
     _notify_repayment(payment)
     return payment

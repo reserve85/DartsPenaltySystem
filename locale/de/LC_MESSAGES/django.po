@@ -2887,3 +2887,129 @@ msgstr "Hallo %(name)s, folgende neue Strafen wurden für dich erfasst:"
 #: app\templates\emails\penalty_digest.html
 msgid "New penalties"
 msgstr "Neue Strafen"
+
+#: app\core\models.py
+msgid "Cashier assigned"
+msgstr "Kassier zugewiesen"
+
+#: app\core\models.py
+msgid "Cashier removed"
+msgstr "Kassier entfernt"
+
+#: app\penalties\models.py
+msgid "received by"
+msgstr "empfangen von"
+
+#: app\penalties\models.py
+msgid "The cashier who physically received the money (snapshot at record time)."
+msgstr "Der Kassier, der das Geld tatsächlich erhalten hat (Stand im Zeitpunkt der Erfassung)."
+
+#: app\teams\models.py
+msgid "cashier"
+msgstr "Kassier"
+
+#: app\teams\models.py
+msgid "cashier (snapshot)"
+msgstr "Kassier (Stand)"
+
+#: app\teams\models.py
+msgid "Display name at assignment time — survives account deletion."
+msgstr "Anzeigename zum Zeitpunkt der Zuweisung — überlebt die Löschung des Kontos."
+
+#: app\teams\models.py
+msgid "valid from"
+msgstr "gültig von"
+
+#: app\teams\models.py
+msgid "valid to"
+msgstr "gültig bis"
+
+#: app\teams\models.py
+msgid "cashier assignment"
+msgstr "Kassier-Zuweisung"
+
+#: app\teams\models.py
+msgid "cashier assignments"
+msgstr "Kassier-Zuweisungen"
+
+#: app\teams\services.py
+msgid "Please select a cashier."
+msgstr "Bitte wähle einen Kassier aus."
+
+#: app\teams\services.py
+msgid "Only active, approved accounts may be assigned as cashier."
+msgstr "Nur aktive, freigegebene Konten können als Kassier zugewiesen werden."
+
+#: app\teams\services.py
+msgid "The cashier was just changed by someone else — please reload the page."
+msgstr "Der Kassier wurde gerade von jemand anderem geändert — bitte lade die Seite neu."
+
+#: app\teams\views.py
+msgid "Cashier updated."
+msgstr "Kassier aktualisiert."
+
+#: app\teams\views.py
+msgid "Cashier removed."
+msgstr "Kassier entfernt."
+
+#: app\penalties\services.py app\penalties\views.py
+msgid "No usable cashier is set for this team yet."
+msgstr "Für dieses Team ist noch kein Kassier festgelegt."
+
+#: app\templates\base.html app\templates\teams\cashier_list.html
+msgid "Cash box"
+msgstr "Kasse"
+
+#: app\templates\dashboard\financial_overview.html app\templates\teams\cashier_list.html
+msgid "Cashier"
+msgstr "Kassier"
+
+#: app\templates\dashboard\financial_overview.html
+msgid "For this team no cashier has been set yet."
+msgstr "Für dieses Team wurde noch kein Kassier festgelegt."
+
+#: app\templates\dashboard\financial_overview.html
+msgid "Set the cashier"
+msgstr "Kassier festlegen"
+
+#: app\templates\dashboard\financial_overview.html
+msgid "Payments are recorded by the cashier"
+msgstr "Zahlungen werden vom Kassier erfasst"
+
+#: app\templates\dashboard\financial_overview.html
+msgid "Received by"
+msgstr "Empfangen von"
+
+#: app\templates\teams\cashier_list.html
+msgid "The cashier of a team is the only account that may record or revert payments for that team."
+msgstr "Der Kassier eines Teams ist das einzige Konto, das Zahlungen für dieses Team erfassen oder stornieren kann."
+
+#: app\templates\teams\cashier_list.html
+msgid "Assign"
+msgstr "Zuweisen"
+
+#: app\templates\teams\cashier_list.html
+msgid "— no cashier —"
+msgstr "— kein Kassier —"
+
+#: app\templates\teams\cashier_list.html
+msgid "History"
+msgstr "Verlauf"
+
+#: app\templates\teams\cashier_list.html
+msgid "Valid from"
+msgstr "Gültig von"
+
+#: app\templates\teams\cashier_list.html
+msgid "Valid to"
+msgstr "Gültig bis"
+
+#: app\templates\teams\cashier_list.html
+msgid "Assigned by"
+msgstr "Zugewiesen von"
+
+#: app\templates\teams\cashier_list.html
+msgid "No entries yet."
+msgstr "Noch keine Einträge."
+
+

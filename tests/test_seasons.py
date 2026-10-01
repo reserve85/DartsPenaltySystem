@@ -125,7 +125,7 @@ def test_delete_season_with_matchdays_blocked(admin_client, season, matchday):
 
 
 def test_delete_season_with_payments_blocked(
-    admin_client, season, matchday_with_players, catalog_normal, admin_user
+    admin_client, season, matchday_with_players, catalog_normal, admin_user, cashier
 ):
     md, players = matchday_with_players(2, season=season)
     record_payment(player=players[0], team=md.team, amount_eur=1, actor=admin_user, season=season)
@@ -208,7 +208,7 @@ def test_matchday_list_filtered_by_active_season(admin_client, season, team):
 # Financial scoping — the trio + NO carry-over between seasons
 # ---------------------------------------------------------------------------
 def test_balance_trio_in_financial_overview(
-    admin_client, season, matchday_with_players, catalog_normal, admin_user
+    admin_client, season, matchday_with_players, catalog_normal, admin_user, cashier
 ):
     md, players = matchday_with_players(2, season=season)
     assign_penalty(
@@ -233,7 +233,9 @@ def test_balance_trio_in_financial_overview(
     assert rows[players[0].pk].balance == Decimal(3)
 
 
-def test_no_carry_over_between_seasons(season, matchday_with_players, catalog_normal, admin_user):
+def test_no_carry_over_between_seasons(
+    season, matchday_with_players, catalog_normal, admin_user, cashier
+):
     """Open amounts of one closed season never leak into the next one."""
     newer = Season.objects.create(name="2026/2027")
     md, players = matchday_with_players(2, season=season)
@@ -280,7 +282,7 @@ def test_financial_view_scoped_to_active_season(
 
 
 def test_payment_is_recorded_in_active_season(
-    admin_client, season, matchday_with_players, catalog_normal, admin_user
+    admin_client, season, matchday_with_players, catalog_normal, admin_user, cashier
 ):
     md, players = matchday_with_players(2, season=season)
     assign_penalty(
@@ -301,7 +303,7 @@ def test_payment_is_recorded_in_active_season(
 
 
 def test_own_trio_for_player_role(
-    player_client, player_user, season, matchday_with_players, catalog_normal, admin_user
+    player_client, player_user, season, matchday_with_players, catalog_normal, admin_user, cashier
 ):
     md, players = matchday_with_players(2, season=season)
     assign_penalty(

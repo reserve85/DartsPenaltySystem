@@ -1,0 +1,93 @@
+{% extends "base.html" %}
+{% load i18n %}
+{% block title %}{% translate "Cash box" %} – {% translate "Darts Penalty Manager" %}{% endblock %}
+{% block content %}
+<h1 class="h3 mb-3">{% translate "Cash box" %}</h1>
+<p class="text-muted">
+    {% translate "The cashier of a team is the only account that may record or revert payments for that team." %}
+</p>
+
+<div class="table-responsive">
+    <table class="table table-striped align-middle">
+        <thead>
+            <tr>
+                <th>{% translate "Team" %}</th>
+                <th>{% translate "Cashier" %}</th>
+                <th>{% translate "Assign" %}</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for team in teams %}
+                <tr>
+                    <td>{{ team.name }}</td>
+                    <td>
+                        {% if team.current_cashier %}
+                            {{ team.current_cashier.player_link.name|default:team.current_cashier.email }}
+                            <span aria-hidden="true">💲</span>
+                        {% else %}–{% endif %}
+                    </td>
+                    <td>
+                        {% if team.can_edit %}
+                            <form method="post" action="{% url 'teams:cashier_set' %}" class="d-flex flex-wrap gap-2">
+                                {% csrf_token %}
+                                <input type="hidden" name="team" value="{{ team.pk }}">
+                                <select name="user" class="form-select form-select-sm" style="width: auto;"
+                                        aria-label="{% translate 'Cashier' %}">
+                                    <option value="">{% translate "— no cashier —" %}</option>
+                                    {% for candidate in assignable_users %}
+                                        <option value="{{ candidate.pk }}"
+                                                {% if team.current_cashier and candidate.pk == team.current_cashier.pk %}selected{% endif %}>
+                                            {% if is_admin %}{{ candidate.player_link.name|default:candidate.email }}{% else %}{{ candidate.player_link.name|default:"—" }}{% endif %}
+                                        </option>
+                                    {% endfor %}
+                                </select>
+                                <button type="submit" class="btn btn-sm btn-success">{% translate "Save" %}</button>
+                            </form>
+                        {% else %}
+                            {# Read-only row: another team's captain sees the name, never a form. #}
+                            {% if team.current_cashier %}
+                                {{ team.current_cashier.player_link.name|default:team.current_cashier.email }}
+                            {% else %}–{% endif %}
+                        {% endif %}
+                    </td>
+                </tr>
+            {% empty %}
+                <tr><td colspan="3" class="text-center text-muted py-3">{% translate "No teams." %}</td></tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+<h2 class="h5 mt-4">{% translate "History" %}</h2>
+<div class="table-responsive">
+    <table class="table table-sm table-striped align-middle">
+        <thead>
+            <tr>
+                <th>{% translate "Team" %}</th>
+                <th>{% translate "Cashier" %}</th>
+                <th>{% translate "Valid from" %}</th>
+                <th>{% translate "Valid to" %}</th>
+                <th>{% translate "Assigned by" %}</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for team in teams %}
+                {% for row in team.history %}
+                    <tr>
+                        <td>{{ team.name }}</td>
+                        <td>
+                            {{ row.user_label }}
+                            {% if row.is_open %}<span aria-hidden="true">💲</span>{% endif %}
+                        </td>
+                        <td>{{ row.valid_from|date:"d.m.Y H:i" }}</td>
+                        <td>{% if row.valid_to %}{{ row.valid_to|date:"d.m.Y H:i" }}{% else %}–{% endif %}</td>
+                        <td>{{ row.created_by.email|default:"–" }}</td>
+                    </tr>
+                {% endfor %}
+            {% empty %}
+                <tr><td colspan="5" class="text-center text-muted py-3">{% translate "No entries yet." %}</td></tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}

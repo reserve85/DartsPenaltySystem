@@ -7,6 +7,46 @@ from app.matchdays.models import Season
 from app.teams.models import Team
 
 
+def approved_active_users_queryset():
+    """Approved + active accounts, ordered by e-mail — cashier candidates.
+
+    Lazy ``get_user_model()`` import keeps app-population order intact
+    (``accounts.models`` must not be imported at module level here).
+    """
+    from django.contrib.auth import get_user_model
+
+    from app.accounts.models import ApprovalStatus
+
+    User = get_user_model()
+    return (
+        User.objects.filter(approval_status=ApprovalStatus.APPROVED, is_active=True)
+        .select_related("player_link")
+        .order_by("email")
+    )
+
+
+class CashierForm(forms.Form):
+    """Assign (or clear, ``user=""``) the cashier of one team.
+
+    The ``team`` queryset is narrowed per submitting user in ``__init__`` —
+    captains may only post their OWN team (enforced server-side; disabled
+    options in the template are never trusted).
+    """
+
+    team = forms.ModelChoiceField(queryset=Team.objects.all())
+    user = forms.ModelChoiceField(queryset=Team.objects.none(), required=False)
+
+    def __init__(self, *args, user=None, **kwargs):
+        super().__init__(*args, **kwargs)
+        from app.core.permissions import user_is_admin
+
+        self.fields["user"].queryset = approved_active_users_queryset()
+        if user is not None and not user_is_admin(user):
+            self.fields["team"].queryset = Team.objects.filter(pk=user.team_id)
+        else:
+            self.fields["team"].queryset = Team.objects.all()
+
+
 class TeamForm(forms.ModelForm):
     class Meta:
         model = Team

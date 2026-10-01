@@ -58,10 +58,32 @@
             <span class="text-muted">{% translate "Captains" %}:</span>
             <ul class="mb-0">
                 {% for captain in team_captains %}
-                    <li title="{% translate 'Captain' %}">{{ captain.player_link.name|default:captain.email }} 👑</li>
+                    {# Marker stacking (decision 13): a captain who is also the cashier carries #}
+                    {# both emojis; the stacked 💲 is decorative — the dedicated Cashier line   #}
+                    {# below carries the meaning for screen readers.                          #}
+                    <li title="{% translate 'Captain' %}">{{ captain.player_link.name|default:captain.email }} 👑{% if cashier and captain.pk == cashier.pk %} <span aria-hidden="true" title="{% translate 'Cashier' %}">💲</span>{% endif %}</li>
                 {% endfor %}
             </ul>
         </div>
+        {% endif %}
+        {# Dedicated Kassier line (Option A): always rendered, canonical place to look. #}
+        <div class="mb-2">
+            <span class="text-muted">{% translate "Cashier" %}:</span>
+            {% if cashier %}
+                {{ cashier.player_link.name|default:cashier.email }} <span aria-hidden="true">💲</span>
+            {% else %}–{% endif %}
+        </div>
+        {% if not cashier and can_manage %}
+            <div class="alert alert-warning">
+                {% translate "For this team no cashier has been set yet." %}
+                <a href="{% url 'teams:cashier_list' %}">{% translate "Set the cashier" %}</a>
+            </div>
+        {% endif %}
+        {% if can_manage and not is_cashier and cashier %}
+            <p class="text-muted mb-2">
+                {% translate "Payments are recorded by the cashier" %}:
+                {{ cashier.player_link.name|default:cashier.email }} <span aria-hidden="true">💲</span>
+            </p>
         {% endif %}
         <p class="mb-2">
             <strong class="text-danger">{% translate "Penalties total" %}:</strong> <span class="text-danger">{{ team_penalties|floatformat:2 }} €</span>
@@ -77,7 +99,7 @@
                     <th class="text-end">{% translate "Penalties total" %}</th>
                     <th class="text-end">{% translate "Penalties settled" %}</th>
                     <th class="text-end">{% translate "Penalties open" %}</th>
-                    {% if can_manage %}<th class="text-end">{% translate "Payment" %}</th>{% endif %}
+                    {% if is_cashier %}<th class="text-end">{% translate "Payment" %}</th>{% endif %}
                 </tr></thead>
                 <tbody>
                 {% for row in team_balances %}
@@ -86,7 +108,7 @@
                         <td class="text-end text-danger">{{ row.total|floatformat:2 }} €</td>
                         <td class="text-end text-success">{{ row.paid|floatformat:2 }} €</td>
                         <td class="text-end text-danger">{{ row.balance|floatformat:2 }} €</td>
-                        {% if can_manage %}
+                        {% if is_cashier %}
                         <td class="text-end text-nowrap">
                             {# Opens the shared payment modal — the amount is entered there (big field, mobile-friendly). #}
                             <button type="button" class="btn btn-sm btn-success"
@@ -99,7 +121,7 @@
                         {% endif %}
                     </tr>
                 {% empty %}
-                    <tr><td colspan="{% if can_manage %}5{% else %}4{% endif %}" class="text-muted text-center py-3">{% translate "No active players." %}</td></tr>
+                    <tr><td colspan="{% if is_cashier %}5{% else %}4{% endif %}" class="text-muted text-center py-3">{% translate "No active players." %}</td></tr>
                 {% endfor %}
                 </tbody>
             </table>
@@ -113,7 +135,7 @@
                     <th class="text-end">{% translate "Penalties total" %}</th>
                     <th class="text-end">{% translate "Penalties settled" %}</th>
                     <th class="text-end">{% translate "Penalties open" %}</th>
-                    {% if can_manage %}<th class="text-end">{% translate "Payment" %}</th>{% endif %}
+                    {% if is_cashier %}<th class="text-end">{% translate "Payment" %}</th>{% endif %}
                 </tr></thead>
                 <tbody>
                 {% for row in inactive_balances %}
@@ -122,7 +144,7 @@
                         <td class="text-end text-danger">{{ row.total|floatformat:2 }} €</td>
                         <td class="text-end text-success">{{ row.paid|floatformat:2 }} €</td>
                         <td class="text-end text-danger">{{ row.balance|floatformat:2 }} €</td>
-                        {% if can_manage %}
+                        {% if is_cashier %}
                         <td class="text-end text-nowrap">
                             {# Same shared modal as in the active table (see payment-modal.js). #}
                             <button type="button" class="btn btn-sm btn-success"
@@ -135,7 +157,7 @@
                         {% endif %}
                     </tr>
                 {% empty %}
-                    <tr><td colspan="{% if can_manage %}5{% else %}4{% endif %}" class="text-muted text-center py-3">{% translate "No inactive players with balances." %}</td></tr>
+                    <tr><td colspan="{% if is_cashier %}5{% else %}4{% endif %}" class="text-muted text-center py-3">{% translate "No inactive players with balances." %}</td></tr>
                 {% endfor %}
                 </tbody>
             </table>
@@ -148,7 +170,8 @@
                     <th>{% translate "Date" %}</th>
                     <th>{% translate "Player" %}</th>
                     <th class="text-end">{% translate "Amount" %}</th>
-                    {% if can_manage %}<th></th>{% endif %}
+                    <th>{% translate "Received by" %}</th>
+                    {% if is_cashier %}<th></th>{% endif %}
                 </tr></thead>
                 <tbody>
                 {% for payment in payments %}
@@ -156,7 +179,8 @@
                         <td>{{ payment.created_at|date:"d.m.Y H:i" }}</td>
                         <td>{{ payment.player.name }}</td>
                         <td class="text-end text-success">{{ payment.amount_eur|floatformat:2 }} €</td>
-                        {% if can_manage %}
+                        <td>{{ payment.received_by.player_link.name|default:payment.received_by.email }}</td>
+                        {% if is_cashier %}
                         <td class="text-end">
                             <form method="post" action="{% url 'penalties:payment_delete' payment.pk %}" class="d-inline"
                                   data-confirm="{% translate 'Revert this payment?' %}">
@@ -168,7 +192,7 @@
                         {% endif %}
                     </tr>
                 {% empty %}
-                    <tr><td colspan="{% if can_manage %}4{% else %}3{% endif %}" class="text-muted text-center py-3">{% translate "No payments yet." %}</td></tr>
+                    <tr><td colspan="{% if is_cashier %}5{% else %}4{% endif %}" class="text-muted text-center py-3">{% translate "No payments yet." %}</td></tr>
                 {% endfor %}
                 </tbody>
             </table>
@@ -229,7 +253,7 @@
             </table>
         </div>
 
-        {% if can_manage %}
+        {% if is_cashier %}
         {# ------------------------------------------------------------------ #}
         {# "Record payment" — ONE modal shared by all player rows.            #}
         {# js/payment-modal.js copies the clicked row's player + open balance #}
@@ -255,6 +279,10 @@
                             <p class="mb-3">
                                 <span class="text-muted">{% translate "Penalties open" %}:</span>
                                 <strong class="text-danger" id="paymentOpenBalance"></strong>
+                            </p>
+                            <p class="mb-3 small" id="paymentReceivedBy">
+                                <span class="text-muted">{% translate "Received by" %}:</span>
+                                {{ cashier.player_link.name|default:cashier.email }} <span aria-hidden="true">💲</span>
                             </p>
 
                             <label class="form-label" for="paymentAmount">{% translate "Amount (EUR)" %}</label>
@@ -291,5 +319,5 @@
 {% endblock %}
 
 {% block extra_js %}
-    {% if can_manage %}<script src="{% static 'js/payment-modal.js' %}"></script>{% endif %}
+    {% if is_cashier %}<script src="{% static 'js/payment-modal.js' %}"></script>{% endif %}
 {% endblock %}

@@ -51,6 +51,8 @@ class AuditAction(models.TextChoices):
     USER_INVITE_CANCELLED = "user_invite_cancelled", _("Invitation cancelled")
     USER_INVITE_ACCEPTED = "user_invite_accepted", _("Invitation accepted")
     USER_INVITE_OBSOLETED = "user_invite_obsoleted", _("Invitation obsolete")
+    CASHIER_SET = "cashier_set", _("Cashier assigned")
+    CASHIER_CLEARED = "cashier_cleared", _("Cashier removed")
 
 
 class AuditLog(models.Model):

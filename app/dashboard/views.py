@@ -23,7 +23,12 @@ from app.penalties.services import (
     team_paid_total,
     team_penalties_total,
 )
-from app.teams.services import captains_for_teams, teams_for_season
+from app.teams.services import (
+    captains_for_teams,
+    cashier_user_for,
+    teams_for_season,
+    user_is_cashier,
+)
 
 
 def _own_team(user, teams, season):
@@ -63,8 +68,9 @@ class FinancialOverviewView(LoginRequiredMixin, View):
     Universal read access (decision): Admin, Captain, Player and role-less
     accounts all get the full team selector and money data. Only WRITE
     actions stay role-scoped — ``can_manage`` (per selected team) gates the
-    payment buttons/modal, so Captains can manage their own team and nothing
-    else; Players and role-less accounts never get write affordances.
+    matchday links, while ``is_cashier`` gates ALL payment UI (strict
+    cashier rule, decision 7); Players and role-less accounts never get
+    write affordances.
     """
 
     template_name = "dashboard/financial_overview.html"
@@ -90,6 +96,8 @@ class FinancialOverviewView(LoginRequiredMixin, View):
             "teams": teams,
             "selected_team": team,
             "can_manage": False,
+            "cashier": None,
+            "is_cashier": False,
         }
 
         # Player role: extra "own penalties" section on top of the shared view.
@@ -140,9 +148,13 @@ class FinancialOverviewView(LoginRequiredMixin, View):
             "team_total": sum(row.balance for row in balances)
             + sum(row.balance for row in inactive),
             "team_paid": team_paid_total(team, season=season),
-            # Write actions (record/revert payment) are Admin/Captain-only —
+            # Write actions (matchday links, totals) stay Admin/Captain-only —
             # the Player role gets the very same overview read-only.
             "can_manage": user_can_manage_team(self.request.user, team),
+            # STRICT payment gate (decision 7): only the team's current
+            # cashier records/reverts payments — admins included.
+            "cashier": cashier_user_for(team),
+            "is_cashier": user_is_cashier(self.request.user, team),
             "payments": _season_payments(
                 Payment.objects.filter(team=team).select_related("player"), season
             ),

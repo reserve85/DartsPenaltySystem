@@ -171,7 +171,9 @@ def test_group_penalty_notifies_every_affected_linked_player(
 # ---------------------------------------------------------------------------
 # Repayment notifications
 # ---------------------------------------------------------------------------
-def test_partial_repayment_email_content(matchday_with_players, catalog_normal, admin_user):
+def test_partial_repayment_email_content(
+    matchday_with_players, catalog_normal, admin_user, cashier
+):
     md, players = matchday_with_players(2)
     _link_user(players[0])
     assign_penalty(
@@ -202,7 +204,9 @@ def test_partial_repayment_email_content(matchday_with_players, catalog_normal, 
     assert "24.09.2026" not in body  # date of the payment, not of the matchday
 
 
-def test_full_repayment_email_content(matchday_with_players, catalog_normal, admin_user):
+def test_full_repayment_email_content(
+    matchday_with_players, catalog_normal, admin_user, cashier
+):
     md, players = matchday_with_players(2)
     _link_user(players[0])
     assign_penalty(
@@ -224,7 +228,7 @@ def test_full_repayment_email_content(matchday_with_players, catalog_normal, adm
 
 
 def test_repayment_without_user_account_sends_no_email(
-    matchday_with_players, catalog_normal, admin_user
+    matchday_with_players, catalog_normal, admin_user, cashier
 ):
     md, players = matchday_with_players(2)
     assign_penalty(
@@ -322,7 +326,7 @@ def test_penalty_email_carries_team_and_season(
 
 
 def test_repayment_email_carries_team_and_season(
-    matchday_with_players, catalog_normal, admin_user, season
+    matchday_with_players, catalog_normal, admin_user, season, cashier
 ):
     md, players = matchday_with_players(2, season=season)
     _link_user(players[0])

@@ -139,7 +139,9 @@ def test_cookie_banner_present_in_english(admin_client):
 
 
 @needs_catalog
-def test_german_payment_button(admin_client, matchday_with_players, catalog_normal, admin_user):
+def test_german_payment_button(
+    admin_client, matchday_with_players, catalog_normal, admin_user, cashier
+):
     """The "Bezahlen" (record payment) action must be translated in German."""
     from app.penalties.services import assign_penalty
 
