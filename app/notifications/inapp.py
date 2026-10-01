@@ -262,3 +262,70 @@ def notify_approval_decided(user, *, approved: bool) -> None:
         target=user,
         level="success" if approved else "warning",
     )
+
+
+def notify_payment_reverted(*, payer, cashier_user, player, amount, team) -> None:
+    """In-app trace of a REVERTED payment (decision 10 — in-app only, no e-mail).
+
+    Called with the SNAPSHOT captured BEFORE the hard delete of the Payment:
+    the row is gone afterwards, so there is NO target (a GenericForeignKey
+    would resolve to None). Deduplicated when payer == cashier; inactive
+    accounts are skipped by ``notify_user``.
+    """
+    amount_text = f"{amount:.2f}"
+    player_name = player.name
+    seen: set = set()
+    if payer is not None:
+        seen.add(payer.pk)
+        notify_user(
+            recipient=payer,
+            verb=lambda: _("Your payment was reverted: {amount} €").format(
+                amount=amount_text
+            ),
+            level="warning",
+        )
+    if cashier_user is not None and cashier_user.pk not in seen:
+        notify_user(
+            recipient=cashier_user,
+            verb=lambda: _("Reverted payment from {player}: {amount} €").format(
+                player=player_name, amount=amount_text
+            ),
+            level="warning",
+        )
+
+
+def notify_penalties_changed(penalties, *, action) -> None:
+    """One row per (active user, penalty) for EDITED / DELETED penalty rows.
+
+    ``action`` is ``"edited"`` or ``"deleted"``; every affected row of a group
+    produces its own row (carrying the NEW amount after an edit).
+    ``target=penalty`` — a soft-deleted row still resolves through
+    ``_base_manager``. In-app only: no new e-mail type is added (decision 10).
+    """
+    if action == "edited":
+
+        def make_verb(amount_text):
+            return lambda: _("Penalty changed: {amount} €").format(amount=amount_text)
+
+    elif action == "deleted":
+
+        def make_verb(amount_text):
+            return lambda: _("Penalty deleted: {amount} €").format(amount=amount_text)
+
+    else:
+        # Programmer error, not a notification problem — log, never raise
+        # (this helper runs after the business transaction committed).
+        logger.error("notify_penalties_changed called with unknown action %r.", action)
+        return
+
+    for penalty in penalties or []:
+        recipient = _inapp_recipient_for(penalty.player)
+        if recipient is None:
+            continue
+        notify_user(
+            recipient=recipient,
+            verb=make_verb(f"{penalty.amount_eur:.2f}"),
+            sender=penalty.created_by,
+            target=penalty,
+            level="warning",
+        )

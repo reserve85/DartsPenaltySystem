@@ -20,7 +20,12 @@ from app.core.models import AuditAction
 from app.core.permissions import user_can_manage_team
 from app.core.services import log_action
 from app.matchdays.models import Matchday, MatchdayPlayer
-from app.notifications.inapp import notify_payment_recorded, notify_penalties_assigned
+from app.notifications.inapp import (
+    notify_payment_recorded,
+    notify_payment_reverted,
+    notify_penalties_assigned,
+    notify_penalties_changed,
+)
 from app.notifications.services import eligible_user_for, flush_outbox, notification_service
 from app.penalties.models import Payment, Penalty, PenaltyType
 from app.players.models import Player
@@ -138,15 +143,32 @@ def record_payment(*, player, team, amount_eur, actor, season=None) -> Payment:
 
 
 def delete_payment(*, payment, actor) -> None:
-    """Revert a mis-recorded payment — the debt is owed again. Audited."""
+    """Revert a mis-recorded payment — the debt is owed again. Audited.
+
+    The receiver snapshot is captured BEFORE the hard delete (the row is gone
+    afterwards) so payer + cashier still leave an in-app trace afterwards
+    (decision 10 — in-app only, no e-mail). Audit metadata copies the row
+    values incl. ``received_by``.
+    """
     metadata = {
         "amount_eur": str(payment.amount_eur),
         "player_id": payment.player_id,
         "team_id": payment.team_id,
+        "received_by_id": payment.received_by_id,
+        "received_by_email": payment.received_by.email,
     }
+    # Snapshot BEFORE the delete — afterwards nothing references the row.
+    payer = payment.player.user  # None when the payer has no account
+    cashier_user = payment.received_by
+    amount = payment.amount_eur
+    player = payment.player
+    team = payment.team
     with transaction.atomic():
         log_action(AuditAction.PAYMENT_DELETED, user=actor, target=payment, metadata=metadata)
         payment.delete()
+    notify_payment_reverted(
+        payer=payer, cashier_user=cashier_user, player=player, amount=amount, team=team
+    )
 
 
 def _assert_participant(matchday, player) -> None:
@@ -364,6 +386,9 @@ def edit_penalty(
                 target=row,
                 metadata={"group_id": group_id},
             )
+    # In-app trace AFTER commit — one row per affected player with the NEW
+    # amount (decision 10; an in-app failure can never roll back the edit).
+    notify_penalties_changed(rows, action="edited")
     return rows[0]
 
 
@@ -393,6 +418,9 @@ def soft_delete_penalty(*, penalty, actor, scope="group") -> None:
                 target=row,
                 metadata={"group_id": group_id, "scope": scope},
             )
+    # In-app trace AFTER commit — every soft-deleted row informs its player
+    # (single -> 1 row, group/everything -> all siblings; decision 10).
+    notify_penalties_changed(rows, action="deleted")
 
 
 def player_balance(player, *, season=None) -> Decimal:

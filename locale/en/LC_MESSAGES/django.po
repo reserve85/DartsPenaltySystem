@@ -1704,4 +1704,20 @@ msgstr ""
 msgid "Your account has been rejected"
 msgstr ""
 
+#: app\notifications\inapp.py
+msgid "Your payment was reverted: {amount} €"
+msgstr ""
+
+#: app\notifications\inapp.py
+msgid "Reverted payment from {player}: {amount} €"
+msgstr ""
+
+#: app\notifications\inapp.py
+msgid "Penalty changed: {amount} €"
+msgstr ""
+
+#: app\notifications\inapp.py
+msgid "Penalty deleted: {amount} €"
+msgstr ""
+
 msgstr ""

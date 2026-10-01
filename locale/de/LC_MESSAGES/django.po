@@ -3028,4 +3028,20 @@ msgstr "Dein Konto wurde freigegeben"
 msgid "Your account has been rejected"
 msgstr "Dein Konto wurde abgelehnt"
 
+#: app\notifications\inapp.py
+msgid "Your payment was reverted: {amount} €"
+msgstr "Deine Zahlung wurde storniert: {amount} €"
+
+#: app\notifications\inapp.py
+msgid "Reverted payment from {player}: {amount} €"
+msgstr "Stornierte Zahlung von {player}: {amount} €"
+
+#: app\notifications\inapp.py
+msgid "Penalty changed: {amount} €"
+msgstr "Strafe geändert: {amount} €"
+
+#: app\notifications\inapp.py
+msgid "Penalty deleted: {amount} €"
+msgstr "Strafe gelöscht: {amount} €"
+
 
