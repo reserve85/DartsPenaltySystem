@@ -125,6 +125,15 @@
                             {% if unread_notification_count %}<span class="badge text-bg-warning">{{ unread_notification_count }}</span>{% endif %}
                         </a>
                     </li>
+                    {% if request.user.is_admin and pending_approval_count %}
+                        {# LIVE pending-approvals badge — admin-only, count from User rows. #}
+                        <li class="nav-item">
+                            <a class="nav-link" href="{% url 'accounts:approval_list' %}">
+                                {% translate "Pending approvals" %}
+                                <span class="badge text-bg-danger">{{ pending_approval_count }}</span>
+                            </a>
+                        </li>
+                    {% endif %}
                     <li class="nav-item"><a class="nav-link" href="{% url 'accounts:settings' %}">{% translate "Settings" %}</a></li>
                     <li class="nav-item">
                         {# Logout must stay a PLAIN nav-link: .btn brings the 2.75rem touch-target min-height from style.css, which is taller than the .nav-link anchors next to it. #}

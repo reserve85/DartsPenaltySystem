@@ -484,3 +484,36 @@ def test_received_by_survives_a_cashier_change(
     assert entry.metadata["received_by_id"] == admin_user.pk
     assert entry.metadata["received_by_email"] == admin_user.email
 
+
+
+# ---------------------------------------------------------------------------
+# 8. Live pending-approvals badge (admin-only, count from User rows)
+# ---------------------------------------------------------------------------
+def test_live_pending_approval_badge(admin_client, captain_client, admin_user):
+    User.objects.create_user(email="pending1@example.com", password="pw")
+    User.objects.create_user(email="pending2@example.com", password="pw")
+    danger = "badge text-bg-danger"
+
+    admin_html = admin_client.get(reverse("dashboard:index")).content.decode()
+    assert f'<span class="{danger}">2</span>' in admin_html
+    assert reverse("accounts:approval_list") in admin_html
+
+    # Never for non-admins…
+    captain_html = captain_client.get(reverse("dashboard:index")).content.decode()
+    assert danger not in captain_html
+
+    # …and independent of the mailbox state (rows can be read/deleted freely).
+    Notification.objects.all().delete()
+    admin_html = admin_client.get(reverse("dashboard:index")).content.decode()
+    assert f'<span class="{danger}">2</span>' in admin_html
+
+    # An approval drops the badge without relying on notification rows.
+    first = User.objects.get(email="pending1@example.com")
+    response = admin_client.post(
+        reverse("accounts:approval", args=[first.pk]), {"action": "approve"}
+    )
+    assert response.status_code == 302
+    admin_html = admin_client.get(reverse("dashboard:index")).content.decode()
+    assert f'<span class="{danger}">1</span>' in admin_html
+    assert f'<span class="{danger}">2</span>' not in admin_html
+

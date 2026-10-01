@@ -4,6 +4,7 @@ from django.conf import settings
 from django.utils import timezone
 
 from app.core.choices import THEME_COOKIE_NAME, ThemeChoice
+from app.core.permissions import user_is_admin
 from app.core.version import get_version_info
 from app.matchdays.models import Season
 from app.matchdays.services import season_for_request
@@ -72,6 +73,23 @@ def _unread_notifications(request) -> int:
     return unread_count(user)
 
 
+def _pending_approval_count(request) -> int:
+    """Pending self-registrations for the LIVE admin badge (0 unless admin).
+
+    Computed from ``User.approval_status`` — deliberately NOT from the
+    notification rows: the badge must survive read/delete actions in the
+    mailbox and drop exactly when an admin decides.
+    """
+    user = getattr(request, "user", None)
+    if user is None or not user.is_authenticated or not user_is_admin(user):
+        return 0
+    from django.contrib.auth import get_user_model
+
+    from app.accounts.models import ApprovalStatus
+
+    return get_user_model().objects.filter(approval_status=ApprovalStatus.PENDING).count()
+
+
 def _theme_choice(request) -> str:
     """Effective theme choice rendered into ``data-theme-choice``.
 
@@ -108,6 +126,7 @@ def site_context(request):
         "active_season": active_season,
         "nav_section": _nav_section(request),
         "unread_notification_count": _unread_notifications(request),
+        "pending_approval_count": _pending_approval_count(request),
         "cookie_consent_enabled": True,
         "IMPRINT_NAME": settings.IMPRINT_NAME,
         "IMPRINT_URL": settings.IMPRINT_URL,
