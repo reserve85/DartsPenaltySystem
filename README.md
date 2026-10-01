@@ -25,10 +25,11 @@ mobile-first responsive design and one-club/multi-team support.
     *Manual*) — individual amount + required comment per assignment
     (e.g. "said stupid stuff → 3.00 €"); fresh installs start with this
     entry only, each club adds its own catalog items.
-- **Payments**: Admin or Captain records **partial payments per player and
-  team** ("Bezahlen" in the financial overview — e.g. 25 € owed, 20 € paid →
-  5 € left), fully audited and revertible; balances are
-  **Σ penalties − Σ payments**.
+- **Payments**: the team's **cashier** (Kasse) records **partial payments per
+  player and team** ("Bezahlen" in the financial overview — e.g. 25 € owed,
+  20 € paid → 5 € left), fully audited and revertible; balances are
+  **Σ penalties − Σ payments**. Recording *and* reverting is the cashier's
+  sole right — admins included (see *Kasse* below).
 - **Seasons** (global dropdown in the navbar, admin manages them at
   `/seasons/`): every season is a **closed cash box** — matchdays and
   payments belong to exactly one season, all tables/money views follow the
@@ -137,6 +138,7 @@ GitHub release for it (→ release workflow + release page). The footer version
 | Catalog items (create/edit/delete while unused) | all teams | all items + all teams' fees/activation | – |
 | Players | all teams | own team (write); read: everyone | read: everyone |
 | Matchdays, penalties (incl. manual) | all teams | own team | – |
+| Payments (record/revert, *Kasse*) | only when set as the team's **cashier** | only when set as the team's **cashier** (own team) | – |
 | Financial overview | all teams | read: all teams; write: own team | read: all teams |
 | Settings (password, language, theme) | ✔ | ✔ | ✔ |
 
@@ -158,7 +160,27 @@ account then manages nothing), an Admin may additionally be assigned as
 captain of one team, and the Player role never gets a team. The financial
 overview marks the captains assigned to the selected team with a **👑 crown**
 — under the team heading and in the roster row of a player linked to a
-captain account (the team selector stays unmarked).
+captain account (the team selector stays unmarked); the team's **cashier**
+is marked with the **💲 emoji** (an emoji, **not** the ASCII character `$`)
+— stacked behind the crown when one account is both (`Kapt. X 👑 💲`) plus a
+dedicated `Kassier:` line below the captains.
+
+### Kasse (cash box)
+
+Every team has **exactly one cashier** — the only account that may record or
+revert payments for that team, with **admins included**: an admin who wants
+to record payments first sets themselves as cashier. Admins and the captain
+of the respective team assign the cashier on **Administration → Cash box**
+(`/teams/cashier/`, captains only for their own team, enforced server-side);
+the page keeps the full **history** ("valid from – valid to" + who assigned
+it), so the Kasse audit trail survives account deletions (name snapshot).
+Each recorded payment stores its receiver (`Payment.received_by`, snapshot)
+and the payment confirmation e-mail goes to **the player + the cashier** —
+each of them can switch off only their own copy (Settings → *Payment
+confirmation*). Money movements never stay silent in-app: recording,
+reverting, adding, changing and deleting a penalty/payment each leaves an
+in-app notification row for the affected accounts (always *in addition to*
+e-mail).
 
 Accounts **without any role** can sign in and read everything (financial
 overview, players, entries) but have no write actions — they never see
@@ -252,7 +274,7 @@ information, round mails, reminders, dunning, newsletter) are added as a
 | 4 | `emails/invitation` | admin sends / resends an invitation | the invitee |
 | 5 | `emails/invitation_completed` | invitation accepted | `SUPPORT_EMAIL` + admins (Bcc) + 🔔 in-app |
 | 6 | `emails/penalty_created` / `emails/penalty_digest` | new penalty(s) — **collected** (outbox) | the player |
-| 7 | `emails/penalty_repayment` | repayment recorded | the player |
+| 7 | `emails/penalty_repayment` | payment confirmation ("Bestätigung für die Zahlung") | the player + the cashier (one mail per recipient) |
 | 8 | `emails/support_request` | support form | `SUPPORT_EMAIL` |
 | – | allauth (`allauth:account/…`) | e-mail verification, password reset, password changed | the user |
 
