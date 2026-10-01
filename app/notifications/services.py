@@ -722,7 +722,7 @@ class NotificationService:
                 "penalty": penalty,
                 "player": penalty.player,
                 "amount": penalty.amount_eur,
-                "reason": penalty.description_snapshot,
+                "reason": penalty.display_description(),
                 "penalty_date": penalty.created_at,
                 "matchday": matchday,
                 "team": team,

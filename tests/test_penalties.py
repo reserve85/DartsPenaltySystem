@@ -5,9 +5,11 @@ from decimal import Decimal
 import pytest
 from django.core.exceptions import PermissionDenied
 from django.core.exceptions import ValidationError as DjangoValidationError
+from django.utils.translation import override as translation_override
 
 from app.core.models import AuditAction, AuditLog
-from app.penalties.models import Penalty
+from app.penalties.forms import PenaltyAssignForm
+from app.penalties.models import Penalty, PenaltyCatalogItem
 from app.penalties.services import (
     assert_can_manage_penalty,
     assign_group_penalty,
@@ -449,3 +451,105 @@ def test_doubles_pair_edit_and_delete_hit_both_rows(
     soft_delete_penalty(penalty=penalty, actor=admin_user)
     assert Penalty.objects.count() == 0
     assert Penalty.all_objects().count() == 2
+
+
+# ---------------------------------------------------------------------------
+# Listing label — penalty type + the comment/reason in brackets
+# ---------------------------------------------------------------------------
+def test_display_description_is_plain_when_snapshot_is_the_catalog_text(
+    matchday_with_players, catalog_normal, admin_user
+):
+    md, players = matchday_with_players(2)
+    penalty = assign_penalty(
+        matchday=md,
+        player=players[0],
+        catalog_item=catalog_normal,
+        description_snapshot="Late arrival",
+        actor=admin_user,
+    )
+    assert penalty.display_description() == "Late arrival"
+
+
+def test_display_description_puts_the_info_in_brackets(
+    matchday_with_players, catalog_normal, admin_user
+):
+    """The imposed penalty leads, the captain's info follows: ``X (Y)``."""
+    md, players = matchday_with_players(2)
+    penalty = assign_penalty(
+        matchday=md,
+        player=players[0],
+        catalog_item=catalog_normal,
+        description_snapshot="9 Punkte",
+        actor=admin_user,
+    )
+    assert penalty.description_snapshot == "9 Punkte"  # stored value stays raw
+    assert penalty.display_description() == "Late arrival (9 Punkte)"
+
+
+def test_display_description_leads_with_the_type_for_manual_and_group(
+    matchday_with_players, catalog_group, catalog_manual, admin_user
+):
+    """EVERY type lists as ``penalty type (comment)`` — manual and group too."""
+    md, players = matchday_with_players(3)
+    assign_group_penalty(
+        matchday=md,
+        trigger_player=players[0],
+        catalog_item=catalog_group,
+        description="too late",
+        actor=admin_user,
+    )
+    # stored: "180 — MP1 — too late" -> listed: "180 (MP1 — too late)"
+    group_row = Penalty.objects.exclude(player=players[0]).first()
+    assert group_row.description_snapshot == f"180 — {players[0].name} — too late"
+    assert group_row.display_description() == f"180 ({players[0].name} — too late)"
+
+    # MANUAL: the comment follows the type instead of replacing it.
+    manual = assign_penalty(
+        matchday=md,
+        player=players[0],
+        catalog_item=catalog_manual,
+        amount_eur=2,
+        description_snapshot="Said stupid stuff",
+        actor=admin_user,
+    )
+    assert manual.display_description() == "Manual (Said stupid stuff)"
+
+
+def test_group_comment_is_optional(matchday_with_players, catalog_group, admin_user):
+    """No comment typed -> only the causers show up in the brackets."""
+    md, players = matchday_with_players(3)
+    assign_group_penalty(
+        matchday=md, trigger_player=players[0], catalog_item=catalog_group, actor=admin_user
+    )
+    row = Penalty.objects.exclude(player=players[0]).first()
+    assert row.description_snapshot == f"180 — {players[0].name}"
+    assert row.display_description() == f"180 ({players[0].name})"
+
+
+def test_comment_field_is_required_only_for_manual(matchday_with_players, catalog_normal):
+    """Label + help text state MANUAL=required, NORMAL/group=optional."""
+    md, _players = matchday_with_players(2)
+    field = PenaltyAssignForm(matchday=md).fields["description"]
+    assert field.required is False  # the flag is toggled per catalog type
+    with translation_override("en"):  # language-tolerant: the local .mo may be stale
+        assert str(field.label) == "Comment / reason"
+        assert "required" in str(field.help_text)
+        assert "optional" in str(field.help_text)
+
+
+def test_display_description_without_catalog_item(
+    matchday_with_players, catalog_normal, admin_user
+):
+    """Deleted catalog entry: the snapshot alone is all that is left."""
+    md, players = matchday_with_players(2)
+    penalty = assign_penalty(
+        matchday=md,
+        player=players[0],
+        catalog_item=catalog_normal,
+        description_snapshot="9 Punkte",
+        actor=admin_user,
+    )
+    PenaltyCatalogItem.objects.filter(pk=catalog_normal.pk).delete()
+    penalty.refresh_from_db()
+    assert penalty.catalog_item is None
+    assert penalty.display_description() == "9 Punkte"

@@ -235,8 +235,16 @@ class PenaltyAssignForm(forms.Form):
     no amount is asked for. MANUAL items ask for an individual amount and a
     required comment (shown/hidden client-side via ``manual_ids``; enforced
     server-side below). For group items the selected player is the TRIGGER
-    player (e.g. the 180 thrower); amount and description always come from
-    the catalog item.
+    player (e.g. the 180 thrower); amount always comes from the catalog item.
+
+    ``description`` is the COMMENT/REASON behind the penalty type:
+
+    * MANUAL — required (it is the whole reason of the charge),
+    * NORMAL — optional (extra info, e.g. the points actually scored),
+    * group  — optional (appended behind the automatically stored causers).
+
+    Whatever is typed is LISTED behind the penalty type in brackets, e.g.
+    ``Late arrival (9 Punkte)`` — see ``Penalty.display_description()``.
     """
 
     catalog_item = forms.ModelChoiceField(
@@ -269,11 +277,17 @@ class PenaltyAssignForm(forms.Form):
         label=_("Amount (EUR)"),
         help_text=_("Only for manual penalties — entered individually each time."),
     )
+    # The comment/reason: REQUIRED for MANUAL items, optional for NORMAL and
+    # group items (the form-level ``required`` flag is toggled client-side by
+    # the template JS, ``clean()`` enforces it server-side).
     description = forms.CharField(
         required=False,
         max_length=255,
-        label=_("Description"),
-        help_text=_("Only for normal penalties — leave empty to use the catalog description."),
+        label=_("Comment / reason"),
+        help_text=_(
+            "Manual penalty: required (comment/reason) — normal and group "
+            "penalties: optional. Always listed as: penalty type (comment)."
+        ),
     )
 
     def __init__(self, *args, matchday=None, **kwargs):

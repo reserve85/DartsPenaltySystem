@@ -13,7 +13,7 @@
     <tr>
         <td style="padding:6px 0;border-bottom:1px solid #e9ecef;white-space:nowrap;">{{ penalty.created_at|date:"d.m.Y" }}</td>
         <td style="padding:6px 0;border-bottom:1px solid #e9ecef;">{{ penalty.matchday.display_label }}</td>
-        <td style="padding:6px 0;border-bottom:1px solid #e9ecef;">{{ penalty.description_snapshot }}</td>
+        <td style="padding:6px 0;border-bottom:1px solid #e9ecef;">{{ penalty.display_description }}</td>
         <td style="padding:6px 0;border-bottom:1px solid #e9ecef;text-align:right;white-space:nowrap;">{{ penalty.amount_eur|floatformat:2 }} €</td>
     </tr>
     {% endfor %}

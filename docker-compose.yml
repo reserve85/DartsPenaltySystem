@@ -11,6 +11,8 @@ services:
     ports:
       - "${BIND_PORT:-8000}:8000"
     env_file:
+      # Everything else — SMTP, CONTACT_*, PUID/PGID, build metadata, optional
+      # tuning (see .env.example). Compose reads .env ONLY from this folder.
       - .env
     volumes:
       - dart_data:/app/data

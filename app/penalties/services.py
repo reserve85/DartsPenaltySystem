@@ -349,7 +349,7 @@ def assign_penalty(
 
 
 def assign_group_penalty(
-    *, matchday, trigger_player, catalog_item, double_partner=None, actor
+    *, matchday, trigger_player, catalog_item, double_partner=None, description=None, actor
 ) -> list[Penalty]:
     """Group penalty: one +amount row for EVERY OTHER participant (M4).
 
@@ -362,6 +362,8 @@ def assign_group_penalty(
     Every generated row names WHO caused the penalty in its
     ``description_snapshot``: the catalog text plus the trigger player and —
     when excluded too — the doubles partner, e.g. ``Highfinish Tag — MP1 & MP2``.
+    The optional ``description`` (the comment/reason typed on the form) is
+    appended behind the causers: ``Highfinish Tag — MP1 & MP2 — too late``.
     """
     if catalog_item.type != PenaltyType.PER_ALL_OTHER_MATCHDAY_PLAYERS:
         raise ValidationError(_("A group penalty requires a group catalog item."))
@@ -396,14 +398,18 @@ def assign_group_penalty(
     if double_partner is not None:
         metadata["double_partner_pk"] = double_partner.pk
     # Snapshot = catalog text + WHO caused it (thrower, plus the doubles
-    # partner when that one is excluded too) — language-neutral, so no extra UI
-    # column is needed. The base text is trimmed so the combined value always
-    # fits description_snapshot (255 chars) with the names intact.
+    # partner when that one is excluded too) + the optional comment —
+    # language-neutral, so no extra UI column is needed. The base text is
+    # trimmed so the combined value always fits description_snapshot (255
+    # chars) with the names and the comment intact.
     causers = " & ".join(
         [trigger_player.name] + ([double_partner.name] if double_partner is not None else [])
     )
-    suffix = f" — {causers}"
-    description = f"{catalog_item.description[: max(0, 255 - len(suffix))]}{suffix}"
+    comment = (description or "").strip()
+    tail = " — ".join([causers] + ([comment] if comment else []))
+    tail = tail[: 255 - 3]  # keeps room for the " — " prefix
+    suffix = f" — {tail}"
+    snapshot = f"{catalog_item.description[: max(0, 255 - len(suffix))]}{suffix}"
     created: list[Penalty] = []
     with transaction.atomic():
         for participation in other_participants:
@@ -411,7 +417,7 @@ def assign_group_penalty(
                 matchday=matchday,
                 player=participation.player,
                 catalog_item=catalog_item,
-                description_snapshot=description,
+                description_snapshot=snapshot,
                 amount_eur=amount,
                 group_id=group_id,
                 created_by=actor,
@@ -708,15 +714,38 @@ def matchday_totals(team, *, season=None) -> list:
 
 
 def most_common_penalties(team=None, *, season=None, limit=10) -> list:
-    """Group by ``description_snapshot`` (M1); count + Σ amount, count desc."""
+    """Group by CATALOG ENTRY (M1); count + Σ amount, count desc.
+
+    The group label is the penalty that was actually imposed — the catalog
+    entry — because one entry is assigned with different infos ("7 Punkte",
+    "9 Punkte", "5 Punkte" all belong to "Scoring < 10"). Rows of a DELETED
+    catalog item (``catalog_item is NULL``) and MANUAL entries (their
+    free-text comment IS the description) fall back to
+    ``description_snapshot``.
+
+    Returns ``{"description", "count", "total"}`` dicts — the same shape the
+    financial overview renders (``item.description``).
+    """
     queryset = _season_penalty_qs(Penalty.objects.all(), season)
     if team is not None:
         queryset = queryset.filter(matchday__team=team)
-    return list(
-        queryset.values("description_snapshot")
-        .annotate(count=models.Count("id"), total=models.Sum("amount_eur"))
-        .order_by("-count", "description_snapshot")[:limit]
+    label = models.Case(
+        models.When(
+            models.Q(catalog_item__isnull=True) | models.Q(catalog_item__type=PenaltyType.MANUAL),
+            then=models.F("description_snapshot"),
+        ),
+        default=models.F("catalog_item__description"),
+        output_field=models.CharField(),
     )
+    rows = (
+        queryset.annotate(label=label)
+        .values("label")
+        .annotate(count=models.Count("id"), total=models.Sum("amount_eur"))
+        .order_by("-count", "label")[:limit]
+    )
+    return [
+        {"description": row["label"], "count": row["count"], "total": row["total"]} for row in rows
+    ]
 
 
 def assigned_penalties_qs(team=None, *, season=None):

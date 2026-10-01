@@ -83,7 +83,17 @@ SERVER_EMAIL = env("SERVER_EMAIL") or SUPPORT_EMAIL
 # background code paths); empty -> relative links (logged by NotificationService).
 PUBLIC_SITE_URL = (env("PUBLIC_SITE_URL") or "").rstrip("/")
 
-if "smtp" in EMAIL_BACKEND.lower() and not EMAIL_HOST and not TESTING:
+# The image build (Dockerfile: collectstatic + compilemessages) runs WITHOUT the
+# runtime environment — .env / compose `environment:` only exists at container
+# start. Never warn there (no mail is sent during a build); every real command
+# (migrate, bootstrap, check, gunicorn) still reports a missing SMTP host.
+_BUILD_ONLY_COMMANDS = {"collectstatic", "compilemessages", "makemessages"}
+if (
+    "smtp" in EMAIL_BACKEND.lower()
+    and not EMAIL_HOST
+    and not TESTING
+    and not _BUILD_ONLY_COMMANDS.intersection(sys.argv)
+):
     logging.getLogger(__name__).warning(
         "EMAIL_BACKEND is SMTP but EMAIL_HOST is not configured — "
         "outgoing e-mails will fail. Set EMAIL_HOST (see .env.example)."

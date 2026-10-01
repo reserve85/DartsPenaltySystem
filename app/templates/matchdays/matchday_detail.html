@@ -92,7 +92,7 @@
             <tr>
                 <td class="text-nowrap">{{ penalty.created_at|date:"d.m.Y H:i" }}</td>
                 <td>{{ penalty.player.name }}</td>
-                <td>{{ penalty.description_snapshot }}
+                <td>{{ penalty.display_description }}
                     {% if penalty.group_id %}<span class="badge text-bg-light border" title="{% translate 'Group penalty' %}">{% translate "group" %}</span>{% endif %}
                     {% if not penalty.catalog_item or penalty.catalog_item.type == "MANUAL" %}<span class="badge text-bg-warning border" title="{% translate 'Manual penalty' %}">{% translate "manual" %}</span>{% endif %}
                 </td>

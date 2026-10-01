@@ -10,6 +10,7 @@ from django.core.exceptions import ValidationError
 from django.db import IntegrityError, transaction
 from django.test import Client
 from django.urls import reverse
+from django.utils import translation
 
 from app.core.models import AuditAction, AuditLog
 from app.players.models import Player
@@ -120,9 +121,12 @@ def test_set_cashier_race_surfaces_validation_error_not_integrity_error(
     noop = mock.Mock(update=mock.Mock(return_value=0))
     monkeypatch.setattr(TeamCashier.objects, "filter", lambda *args, **kwargs: noop)
 
-    with pytest.raises(ValidationError) as exc:
-        set_cashier(team=team, user=captain_user, actor=admin_user)
-    assert "reload" in str(exc.value).lower()
+    # The message uses gettext_lazy (default language is de) — evaluate the
+    # assertion INSIDE the override, otherwise the German catalog wins.
+    with translation.override("en"):
+        with pytest.raises(ValidationError) as exc:
+            set_cashier(team=team, user=captain_user, actor=admin_user)
+        assert "reload" in str(exc.value).lower()
 
 
 # ---------------------------------------------------------------------------

@@ -340,14 +340,35 @@ def test_financial_sections_rendered_for_admin(
     assert context["inactive_balances"][0] == players[1]
     assert context["inactive_balances"][0].balance == Decimal(5)
     assert {m.pk for m in context["matchday_totals"]} == {md.pk}
-    counts = {c["description_snapshot"]: c["count"] for c in context["most_common"]}
-    assert counts == {"Late arrival": 1, "Keks": 1}
+    counts = {c["description"]: c["count"] for c in context["most_common"]}
+    # Both rows belong to the SAME catalog entry — one group now.
+    assert counts == {"Late arrival": 2}
     assert context["assigned_penalties"].count() == 2
 
     # regression: player names (not only amounts) are rendered in the tables
     content = response.content.decode()
     for row_player in players:
         assert row_player.name in content
+
+
+def test_financial_overview_shows_catalog_entry_and_info(
+    admin_client, matchday_with_players, catalog_normal, admin_user
+):
+    """Single rows list ``<catalog entry> (<info>)``, the most common table
+    groups by the catalog entry alone."""
+    md, players = matchday_with_players(2)
+    assign_penalty(
+        matchday=md,
+        player=players[0],
+        catalog_item=catalog_normal,
+        amount_eur=5,
+        description_snapshot="9 Punkte",
+        actor=admin_user,
+    )
+
+    content = admin_client.get(reverse("dashboard:financial_overview")).content.decode()
+    assert "Late arrival (9 Punkte)" in content  # assigned penalties row
+    assert "<td>Late arrival</td>" in content  # most common penalties row
 
 
 def test_financial_overview_shows_inactive_player_names(

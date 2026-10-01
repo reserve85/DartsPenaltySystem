@@ -234,6 +234,8 @@ class PenaltyCreateView(LoginRequiredMixin, View):
                         trigger_player=player,
                         catalog_item=catalog_item,
                         double_partner=double_partner,
+                        # Optional comment/reason — stored behind the causers.
+                        description=form.cleaned_data.get("description"),
                         actor=request.user,
                     )
                 else:

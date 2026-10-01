@@ -293,6 +293,46 @@ class Penalty(models.Model):
     def __str__(self):
         return f"{self.description_snapshot} — {self.player.name}"
 
+    def display_description(self) -> str:
+        """How a single penalty row is LISTED: penalty type + optional comment.
+
+        ``description_snapshot`` holds whatever was entered at assign time —
+        for catalog penalties either the catalog text itself or the free-text
+        comment that REPLACED it (the captain types the points: "9 Punkte" for
+        the "Scoring < 10" entry), for group penalties the catalog text plus
+        the causers and — when given — the comment. The imposed penalty comes
+        first, the info follows in brackets::
+
+            Scoring < 10 (9 Punkte)
+            Manual (Said stupid stuff)
+            180 (MP1 & MP2 — too late)
+
+        Rows whose catalog item was deleted (``catalog_item is None``) show
+        the raw snapshot — there is no type left to lead with.
+        """
+        text = (self.description_snapshot or "").strip()
+        item = self.catalog_item
+        if item is None:
+            return text
+        base = item.description
+        if not text:
+            return base
+        if item.type == PenaltyType.MANUAL:
+            # The typed comment IS the info — it never gets stripped.
+            return base if text == base else f"{base} ({text})"
+        if text == base:
+            return base
+        if text.startswith(base):
+            # Snapshot repeats the catalog text (group rows:
+            # "180 — MP1 & MP2 — comment") — show only what follows it.
+            info = text[len(base) :].strip()
+            for separator in ("—", "–", "-"):
+                if info.startswith(separator):
+                    info = info[1:].strip()
+                    break
+            return f"{base} ({info})" if info else base
+        return f"{base} ({text})"
+
     class Meta:
         ordering: ClassVar[list] = ["-created_at"]
         constraints: ClassVar[list] = [

@@ -318,7 +318,12 @@ msgstr ""
 msgid "Description"
 msgstr ""
 
-msgid "Only for normal penalties — leave empty to use the catalog description."
+msgid "Comment / reason"
+msgstr ""
+
+msgid ""
+"Manual penalty: required (comment/reason) — normal and group penalties: "
+"optional. Always listed as: penalty type (comment)."
 msgstr ""
 
 msgid "A manual penalty needs an individual amount."

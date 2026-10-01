@@ -6,6 +6,7 @@ from decimal import Decimal
 import pytest
 
 from app.matchdays.models import Matchday, MatchdayPlayer
+from app.penalties.models import PenaltyCatalogItem, PenaltyType
 from app.penalties.services import (
     assign_penalty,
     assigned_penalties_qs,
@@ -88,7 +89,7 @@ def test_totals_scoped_to_matchday_team_after_reassignment(
     assert matchday_totals(other_team) == []
     # Description grouping stays with the originating team
     common = most_common_penalties(team)
-    assert common[0]["description_snapshot"] == "Late arrival"
+    assert common[0]["description"] == "Late arrival"
     assert common[0]["count"] == 1
     assert most_common_penalties(other_team) == []
 
@@ -99,7 +100,11 @@ def test_totals_scoped_to_matchday_team_after_reassignment(
 def test_matchday_totals_and_most_common_grouping(
     matchday_with_players, catalog_normal, admin_user
 ):
+    """M1: one row per CATALOG entry — typed infos group under their entry."""
     md, players = matchday_with_players(6)
+    other_entry = PenaltyCatalogItem.objects.create(
+        description="Keks", amount_eur=5, type=PenaltyType.NORMAL
+    )
     assign_penalty(
         matchday=md,
         player=players[0],
@@ -108,18 +113,19 @@ def test_matchday_totals_and_most_common_grouping(
         description_snapshot="Late arrival",
         actor=admin_user,
     )
+    # The captain REPLACED the catalog text with an info — still the SAME entry.
     assign_penalty(
         matchday=md,
         player=players[1],
         catalog_item=catalog_normal,
         amount_eur=5,
-        description_snapshot="Late arrival",
+        description_snapshot="7 Punkte",
         actor=admin_user,
     )
     assign_penalty(
         matchday=md,
         player=players[2],
-        catalog_item=catalog_normal,
+        catalog_item=other_entry,
         description_snapshot="Keks",
         actor=admin_user,
     )
@@ -128,9 +134,43 @@ def test_matchday_totals_and_most_common_grouping(
     assert totals[md.pk] == Decimal(15)
 
     common = most_common_penalties(md.team)
-    assert common[0] == {"description_snapshot": "Late arrival", "count": 2, "total": Decimal(10)}
-    assert common[1] == {"description_snapshot": "Keks", "count": 1, "total": Decimal(5)}
+    assert common[0] == {"description": "Late arrival", "count": 2, "total": Decimal(10)}
+    assert common[1] == {"description": "Keks", "count": 1, "total": Decimal(5)}
     assert len(most_common_penalties(md.team, limit=1)) == 1
+
+
+def test_most_common_keeps_manual_and_orphan_rows_by_snapshot(
+    matchday_with_players, catalog_normal, catalog_manual, admin_user
+):
+    """MANUAL entries and rows of a DELETED catalog item label themselves."""
+    md, players = matchday_with_players(4)
+    for index, text in enumerate(("Forgot the darts", "Forgot the darts", "No game called")):
+        assign_penalty(
+            matchday=md,
+            player=players[index],
+            catalog_item=catalog_manual,
+            amount_eur=1,
+            description_snapshot=text,
+            actor=admin_user,
+        )
+    orphan = assign_penalty(
+        matchday=md,
+        player=players[3],
+        catalog_item=catalog_normal,
+        amount_eur=5,
+        description_snapshot="Late arrival",
+        actor=admin_user,
+    )
+    # Simulate the entry being removed from the catalog (catalog_item SET_NULL).
+    PenaltyCatalogItem.objects.filter(pk=catalog_normal.pk).delete()
+    orphan.refresh_from_db()
+    assert orphan.catalog_item is None
+
+    assert most_common_penalties(md.team) == [
+        {"description": "Forgot the darts", "count": 2, "total": Decimal(2)},
+        {"description": "Late arrival", "count": 1, "total": Decimal(5)},
+        {"description": "No game called", "count": 1, "total": Decimal(1)},
+    ]
 
 
 def test_matchday_totals_sorted_ascending(team, matchday_with_players):

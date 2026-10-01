@@ -62,7 +62,7 @@
             <tr>
                 <td>{{ penalty.created_at|date:"d.m.Y H:i" }}</td>
                 <td>{{ penalty.matchday.team.name }}</td>
-                <td>{{ penalty.description_snapshot }}</td>
+                <td>{{ penalty.display_description }}</td>
                 <td class="text-end text-danger">{{ penalty.amount_eur|floatformat:2 }} €</td>
             </tr>
         {% empty %}

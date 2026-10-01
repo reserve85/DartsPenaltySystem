@@ -26,7 +26,7 @@
                     <tr>
                         <td>{{ penalty.created_at|date:"d.m.Y H:i" }}</td>
                         <td>{{ penalty.matchday.team.name }}</td>
-                        <td>{{ penalty.description_snapshot }}</td>
+                        <td>{{ penalty.display_description }}</td>
                         <td class="text-end text-danger">{{ penalty.amount_eur|floatformat:2 }} €</td>
                     </tr>
                 {% empty %}
@@ -262,7 +262,7 @@
                 <thead><tr><th>{% translate "Description" %}</th><th class="text-end">{% translate "Count" %}</th><th class="text-end">{% translate "Total" %}</th></tr></thead>
                 <tbody>
                 {% for item in most_common %}
-                    <tr><td>{{ item.description_snapshot }}</td><td class="text-end">{{ item.count }}</td><td class="text-end text-danger">{{ item.total|floatformat:2 }} €</td></tr>
+                    <tr><td>{{ item.description }}</td><td class="text-end">{{ item.count }}</td><td class="text-end text-danger">{{ item.total|floatformat:2 }} €</td></tr>
                 {% empty %}
                     <tr><td colspan="3" class="text-muted text-center py-3">{% translate "No penalties yet." %}</td></tr>
                 {% endfor %}
@@ -280,7 +280,7 @@
                         <td>{{ penalty.created_at|date:"d.m.Y H:i" }}</td>
                         <td>{{ penalty.player.name }}</td>
                         <td>{{ penalty.matchday.display_label }}</td>
-                        <td>{{ penalty.description_snapshot }}</td>
+                        <td>{{ penalty.display_description }}</td>
                         <td class="text-end text-danger">{{ penalty.amount_eur|floatformat:2 }} €</td>
                     </tr>
                 {% empty %}

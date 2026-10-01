@@ -329,10 +329,13 @@ See `.env.example` for the full list: `DJANGO_SECRET_KEY`, `DJANGO_DEBUG`,
 `BIND_PORT`, `CONTACT_*` (Imprint + Privacy Policy), `IMPRINT_NAME`/`IMPRINT_URL`.
 
 **SMTP / e-mail** (never committed — `.env` only): `EMAIL_HOST`, `EMAIL_PORT`,
-`EMAIL_HOST_USER`, `EMAIL_HOST_PASSWORD`, `EMAIL_USE_TLS`, `DEFAULT_FROM_EMAIL`,
-`SUPPORT_EMAIL`, `PUBLIC_SITE_URL` (absolute links inside e-mails),
-`ACCOUNT_EMAIL_VERIFICATION` (`mandatory`/`optional`/`none`). Tests use the
-in-memory e-mail backend automatically.
+`EMAIL_HOST_USER`, `EMAIL_HOST_PASSWORD`, `EMAIL_USE_TLS` (+ `EMAIL_USE_SSL`,
+`EMAIL_TIMEOUT`, optional `EMAIL_BACKEND`), `DEFAULT_FROM_EMAIL`,
+`SUPPORT_EMAIL`, `SERVER_EMAIL`, `PUBLIC_SITE_URL` (absolute links inside
+e-mails — scheme required, e.g. `https://…`), `ACCOUNT_EMAIL_VERIFICATION`
+(`mandatory`/`optional`/`none`). Tests use the in-memory e-mail backend
+automatically. A missing `EMAIL_HOST` is reported at container start, never
+during the image build.
 
 **Invitations**: `INVITE_EXPIRE_DAYS` (default `14`) — days until an
 admin-sent invitation link expires; Resend regenerates the token and resets

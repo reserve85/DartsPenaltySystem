@@ -206,6 +206,37 @@ def test_assign_group_via_view(admin_client, matchday_with_players, catalog_grou
     assert not Penalty.objects.filter(player_id=players[0].pk).exists()
 
 
+def test_assign_group_with_comment_via_view(admin_client, matchday_with_players, catalog_group):
+    """The optional comment/reason is stored behind the causers (group penalty)."""
+    md, players = matchday_with_players(4)
+    response = admin_client.post(
+        reverse("penalties:penalty_create", args=[md.pk]),
+        {
+            "catalog_item": catalog_group.pk,
+            "player": players[0].pk,
+            "description": "too late",
+        },
+    )
+    assert response.status_code == 302
+    row = Penalty.objects.exclude(player_id=players[0].pk).first()
+    assert row.description_snapshot == f"180 — {players[0].name} — too late"
+    assert row.display_description() == f"180 ({players[0].name} — too late)"
+
+
+def test_assign_form_labels_the_comment_field(admin_client, matchday_with_players, catalog_normal):
+    """The entry form names the field "Comment / reason" and explains when it is required."""
+    md, _players = matchday_with_players(2)
+    # Force English: the hand-maintained .mo may be stale, so only the msgid
+    # (EN catalog carries empty msgstr entries) is a stable assertion.
+    admin_client.post(reverse("set_language"), {"language": "en", "next": "/"})
+    # follow=True: the middleware redirects unprefixed URLs to /en/...
+    response = admin_client.get(reverse("penalties:penalty_create", args=[md.pk]), follow=True)
+    assert response.status_code == 200
+    content = response.content.decode()
+    assert "Comment / reason" in content
+    assert "penalty type (comment)" in content
+
+
 def test_assign_via_captain_own_team_ok(captain_client, matchday_with_players, catalog_normal):
     md, players = matchday_with_players(2)
     response = captain_client.post(
@@ -498,8 +529,8 @@ def test_group_penalty_row_names_the_trigger_on_matchday_page(
     assert Penalty.objects.count() == 2
 
     content = admin_client.get(reverse("matchdays:matchday_detail", args=[md.pk])).content.decode()
-    # "180 — MP1" (en / de catalog text is user data, the name is appended)
-    assert f"{catalog_group.description} — {players[0].name}" in content
+    # listed as "180 (MP1)" — type first, the causers in brackets
+    assert f"{catalog_group.description} ({players[0].name})" in content
     # ...while the thrower themself has NO penalty row.
     assert Penalty.objects.filter(player=players[0]).exists() is False
 

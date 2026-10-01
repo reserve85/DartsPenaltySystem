@@ -646,11 +646,17 @@ msgstr ""
 msgid "Description"
 msgstr "Beschreibung"
 
-#: .\app\penalties\forms.py:55
-msgid "Only for normal penalties — leave empty to use the catalog description."
+#: .\app\penalties\forms.py:286
+msgid "Comment / reason"
+msgstr "Kommentar / Begründung"
+
+#: .\app\penalties\forms.py:287
+msgid ""
+"Manual penalty: required (comment/reason) — normal and group penalties: "
+"optional. Always listed as: penalty type (comment)."
 msgstr ""
-"Nur für normale Strafen — leer lassen, um die Katalogbeschreibung zu "
-"verwenden."
+"Manuelle Strafe: Pflicht (Kommentar/Begründung) — normale und "
+"Gruppenstrafen: optional. Anzeige immer: Straftyp (Kommentar)."
 
 #: .\app\penalties\forms.py:80 .\app\penalties\services.py:114
 msgid "A manual penalty needs an individual amount."

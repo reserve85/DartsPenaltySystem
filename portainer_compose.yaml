@@ -70,10 +70,29 @@ services:
       - EMAIL_HOST_USER=                               # SMTP user | Often the full e-mail address
       - EMAIL_HOST_PASSWORD=                           # SMTP password | ⚠ keep secret, never commit
       - EMAIL_USE_TLS=True                             # STARTTLS | true, false
+      - EMAIL_USE_SSL=False                            # implicit SSL (port 465, then TLS=False) | true, false | Default: False
+      - EMAIL_TIMEOUT=10                               # SMTP socket timeout in seconds | any number | Default: 10
+      - EMAIL_BACKEND=                                 # only for special setups (e.g. console) | Default: SMTP
       - DEFAULT_FROM_EMAIL=                            # Sender address | e.g. noreply@example.com
       - SUPPORT_EMAIL=                                 # Support/admin recipient | e.g. support@example.com
+      - SERVER_EMAIL=                                  # Sender of Django error mails | Default: SUPPORT_EMAIL
       - PUBLIC_SITE_URL=                               # Public base URL for e-mail links | e.g. https://darts.example.com
       - ACCOUNT_EMAIL_VERIFICATION=mandatory           # E-mail verification | mandatory, optional, none
+
+      # ── Notifications / outbox (penalty digest — defaults are sensible) ──
+      # - NOTIFICATIONS_ASYNC=True                     # send in a background thread | Default: True
+      # - NOTIFICATION_COALESCE_SECONDS=90             # Quick-mode batch window (s) | Default: 90
+      # - NOTIFICATIONS_SCHEDULER=True                 # in-process outbox flusher (no cron) | Default: True
+      # - NOTIFICATION_SCHEDULER_INTERVAL=30           # flusher tick (s) | Default: 30
+      # - NOTIFICATION_QUIET_HOURS=22:00-07:00         # Quick-mode night window, empty = off | Default: (empty)
+
+      # ── Optional tuning ─────────────────────────────────────────────────
+      # - DJANGO_LOG_LEVEL=INFO                       # level of the app.* loggers | Default: INFO
+      # - INVITE_EXPIRE_DAYS=14                       # invitation link validity in days | Default: 14
+      # - SIGNUP_RATE_LIMIT=10/m/ip,50/h/ip           # self-registration rate limit | Default: 10/m/ip,50/h/ip
+      # - ALLAUTH_TRUSTED_PROXY_COUNT=1               # trusted reverse proxies (real client IP) | Default: 0
+      # - DJANGO_SESSION_COOKIE_SECURE=true           # force secure session cookie | Default: follows DJANGO_SECURE_SSL_REDIRECT
+      # - DJANGO_CSRF_COOKIE_SECURE=true              # force secure CSRF cookie | Default: follows DJANGO_SECURE_SSL_REDIRECT
 
       # ── Legal / Impressum + Privacy Policy ─────────────────────────────
       # Contact information displayed on /imprint/ and /privacy/.

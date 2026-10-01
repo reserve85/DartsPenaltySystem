@@ -75,5 +75,21 @@ services:
       - EMAIL_USE_TLS=True                            # STARTTLS | true, false
       - DEFAULT_FROM_EMAIL=                           # Sender address | e.g. noreply@example.com
       - SUPPORT_EMAIL=                                # Support/admin recipient | e.g. support@example.com
-      - PUBLIC_SITE_URL=127.0.0.1:8900                # Public base URL for e-mail links | e.g. https://darts.example.com
+      # Scheme REQUIRED — without http(s):// the activation links in e-mails
+      # are not clickable (settings.PUBLIC_SITE_URL is used verbatim).
+      - PUBLIC_SITE_URL=http://127.0.0.1:8900         # Public base URL for e-mail links | e.g. https://darts.example.com
       - ACCOUNT_EMAIL_VERIFICATION=mandatory          # E-mail verification | mandatory, optional, none
+
+      # ── Optional tuning (defaults are sensible — uncomment to override) ──
+      # - EMAIL_USE_SSL=False                          # implicit SSL (port 465, then TLS=False) | Default: False
+      # - EMAIL_TIMEOUT=10                             # SMTP socket timeout (s) | Default: 10
+      # - SERVER_EMAIL=                                # Sender of Django error mails | Default: SUPPORT_EMAIL
+      # - NOTIFICATIONS_ASYNC=True                     # send in a background thread | Default: True
+      # - NOTIFICATION_COALESCE_SECONDS=90             # Quick-mode batch window (s) | Default: 90
+      # - NOTIFICATIONS_SCHEDULER=True                 # in-process outbox flusher (no cron) | Default: True
+      # - NOTIFICATION_SCHEDULER_INTERVAL=30           # flusher tick (s) | Default: 30
+      # - NOTIFICATION_QUIET_HOURS=22:00-07:00         # Quick-mode night window, empty = off | Default: (empty)
+      # - DJANGO_LOG_LEVEL=INFO                       # level of the app.* loggers | Default: INFO
+      # - INVITE_EXPIRE_DAYS=14                       # invitation link validity (days) | Default: 14
+      # - SIGNUP_RATE_LIMIT=10/m/ip,50/h/ip           # self-registration rate limit | Default: 10/m/ip,50/h/ip
+      # - ALLAUTH_TRUSTED_PROXY_COUNT=1               # trusted reverse proxies (real client IP) | Default: 0

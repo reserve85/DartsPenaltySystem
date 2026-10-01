@@ -3,7 +3,7 @@
 {% blocktranslate with name=player.name %}Hi {{ name }}, the following new penalties have been recorded for you:{% endblocktranslate %}
 
 {% translate "Date" %} | {% translate "Matchday" %} | {% translate "Reason" %} | {% translate "Amount" %}
-{% for penalty in penalties %}{{ penalty.created_at|date:"d.m.Y" }} | {{ penalty.matchday.display_label }} | {{ penalty.description_snapshot }} | {{ penalty.amount_eur|floatformat:2 }} €
+{% for penalty in penalties %}{{ penalty.created_at|date:"d.m.Y" }} | {{ penalty.matchday.display_label }} | {{ penalty.display_description }} | {{ penalty.amount_eur|floatformat:2 }} €
 {% endfor %}
 {% translate "Total" %}: {{ total|floatformat:2 }} € ({{ count }})
 {% for summary in season_summaries %}

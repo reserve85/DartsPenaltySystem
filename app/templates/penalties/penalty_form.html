@@ -65,6 +65,8 @@
 (function () {
     // Amount input is only relevant for MANUAL catalog items (individual
     // amount + required comment); everything else uses the catalog amount.
+    // The comment/reason is REQUIRED for MANUAL penalties and OPTIONAL for
+    // normal and group penalties (it is listed behind the penalty type).
     const select = document.getElementById("id_catalog_item");
     const amount = document.getElementById("id_amount_eur");
     const description = document.getElementById("id_description");
