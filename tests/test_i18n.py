@@ -197,7 +197,15 @@ def test_settings_language_change_writes_cookie(captain_client, captain_user):
     overriding the new preference (navbar switcher is gone).
     """
     response = captain_client.post(
-        reverse("accounts:settings"), {"preferred_language": "en", "preferred_theme": "auto"}
+        reverse("accounts:settings"),
+        {
+            "preferred_language": "en",
+            "preferred_theme": "auto",
+            "penalty_notify_mode": "daily",
+            "penalty_notify_time": "08:00",
+            "repayment_notify": "True",
+            "club_news_optin": "True",
+        },
     )
     assert response.status_code == 302
     assert response.cookies[settings.LANGUAGE_COOKIE_NAME].value == "en"

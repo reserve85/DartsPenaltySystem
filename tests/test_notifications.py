@@ -31,8 +31,14 @@ User = get_user_model()
 
 
 def _link_user(player, email="member@example.com", **kwargs):
-    """Create a user account linked to ``player`` (approved + active by default)."""
+    """Create a user account linked to ``player`` (approved + active by default).
+
+    Notification mode defaults to ``immediate`` here: these tests pin the
+    delivery CONTENT of a single penalty/mail, while the production default is
+    the daily digest (see ``test_outbox.py`` for the collecting behaviour).
+    """
     kwargs.setdefault("approval_status", "approved")
+    kwargs.setdefault("penalty_notify_mode", "immediate")
     user = User.objects.create_user(email=email, password="pw", **kwargs)
     user.player_link = player
     user.save()

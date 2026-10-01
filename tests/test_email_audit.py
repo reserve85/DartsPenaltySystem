@@ -26,8 +26,14 @@ EMAIL_ACTIONS = [AuditAction.EMAIL_SENT, AuditAction.EMAIL_FAILED]
 
 
 def _link_user(player, email="member@example.com"):
-    """Create a user account linked to ``player`` (approved + active)."""
-    user = User.objects.create_user(email=email, password="pw", approval_status="approved")
+    """Create a user account linked to ``player`` (approved + active).
+
+    ``immediate`` (not the production default ``daily``) so the historic
+    "assign -> one e-mail is sent AND audited right now" contract is testable.
+    """
+    user = User.objects.create_user(
+        email=email, password="pw", approval_status="approved", penalty_notify_mode="immediate"
+    )
     user.player_link = player
     user.save()
     return user

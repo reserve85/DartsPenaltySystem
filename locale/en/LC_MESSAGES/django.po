@@ -1398,3 +1398,161 @@ msgstr ""
 #: app\penalties\views.py (hand-added)
 msgid "Penalty assigned to both players."
 msgstr ""
+# --- Notification preferences: outbox + digest (hand-added) ---
+#: app\core\choices.py (also used by app\accounts\forms.py)
+msgid "Off"
+msgstr ""
+
+#: app\core\choices.py
+msgid "Quick (collected)"
+msgstr ""
+
+#: app\core\choices.py
+msgid "Daily digest"
+msgstr ""
+
+#: app\accounts\models.py
+msgid "penalty notifications"
+msgstr ""
+
+#: app\accounts\models.py
+msgid "When newly assigned penalties are e-mailed to you."
+msgstr ""
+
+#: app\accounts\models.py (also used by app\accounts\forms.py)
+msgid "digest time"
+msgstr ""
+
+#: app\accounts\models.py (also used by app\accounts\forms.py)
+msgid "Only used by the daily digest."
+msgstr ""
+
+#: app\accounts\models.py
+msgid "payment confirmations"
+msgstr ""
+
+#: app\accounts\models.py
+msgid "One e-mail per recorded repayment (receipt)."
+msgstr ""
+
+#: app\accounts\models.py
+msgid "club news"
+msgstr ""
+
+#: app\accounts\models.py
+msgid "Round mails / club information from your club."
+msgstr ""
+
+#: app\accounts\forms.py
+msgid "Payment confirmations"
+msgstr ""
+
+#: app\accounts\forms.py
+msgid "Club news / round mails"
+msgstr ""
+
+#: app\accounts\forms.py
+msgid "Digest time"
+msgstr ""
+
+#: app\accounts\forms.py
+msgid "Abonnieren"
+msgstr ""
+
+#: app\accounts\forms.py
+msgid "Choose the time of day for the daily digest."
+msgstr ""
+# --- NotificationOutbox model (hand-added) ---
+#: app\notifications\models.py
+msgid "Coalescing deadline (quick mode) or the next digest time."
+msgstr ""
+
+#: app\notifications\models.py
+msgid "NULL = pending; set BEFORE delivery as the flush claim."
+msgstr ""
+
+#: app\notifications\models.py
+msgid "Recipient language at queue time (rendering must not depend on a request)."
+msgstr ""
+
+#: app\notifications\models.py
+msgid "Snapshot at queue time — the audit trail keeps the original target."
+msgstr ""
+
+#: app\notifications\models.py
+msgid "Soft-deleted rows are dropped when the batch is flushed."
+msgstr ""
+
+#: app\notifications\models.py
+msgid "Template family of the queued message."
+msgstr ""
+
+#: app\notifications\models.py
+msgid "attempts"
+msgstr ""
+
+#: app\notifications\models.py
+msgid "e-mail address"
+msgstr ""
+
+#: app\notifications\models.py
+msgid "kind"
+msgstr ""
+
+#: app\notifications\models.py
+msgid "language"
+msgstr ""
+
+#: app\notifications\models.py
+msgid "last error"
+msgstr ""
+
+#: app\notifications\models.py
+msgid "queued at"
+msgstr ""
+
+#: app\notifications\models.py
+msgid "queued notification"
+msgstr ""
+
+#: app\notifications\models.py
+msgid "queued notifications"
+msgstr ""
+
+#: app\notifications\models.py
+msgid "send after"
+msgstr ""
+
+#: app\notifications\models.py
+msgid "sent at"
+msgstr ""
+# --- Penalty digest mail + Settings notification card (hand-added) ---
+#: app\notifications\services.py
+#, python-format
+msgid "New penalties: {count} ({total} €)"
+msgstr ""
+
+#: app\templates\accounts\settings.html
+msgid "Invitations, approval decisions, password and verification mails are always sent."
+msgstr ""
+
+#: app\templates\accounts\settings.html
+msgid "One e-mail per recorded payment — the receipt for your transfer."
+msgstr ""
+
+#: app\templates\accounts\settings.html
+msgid "Round mails and information from your club."
+msgstr ""
+
+#: app\templates\accounts\settings.html
+msgid "Several penalties entered in a row always arrive as ONE e-mail."
+msgstr ""
+
+#: app\templates\emails\penalty_digest.html app\templates\emails\penalty_digest.txt
+#, python-format
+msgid "Hi %(name)s, the following new penalties have been recorded for you:"
+msgstr ""
+
+#: app\templates\emails\penalty_digest.html
+msgid "New penalties"
+msgstr ""

@@ -50,7 +50,10 @@ mobile-first responsive design and one-club/multi-team support.
   see below), password reset/change — and a central `NotificationService` that
   sends HTML + plain-text e-mails for registrations, approvals, new penalties
   and repayments (players **without** a user account stay fully manageable and
-  simply receive no e-mails). Every new registration also raises an **in-app
+  simply receive no e-mails). **New penalties are collected**: every player
+  chooses *Off / Quick (collected) / daily digest at 08:00* on the Settings
+  page, so five penalties in a row arrive as **one** e-mail instead of five.
+  Every new registration also raises an **in-app
   notification** for all admins ([django-notifications-hq](https://github.com/django-notifications/django-notifications):
   🔔 badge in the navbar → notification list with a *Review* shortcut;
   approve/reject marks it read).
@@ -239,6 +242,51 @@ information, round mails, reminders, dunning, newsletter) are added as a
 `send_…` method + a template pair `app/templates/emails/<name>.txt`/`.html`
 (`send_to_users()` is the round-mail entry point).
 
+## Notifications & e-mails
+
+| # | Template | Trigger | Recipient |
+|---|---|---|---|
+| 1 | `emails/account_registered` | new self-registration | `SUPPORT_EMAIL` (To) + all admins (Bcc) + 🔔 in-app |
+| 2 | `emails/account_approved` | admin approves an account | the user |
+| 3 | `emails/account_rejected` | admin declines an account | the user |
+| 4 | `emails/invitation` | admin sends / resends an invitation | the invitee |
+| 5 | `emails/invitation_completed` | invitation accepted | `SUPPORT_EMAIL` + admins (Bcc) + 🔔 in-app |
+| 6 | `emails/penalty_created` / `emails/penalty_digest` | new penalty(s) — **collected** (outbox) | the player |
+| 7 | `emails/penalty_repayment` | repayment recorded | the player |
+| 8 | `emails/support_request` | support form | `SUPPORT_EMAIL` |
+| – | allauth (`allauth:account/…`) | e-mail verification, password reset, password changed | the user |
+
+Per-user switches live on **Settings → Notifications**: penalties
+(*Off* / *Quick* / *daily digest* + time), payment confirmations and club news.
+Transactional mails (invitation, approval/rejection, password, verification)
+are **always** delivered — they are not part of any opt-out.
+
+### Outbox + daily digest (why 5 penalties = 1 e-mail)
+
+New penalties are **never** mailed row by row. Each penalty is written to
+`NotificationOutbox` (`app/notifications/models.py`) with a `send_after` stamp:
+
+- **Quick** → `now + NOTIFICATION_COALESCE_SECONDS` (default 90 s), so a batch
+  entered in one go arrives as ONE message;
+- **Daily digest** → the next occurrence of the player's `penalty_notify_time`
+  (default 08:00) — one e-mail per day listing every new position with the
+  season-scoped open total;
+- **Off** → nothing is queued at all.
+
+`flush_outbox()` (`app/notifications/services.py`) claims due rows atomically
+(`WHERE sent_at IS NULL` → the scheduler thread and an external cron can never
+send twice) and groups everything **per user** into one message. Soft-deleted
+penalties drop out of the batch, a delivery failure is retried up to
+3 times and then abandoned with `last_error`. Two triggers:
+
+- the **in-process scheduler** (daemon thread, every
+  `NOTIFICATIONS_SCHEDULER_INTERVAL` seconds, default 30) — no cron needed;
+- `python manage.py flush_notification_outbox` for setups that prefer an
+  external cron/timer (`* * * * * docker exec <container> manage.py
+  flush_notification_outbox`) — set `NOTIFICATIONS_SCHEDULER=False` then.
+  Optional: `NOTIFICATION_QUIET_HOURS=22:00-07:00` delays *Quick*-mode
+  messages that become due at night (digest times are self-chosen anyway).
+
 ## Environment variables
 
 See `.env.example` for the full list: `DJANGO_SECRET_KEY`, `DJANGO_DEBUG`,
@@ -255,6 +303,11 @@ in-memory e-mail backend automatically.
 **Invitations**: `INVITE_EXPIRE_DAYS` (default `14`) — days until an
 admin-sent invitation link expires; Resend regenerates the token and resets
 the timer.
+
+**Outbox / digest** (collected penalty e-mails, see *Notifications & e-mails*):
+`NOTIFICATION_COALESCE_SECONDS` (default `90`), `NOTIFICATIONS_SCHEDULER`
+(default `True`), `NOTIFICATION_SCHEDULER_INTERVAL` (default `30`),
+`NOTIFICATION_QUIET_HOURS` (e.g. `22:00-07:00`, empty = disabled).
 
 **HTTPS hardening** (enable behind a TLS reverse proxy / Portainer):
 `DJANGO_SECURE_SSL_REDIRECT=True` turns on HTTP→HTTPS redirects plus secure

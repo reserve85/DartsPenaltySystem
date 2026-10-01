@@ -15,6 +15,23 @@
     font-weight: 600;
 }
 
+/* Radio groups (Settings → notifications): Django's RadioSelect renders one
+   plain <div> per choice, so Bootstrap's .form-check wrapper is missing.
+   These rules restore inline, comfortably spaced rows. */
+.radio-group > div {
+    display: inline-block;
+    margin-right: 1rem;
+}
+.radio-group input[type="radio"] {
+    margin-right: 0.4rem;
+    vertical-align: middle;
+}
+.radio-group label {
+    display: inline-flex;
+    align-items: center;
+    vertical-align: middle;
+}
+
 /* Navbar follows the active color mode (base.html renders no navbar-dark/
    bg-dark anymore). The hairline keeps the sticky bar distinguishable from
    the content behind it — most noticeable on phones with the expanded menu. */

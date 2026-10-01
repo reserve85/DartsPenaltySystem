@@ -1,6 +1,7 @@
 """Accounts tests — email login, group roles, is_staff derivation, user mgmt, settings."""
 
 import re
+from datetime import time as dt_time
 from pathlib import Path
 
 import pytest
@@ -410,12 +411,64 @@ def test_superuser_is_always_admin_and_unlockable(db):
 # ---------------------------------------------------------------------------
 def test_settings_preferences_persist(captain_client, captain_user):
     response = captain_client.post(
-        reverse("accounts:settings"), {"preferred_language": "en", "preferred_theme": "dark"}
+        reverse("accounts:settings"),
+        {
+            "preferred_language": "en",
+            "preferred_theme": "dark",
+            "penalty_notify_mode": "immediate",
+            "penalty_notify_time": "08:00",
+            "repayment_notify": "False",
+            "club_news_optin": "False",
+        },
     )
     assert response.status_code == 302
     captain_user.refresh_from_db()
     assert captain_user.preferred_language == "en"
     assert captain_user.preferred_theme == "dark"
+    assert captain_user.penalty_notify_mode == "immediate"
+    assert captain_user.repayment_notify is False
+    assert captain_user.club_news_optin is False
+
+
+def test_settings_notification_defaults_and_digest_time(captain_client, captain_user):
+    """New accounts default to the 08:00 digest; a digest needs a time."""
+    captain_user.penalty_notify_mode = "daily"
+    captain_user.penalty_notify_time = dt_time(8, 0)
+    captain_user.save(update_fields=["penalty_notify_mode", "penalty_notify_time"])
+
+    # Digest without a time is rejected instead of silently guessed …
+    response = captain_client.post(
+        reverse("accounts:settings"),
+        {
+            "preferred_language": "de",
+            "preferred_theme": "auto",
+            "penalty_notify_mode": "daily",
+            "penalty_notify_time": "",
+            "repayment_notify": "True",
+            "club_news_optin": "True",
+        },
+    )
+    assert response.status_code == 200
+    assert response.context["form"].errors["penalty_notify_time"]
+
+    # … and the digest time is stored when it is supplied.
+    response = captain_client.post(
+        reverse("accounts:settings"),
+        {
+            "preferred_language": "de",
+            "preferred_theme": "auto",
+            "penalty_notify_mode": "daily",
+            "penalty_notify_time": "06:30",
+            "repayment_notify": "True",
+            "club_news_optin": "True",
+        },
+    )
+    assert response.status_code == 302
+    captain_user.refresh_from_db()
+    assert captain_user.penalty_notify_mode == "daily"
+    assert captain_user.penalty_notify_time == dt_time(6, 30)
+    assert captain_user.repayment_notify is True
+    assert captain_user.club_news_optin is True
 
 
 def test_settings_password_change(captain_client, captain_user):

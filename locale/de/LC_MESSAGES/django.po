@@ -2729,3 +2729,161 @@ msgstr "Ungültiger Löschumfang."
 #: app\penalties\views.py
 msgid "Penalty deleted for all players of the group."
 msgstr "Strafe für alle Spieler der Gruppe gelöscht."
+# --- Notification preferences: outbox + digest (hand-added) ---
+#: app\core\choices.py (also used by app\accounts\forms.py)
+msgid "Off"
+msgstr "Aus"
+
+#: app\core\choices.py
+msgid "Quick (collected)"
+msgstr "Schnell (gesammelt)"
+
+#: app\core\choices.py
+msgid "Daily digest"
+msgstr "Täglicher Digest"
+
+#: app\accounts\models.py
+msgid "penalty notifications"
+msgstr "Strafen-Benachrichtigungen"
+
+#: app\accounts\models.py
+msgid "When newly assigned penalties are e-mailed to you."
+msgstr "Wann dir neue Strafen per E-Mail zugeschickt werden."
+
+#: app\accounts\models.py (also used by app\accounts\forms.py)
+msgid "digest time"
+msgstr "Digest-Uhrzeit"
+
+#: app\accounts\models.py (also used by app\accounts\forms.py)
+msgid "Only used by the daily digest."
+msgstr "Wird nur vom täglichen Digest verwendet."
+
+#: app\accounts\models.py
+msgid "payment confirmations"
+msgstr "Zahlungsbestätigungen"
+
+#: app\accounts\models.py
+msgid "One e-mail per recorded repayment (receipt)."
+msgstr "Eine E-Mail pro erfasste Zahlung (Beleg)."
+
+#: app\accounts\models.py
+msgid "club news"
+msgstr "Vereinsnachrichten"
+
+#: app\accounts\models.py
+msgid "Round mails / club information from your club."
+msgstr "Rundschreiben und Vereinsinformationen deines Vereins."
+
+#: app\accounts\forms.py
+msgid "Payment confirmations"
+msgstr "Zahlungsbestätigungen"
+
+#: app\accounts\forms.py
+msgid "Club news / round mails"
+msgstr "Vereinsnachrichten / Rundschreiben"
+
+#: app\accounts\forms.py
+msgid "Digest time"
+msgstr "Digest-Uhrzeit"
+
+#: app\accounts\forms.py
+msgid "Abonnieren"
+msgstr "Abonnieren"
+
+#: app\accounts\forms.py
+msgid "Choose the time of day for the daily digest."
+msgstr "Wähle die Tageszeit für den täglichen Digest."
+# --- NotificationOutbox model (hand-added) ---
+#: app\notifications\models.py
+msgid "Coalescing deadline (quick mode) or the next digest time."
+msgstr "Sammelfrist (Schnell-Modus) oder nächste Digest-Uhrzeit."
+
+#: app\notifications\models.py
+msgid "NULL = pending; set BEFORE delivery as the flush claim."
+msgstr "NULL = ausstehend; wird VOR dem Versand als Anspruch gesetzt."
+
+#: app\notifications\models.py
+msgid "Recipient language at queue time (rendering must not depend on a request)."
+msgstr "Empfängersprache beim Einreihen (Rendern darf nicht von einem Request abhängen)."
+
+#: app\notifications\models.py
+msgid "Snapshot at queue time — the audit trail keeps the original target."
+msgstr "Stand beim Einreihen — der Audit-Trail behält das ursprüngliche Ziel."
+
+#: app\notifications\models.py
+msgid "Soft-deleted rows are dropped when the batch is flushed."
+msgstr "Weichgelöschte Zeilen entfallen beim Ausliefern des Batches."
+
+#: app\notifications\models.py
+msgid "Template family of the queued message."
+msgstr "Vorlagenfamilie der eingereihten Nachricht."
+
+#: app\notifications\models.py
+msgid "attempts"
+msgstr "Versuche"
+
+#: app\notifications\models.py
+msgid "e-mail address"
+msgstr "E-Mail-Adresse"
+
+#: app\notifications\models.py
+msgid "kind"
+msgstr "Art"
+
+#: app\notifications\models.py
+msgid "language"
+msgstr "Sprache"
+
+#: app\notifications\models.py
+msgid "last error"
+msgstr "letzter Fehler"
+
+#: app\notifications\models.py
+msgid "queued at"
+msgstr "eingereiht am"
+
+#: app\notifications\models.py
+msgid "queued notification"
+msgstr "eingereihte Benachrichtigung"
+
+#: app\notifications\models.py
+msgid "queued notifications"
+msgstr "eingereihte Benachrichtigungen"
+
+#: app\notifications\models.py
+msgid "send after"
+msgstr "senden nach"
+
+#: app\notifications\models.py
+msgid "sent at"
+msgstr "gesendet am"
+# --- Penalty digest mail + Settings notification card (hand-added) ---
+#: app\notifications\services.py
+#, python-format
+msgid "New penalties: {count} ({total} €)"
+msgstr "Neue Strafen: {count} ({total} €)"
+
+#: app\templates\accounts\settings.html
+msgid "Invitations, approval decisions, password and verification mails are always sent."
+msgstr "Einladungen, Freigabe-Entscheidungen sowie Passwort- und Bestätigungs-Mails werden immer zugestellt."
+
+#: app\templates\accounts\settings.html
+msgid "One e-mail per recorded payment — the receipt for your transfer."
+msgstr "Eine E-Mail pro erfasste Zahlung — der Beleg für deine Überweisung."
+
+#: app\templates\accounts\settings.html
+msgid "Round mails and information from your club."
+msgstr "Rundschreiben und Informationen aus deinem Verein."
+
+#: app\templates\accounts\settings.html
+msgid "Several penalties entered in a row always arrive as ONE e-mail."
+msgstr "Mehrere hintereinander erfasste Strafen kommen immer als EINE E-Mail an."
+
+#: app\templates\emails\penalty_digest.html app\templates\emails\penalty_digest.txt
+#, python-format
+msgid "Hi %(name)s, the following new penalties have been recorded for you:"
+msgstr "Hallo %(name)s, folgende neue Strafen wurden für dich erfasst:"
+
+#: app\templates\emails\penalty_digest.html
+msgid "New penalties"
+msgstr "Neue Strafen"

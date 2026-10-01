@@ -21,7 +21,7 @@ from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
 
 from app.accounts.models import ApprovalStatus
-from app.core.choices import RoleChoice, ThemeChoice
+from app.core.choices import PenaltyNotifyChoice, RoleChoice, ThemeChoice
 from app.core.permissions import GROUP_ADMIN, GROUP_CAPTAIN, GROUP_PLAYER
 from app.players.models import Player
 
@@ -373,12 +373,65 @@ class UserUpdateForm(forms.ModelForm):
 
 
 class SettingsForm(forms.ModelForm):
-    """Preferred language + theme (password handled by PasswordChangeForm)."""
+    """Language, theme AND the per-user notification preferences.
+
+    The notification block mirrors the mail types a user may switch off:
+
+    * ``penalty_notify_mode``/``penalty_notify_time`` — Off / Quick (collected
+      after the coalescing window) / Daily digest at the chosen time,
+    * ``repayment_notify``    — a receipt per recorded payment,
+    * ``club_news_optin``     — round mails / club information.
+
+    The two booleans are rendered as OFF/subscribe radio groups, so an
+    unchecked box is never a hidden "No" — the choice is always visible.
+    Transactional mails (invitation, approval, password reset, e-mail
+    verification) are deliberately NOT part of this form: they always go out.
+    """
+
+    penalty_notify_time = forms.TimeField(
+        label=_("Digest time"),
+        help_text=_("Only used by the daily digest."),
+        input_formats=["%H:%M", "%H:%M:%S"],
+        widget=forms.TimeInput(attrs={"type": "time", "step": "300"}, format="%H:%M"),
+    )
+    repayment_notify = forms.BooleanField(
+        required=False,
+        label=_("Payment confirmations"),
+        widget=forms.RadioSelect(
+            choices=((True, _("Abonnieren")), (False, _("Off"))),
+        ),
+    )
+    club_news_optin = forms.BooleanField(
+        required=False,
+        label=_("Club news / round mails"),
+        widget=forms.RadioSelect(
+            choices=((True, _("Abonnieren")), (False, _("Off"))),
+        ),
+    )
 
     class Meta:
         model = User
-        fields: ClassVar[list] = ["preferred_language", "preferred_theme"]
+        fields: ClassVar[list] = [
+            "preferred_language",
+            "preferred_theme",
+            "penalty_notify_mode",
+            "penalty_notify_time",
+            "repayment_notify",
+            "club_news_optin",
+        ]
         widgets: ClassVar[dict] = {
             "preferred_language": forms.Select(choices=settings.LANGUAGES),
             "preferred_theme": forms.Select(choices=ThemeChoice.choices),
+            "penalty_notify_mode": forms.RadioSelect,
         }
+
+    def clean(self):
+        """A digest without a time is a contradiction — say so, don't guess."""
+        cleaned = super().clean()
+        mode = cleaned.get("penalty_notify_mode")
+        if mode == PenaltyNotifyChoice.DAILY and not cleaned.get("penalty_notify_time"):
+            self.add_error(
+                "penalty_notify_time",
+                _("Choose the time of day for the daily digest."),
+            )
+        return cleaned

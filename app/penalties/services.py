@@ -7,6 +7,7 @@ Money model (B1): every penalty row is a debt row with ``amount_eur > 0``;
 a positive balance means the player owes that amount to the club pot.
 """
 
+import logging
 import uuid
 from decimal import Decimal
 
@@ -19,28 +20,47 @@ from app.core.models import AuditAction
 from app.core.permissions import user_can_manage_team
 from app.core.services import log_action
 from app.matchdays.models import Matchday, MatchdayPlayer
-from app.notifications.services import eligible_user_for, notification_service
+from app.notifications.services import eligible_user_for, flush_outbox, notification_service
 from app.penalties.models import Payment, Penalty, PenaltyType
 from app.players.models import Player
 
+logger = logging.getLogger("app.penalties")
 
-def _notify_penalty_created(penalty) -> None:
-    """E-mail the affected user — only when the eligibility check passes.
+
+def _notify_penalties_created(penalties) -> None:
+    """Queue a batch of NEW penalties — at most ONE e-mail per affected player.
+
+    The e-mail is NOT sent here: every row goes into the outbox
+    (``NotificationOutbox``) and ``flush_outbox()`` groups everything that is
+    due for the same user into one message. That is what turns "5 penalties ->
+    5 e-mails" into "5 penalties -> 1 e-mail", both for one save operation and
+    for entries made within the coalescing window (quick mode) or before the
+    daily digest time.
 
     Players without a user account (or without a valid/active account) are
     silently skipped — the check itself lives in
     ``app.notifications.services.eligible_user_for``.
     """
-    user = eligible_user_for(penalty.player)
-    if user is not None:
-        notification_service.send_penalty_created(user=user, penalty=penalty)
+    if not penalties:
+        return
+    notification_service.queue_penalties(penalties)
+    flush_outbox()
 
 
 def _notify_repayment(payment) -> None:
-    """E-mail the affected user about a recorded (partial) repayment."""
+    """E-mail the affected user about a recorded (partial) repayment.
+
+    A repayment is a RECEIPT (one e-mail per recorded payment, never
+    collected) and can be switched off individually — Settings → "Payment
+    confirmations".
+    """
     user = eligible_user_for(payment.player)
-    if user is not None:
-        notification_service.send_penalty_repayment(user=user, repayment=payment)
+    if user is None:
+        return
+    if not getattr(user, "repayment_notify", True):
+        logger.info("Repayment e-mail skipped: %s opted out.", user.email)
+        return
+    notification_service.send_penalty_repayment(user=user, repayment=payment)
 
 
 def assert_can_manage_penalty(user, penalty) -> None:
@@ -175,8 +195,7 @@ def assign_penalty(
             created.append(penalty)
             log_action(AuditAction.PENALTY_ASSIGNED, user=actor, target=penalty, metadata=metadata)
     # Notify only after the rows are committed — a rollback must not mail.
-    for penalty in created:
-        _notify_penalty_created(penalty)
+    _notify_penalties_created(created)
     return created[0]
 
 
@@ -256,8 +275,7 @@ def assign_group_penalty(
                 metadata=metadata,
             )
     # Notify only after the group is committed — a rollback must not mail.
-    for penalty in created:
-        _notify_penalty_created(penalty)
+    _notify_penalties_created(created)
     return created
 
 

@@ -5,6 +5,7 @@ Users and Players are decoupled entities (D2); ``player_link`` is an optional
 auto-derived from group membership (H1); see ``app/accounts/signals.py``.
 """
 
+from datetime import time as dt_time
 from datetime import timedelta
 from typing import ClassVar
 
@@ -16,7 +17,7 @@ from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
 
 from app.accounts.managers import UserManager
-from app.core.choices import RoleChoice, ThemeChoice
+from app.core.choices import PenaltyNotifyChoice, RoleChoice, ThemeChoice
 from app.core.permissions import (
     _invalidate_role_cache,
     user_is_admin,
@@ -84,6 +85,35 @@ class User(AbstractUser):
         max_length=8,
         choices=ThemeChoice.choices,
         default=ThemeChoice.AUTO,
+    )
+
+    # -- notification preferences (opt-in/out per mail type, see Settings) --
+    # Penalties are NOT mailed one row at a time: every new penalty is queued
+    # (NotificationOutbox) and mailed as ONE message per player — either after
+    # the coalescing window (``immediate``) or as the daily digest at
+    # ``penalty_notify_time`` (``daily``). Default: digest, so entering five
+    # penalties never produces five e-mails out of the box.
+    penalty_notify_mode = models.CharField(
+        _("penalty notifications"),
+        max_length=16,
+        choices=PenaltyNotifyChoice.choices,
+        default=PenaltyNotifyChoice.DAILY,
+        help_text=_("When newly assigned penalties are e-mailed to you."),
+    )
+    penalty_notify_time = models.TimeField(
+        _("digest time"),
+        default=dt_time(8, 0),
+        help_text=_("Only used by the daily digest."),
+    )
+    repayment_notify = models.BooleanField(
+        _("payment confirmations"),
+        default=True,
+        help_text=_("One e-mail per recorded repayment (receipt)."),
+    )
+    club_news_optin = models.BooleanField(
+        _("club news"),
+        default=True,
+        help_text=_("Round mails / club information from your club."),
     )
 
     USERNAME_FIELD = "email"

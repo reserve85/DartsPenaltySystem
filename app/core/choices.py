@@ -25,6 +25,26 @@ class RoleChoice(models.TextChoices):
     PLAYER = GROUP_PLAYER, _("Player")
 
 
+class PenaltyNotifyChoice(models.TextChoices):
+    """How a player learns about newly assigned penalties (e-mail).
+
+    ``OFF``       -> no e-mail at all,
+    ``IMMEDIATE`` -> one e-mail per coalescing window (default 90 s, so a
+                     batch of entries made in quick succession still arrives
+                     as ONE message),
+    ``DAILY``     -> one digest e-mail per day at the user's
+                     ``penalty_notify_time`` (default 08:00).
+
+    The queued rows live in ``app.notifications.models.NotificationOutbox``;
+    ``app.notifications.services.flush_outbox()`` turns every due row into at
+    most ONE e-mail per user.
+    """
+
+    OFF = "off", _("Off")
+    IMMEDIATE = "immediate", _("Quick (collected)")
+    DAILY = "daily", _("Daily digest")
+
+
 # Cookie that keeps the theme choice of visitors without an account across
 # page changes. Written by app/static/js/theme.js — keep the name in sync.
 THEME_COOKIE_NAME = "dpm_theme"

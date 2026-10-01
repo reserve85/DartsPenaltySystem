@@ -100,6 +100,26 @@ if "smtp" in EMAIL_BACKEND.lower() and not EMAIL_HOST and not TESTING:
 ASYNC_NOTIFICATIONS = (not TESTING) and env_bool("NOTIFICATIONS_ASYNC", "True")
 
 # ---------------------------------------------------------------------------
+# Outbox + digest (penalties are collected, never mailed one row at a time)
+# ---------------------------------------------------------------------------
+# NEW penalties are queued in NotificationOutbox and mailed as ONE message per
+# player. "Quick" mode waits this many seconds first, so five entries made in
+# a row arrive as a single e-mail. Tests use 0 so the historic contract
+# ("assign a penalty -> one e-mail") stays synchronously assertable.
+NOTIFICATION_COALESCE_SECONDS = 0 if TESTING else env_int("NOTIFICATION_COALESCE_SECONDS", 90)
+
+# In-process flusher thread (30 s tick) that delivers due outbox rows — the
+# container therefore works WITHOUT any cron. Set to False when an external
+# scheduler runs ``manage.py flush_notification_outbox`` instead.
+NOTIFICATION_SCHEDULER = (not TESTING) and env_bool("NOTIFICATIONS_SCHEDULER", "True")
+NOTIFICATION_SCHEDULER_INTERVAL = env_int("NOTIFICATIONS_SCHEDULER_INTERVAL", 30)
+
+# Optional quiet window "22:00-07:00" (local time, may wrap midnight). A QUICK
+# mode message that becomes due inside it is delayed until the window ends;
+# the daily digest is unaffected (its time is chosen by the user anyway).
+NOTIFICATION_QUIET_HOURS = env("NOTIFICATION_QUIET_HOURS", "")
+
+# ---------------------------------------------------------------------------
 # Invitations (admin-sent account invitations, see app.accounts.services)
 # ---------------------------------------------------------------------------
 # Days until an invitation link expires; the admin can always Resend (new

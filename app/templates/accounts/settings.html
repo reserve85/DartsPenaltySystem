@@ -9,13 +9,51 @@
             <h2 class="h5 card-title">{% translate "Preferences" %}</h2>
             {% csrf_token %}
             {% include "includes/_form_errors.html" with form=form %}
-            {% for field in form %}
-                <div class="mb-3">
-                    <label for="{{ field.id_for_label }}" class="form-label">{{ field.label }}</label>
-                    {{ field }}
-                    {% for error in field.errors %}<div class="text-danger small">{{ error }}</div>{% endfor %}
+            <div class="mb-3">
+                <label for="{{ form.preferred_language.id_for_label }}" class="form-label">{{ form.preferred_language.label }}</label>
+                {{ form.preferred_language }}
+                {% for error in form.preferred_language.errors %}<div class="text-danger small">{{ error }}</div>{% endfor %}
+            </div>
+            <div class="mb-3">
+                <label for="{{ form.preferred_theme.id_for_label }}" class="form-label">{{ form.preferred_theme.label }}</label>
+                {{ form.preferred_theme }}
+                {% for error in form.preferred_theme.errors %}<div class="text-danger small">{{ error }}</div>{% endfor %}
+            </div>
+
+            <hr class="my-3">
+            <h2 class="h5 card-title">{% translate "Notifications" %}</h2>
+            <p class="text-muted small">{% translate "Invitations, approval decisions, password and verification mails are always sent." %}</p>
+
+            {# 1) New penalties: Off / quick (collected) / daily digest + time #}
+            <div class="mb-3">
+                <span class="form-label d-block">{{ form.penalty_notify_mode.label }}</span>
+                <div class="radio-group">{{ form.penalty_notify_mode }}</div>
+                {% for error in form.penalty_notify_mode.errors %}<div class="text-danger small">{{ error }}</div>{% endfor %}
+                <div id="digest-time-row" class="mt-2">
+                    <label for="{{ form.penalty_notify_time.id_for_label }}" class="form-label">{{ form.penalty_notify_time.label }}</label>
+                    {{ form.penalty_notify_time }}
+                    {% for error in form.penalty_notify_time.errors %}<div class="text-danger small">{{ error }}</div>{% endfor %}
                 </div>
-            {% endfor %}
+                {% if form.penalty_notify_mode.help_text %}<div class="form-text">{{ form.penalty_notify_mode.help_text }}</div>{% endif %}
+                <div class="form-text">{% translate "Several penalties entered in a row always arrive as ONE e-mail." %}</div>
+            </div>
+
+            {# 2) Payment receipts #}
+            <div class="mb-3">
+                <span class="form-label d-block">{{ form.repayment_notify.label }}</span>
+                <div class="radio-group">{{ form.repayment_notify }}</div>
+                {% for error in form.repayment_notify.errors %}<div class="text-danger small">{{ error }}</div>{% endfor %}
+                <div class="form-text">{% translate "One e-mail per recorded payment — the receipt for your transfer." %}</div>
+            </div>
+
+            {# 3) Round mails / club information #}
+            <div class="mb-3">
+                <span class="form-label d-block">{{ form.club_news_optin.label }}</span>
+                <div class="radio-group">{{ form.club_news_optin }}</div>
+                {% for error in form.club_news_optin.errors %}<div class="text-danger small">{{ error }}</div>{% endfor %}
+                <div class="form-text">{% translate "Round mails and information from your club." %}</div>
+            </div>
+
             <button type="submit" class="btn btn-primary">{% translate "Save preferences" %}</button>
         </form>
     </div>
@@ -27,4 +65,22 @@
         </div>
     </div>
 </div>
+{% endblock %}
+{% block extra_js %}
+<script>
+    // The digest time only matters in "daily" mode — hide it otherwise
+    // (server-side validation still checks it when daily is selected).
+    (function () {
+        var radios = document.getElementsByName("penalty_notify_mode");
+        var row = document.getElementById("digest-time-row");
+        if (!row || !radios.length) return;
+        function sync() {
+            var checked = null;
+            radios.forEach(function (input) { if (input.checked) checked = input; });
+            row.classList.toggle("d-none", !checked || checked.value !== "daily");
+        }
+        radios.forEach(function (input) { input.addEventListener("change", sync); });
+        sync();
+    })();
+</script>
 {% endblock %}
