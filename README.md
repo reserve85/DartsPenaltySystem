@@ -163,7 +163,8 @@ overview marks the captains assigned to the selected team with a **👑 crown**
 captain account (the team selector stays unmarked); the team's **cashier**
 is marked with the **💲 emoji** (an emoji, **not** the ASCII character `$`)
 — stacked behind the crown when one account is both (`Kapt. X 👑 💲`) plus a
-dedicated `Kassier:` line below the captains.
+dedicated `Cashier:` block below the captains, shaped like that list: the label
+on its own line and the cashier's name as the list entry underneath.
 
 ### Kasse (cash box)
 

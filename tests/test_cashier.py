@@ -274,8 +274,26 @@ def test_kassier_line_renders_for_every_role(admin_user, team, request):
 
 def test_kassier_line_shows_dash_without_cashier(admin_client, team):
     content = admin_client.get(reverse("dashboard:financial_overview")).content.decode()
-    assert re.search(r"(Cashier|Kassier):</span>\s*–", content)
+    assert re.search(r"(Cashier|Kassier):</span>\s*<ul[^>]*>\s*<li[^>]*>\s*–", content)
     assert "💲" not in content  # no marker without a cashier
+
+
+def test_cashier_is_a_list_entry_under_its_own_label(admin_client, team, admin_user):
+    """Same shape as the captains: 'Cashier:' on its own line, the name as the
+    list item BELOW it — label and name must never share one line."""
+    set_cashier(team=team, user=admin_user, actor=admin_user)
+    content = admin_client.get(reverse("dashboard:financial_overview")).content.decode()
+
+    block = re.search(r"(Cashier|Kassier):</span>(.*?)</ul>", content, flags=re.DOTALL)
+    assert block, "cashier block with its own list not rendered"
+    assert "<li" in block.group(2)
+    assert admin_user.email in block.group(2)  # the name sits inside the <li>
+
+    label_line = next(
+        (line for line in content.splitlines() if re.search(r"(Cashier|Kassier):</span>", line)),
+        "",
+    )
+    assert label_line and admin_user.email not in label_line  # never "Cashier: name"
 
 
 def test_invalid_form_redirects_with_message(admin_client):
@@ -337,7 +355,12 @@ def test_non_captain_cashier_renders_only_the_kassier_line(
     line = _captain_li_line(content, captain_user)
     assert "👑" in line
     assert "💲" not in line  # the admin is no captain -> no stacking in that list
-    assert re.search(rf"(Cashier|Kassier):</span>\s*{re.escape(admin_user.email)}", content)
+    # … and the dedicated Cashier block still names the (non-captain) cashier,
+    # as a list entry under the label (never inline: "Cashier: name").
+    assert re.search(
+        rf"(Cashier|Kassier):</span>\s*<ul[^>]*>\s*<li[^>]*>\s*{re.escape(admin_user.email)}",
+        content,
+    )
 
 
 # ---------------------------------------------------------------------------

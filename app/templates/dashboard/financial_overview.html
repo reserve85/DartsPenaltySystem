@@ -66,12 +66,18 @@
             </ul>
         </div>
         {% endif %}
-        {# Dedicated Kassier line (Option A): always rendered, canonical place to look. #}
+        {# Dedicated Kassier block (Option A): always rendered, canonical place to look. #}
+        {# Same shape as the captains above: the label sits on a line of its own and the #}
+        {# cashier is a list item underneath — never "Cashier: Name" inline on one line.  #}
         <div class="mb-2">
             <span class="text-muted">{% translate "Cashier" %}:</span>
-            {% if cashier %}
-                {{ cashier.player_link.name|default:cashier.email }} <span aria-hidden="true">💲</span>
-            {% else %}–{% endif %}
+            <ul class="mb-0">
+                {% if cashier %}
+                <li>{{ cashier.player_link.name|default:cashier.email }} <span aria-hidden="true">💲</span></li>
+                {% else %}
+                <li>–</li>
+                {% endif %}
+            </ul>
         </div>
         {% if not cashier and can_manage %}
             <div class="alert alert-warning">
