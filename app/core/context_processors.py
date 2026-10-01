@@ -62,11 +62,12 @@ def _nav_section(request) -> str:
 def _unread_notifications(request) -> int:
     """Unread in-app notifications for the navbar bell (django-notifications-hq).
 
-    Only admins receive in-app notifications today (the bell is admin-only),
-    so only their badge spends the one COUNT query per page.
+    Read is universal: EVERY signed-in account may see their own mailbox
+    (payments, penalties, approval decisions — always in addition to e-mail),
+    so every authenticated user spends the one COUNT query per page.
     """
     user = getattr(request, "user", None)
-    if user is None or not user.is_authenticated or not user.is_admin:
+    if user is None or not user.is_authenticated:
         return 0
     return unread_count(user)
 

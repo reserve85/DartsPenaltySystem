@@ -1688,8 +1688,20 @@ msgstr ""
 msgid "Payment confirmation"
 msgstr ""
 
-#: app\templates\accounts\settings.html
-msgid "One e-mail per recorded payment — the confirmation for the payment."
+#: app\notifications\inapp.py
+msgid "Your payment has been recorded: {amount} €"
+msgstr ""
+
+#: app\notifications\inapp.py
+msgid "Payment from {player}: {amount} €"
+msgstr ""
+
+#: app\notifications\inapp.py
+msgid "Your account has been approved"
+msgstr ""
+
+#: app\notifications\inapp.py
+msgid "Your account has been rejected"
 msgstr ""
 
 msgstr ""

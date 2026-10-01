@@ -20,6 +20,7 @@ from app.core.models import AuditAction
 from app.core.permissions import user_can_manage_team
 from app.core.services import log_action
 from app.matchdays.models import Matchday, MatchdayPlayer
+from app.notifications.inapp import notify_payment_recorded, notify_penalties_assigned
 from app.notifications.services import eligible_user_for, flush_outbox, notification_service
 from app.penalties.models import Payment, Penalty, PenaltyType
 from app.players.models import Player
@@ -46,6 +47,9 @@ def _notify_penalties_created(penalties) -> None:
         return
     notification_service.queue_penalties(penalties)
     flush_outbox()
+    # In-app is IMMEDIATE (independent of quick/digest delivery): one warning
+    # row per affected player, next to — never instead of — the e-mail.
+    notify_penalties_assigned(penalties)
 
 
 def _notify_repayment(payment) -> None:
@@ -76,6 +80,8 @@ def _notify_repayment(payment) -> None:
         notification_service.send_penalty_repayment(
             user=cashier, repayment=payment, recipient_role="cashier"
         )
+    # In-app is NEVER switchable off (decision 5) — payer + cashier, always:
+    notify_payment_recorded(payment)
 
 
 def assert_can_manage_penalty(user, penalty) -> None:

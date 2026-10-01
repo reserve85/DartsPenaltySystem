@@ -117,16 +117,14 @@
                     {% include "includes/_theme_switcher.html" %}
                 {% endif %}
                 {% if request.user.is_authenticated %}
-                    {% if request.user.is_admin %}
-                        {# Admin bell: in-app notifications (django-notifications-hq) — new approval requests. #}
-                        <li class="nav-item">
-                            <a class="nav-link" href="{% url 'notifications:unread' %}"
-                               title="{% translate 'Notifications' %}">
-                                🔔 {% translate "Notifications" %}
-                                {% if unread_notification_count %}<span class="badge text-bg-warning">{{ unread_notification_count }}</span>{% endif %}
-                            </a>
-                        </li>
-                    {% endif %}
+                    {# In-app notifications: the bell belongs to EVERY signed-in account. #}
+                    <li class="nav-item">
+                        <a class="nav-link" href="{% url 'notifications:unread' %}"
+                           title="{% translate 'Notifications' %}">
+                            🔔 {% translate "Notifications" %}
+                            {% if unread_notification_count %}<span class="badge text-bg-warning">{{ unread_notification_count }}</span>{% endif %}
+                        </a>
+                    </li>
                     <li class="nav-item"><a class="nav-link" href="{% url 'accounts:settings' %}">{% translate "Settings" %}</a></li>
                     <li class="nav-item">
                         {# Logout must stay a PLAIN nav-link: .btn brings the 2.75rem touch-target min-height from style.css, which is taller than the .nav-link anchors next to it. #}

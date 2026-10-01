@@ -83,8 +83,16 @@ def test_admin_sees_bell_with_unread_badge(db, admin_client, admin_user):
     assert '<span class="badge text-bg-warning">1</span>' in content
 
 
-def test_non_admin_never_sees_the_bell(captain_client):
-    content = captain_client.get(reverse("dashboard:index")).content.decode()
+def test_every_signed_in_account_sees_the_bell(captain_client, player_client):
+    """Read is universal: the bell moved out of the admin block (decision 5)."""
+    for client in (captain_client, player_client):
+        content = client.get(reverse("dashboard:index")).content.decode()
+        assert reverse("notifications:unread") in content
+        assert "🔔" in content
+
+
+def test_anonymous_visitor_never_sees_the_bell(db):
+    content = Client().get(reverse("account_login")).content.decode()
     assert reverse("notifications:unread") not in content
 
 
@@ -115,17 +123,20 @@ def test_empty_list_renders_friendly_hint(admin_client):
 # ---------------------------------------------------------------------------
 # Decisions + mark-as-read
 # ---------------------------------------------------------------------------
-def test_reject_marks_notifications_read(db, admin_client):
+def test_reject_marks_notifications_read(db, admin_client, admin_user):
     _signup(Client())
     pending = User.objects.get(email="fresh@example.com")
 
     url = reverse("accounts:approval", args=[pending.pk])
     response = admin_client.post(url, {"action": "reject"})
     assert response.status_code == 302
-    assert not Notification.objects.filter(unread=True).exists()
+    # The admins' request rows are read; the REJECTED user's fresh decision
+    # row (created after clear_approval_notifications) stays unread for them.
+    assert not Notification.objects.filter(recipient=admin_user, unread=True).exists()
+    assert Notification.objects.filter(recipient=pending, unread=True).exists()
 
 
-def test_approve_marks_notifications_read(db, admin_client, team):
+def test_approve_marks_notifications_read(db, admin_client, admin_user, team):
     from app.players.models import Player
 
     player = Player.objects.create(name="Approve Me", team=team)
@@ -135,7 +146,9 @@ def test_approve_marks_notifications_read(db, admin_client, team):
     url = reverse("accounts:approval", args=[pending.pk])
     response = admin_client.post(url, {"action": "approve", "player": player.pk})
     assert response.status_code == 302
-    assert not Notification.objects.filter(unread=True).exists()
+    # Admin rows are read; the approved user's own decision row is unread.
+    assert not Notification.objects.filter(recipient=admin_user, unread=True).exists()
+    assert Notification.objects.filter(recipient=pending, unread=True).exists()
 
 
 def test_mark_all_as_read_clears_the_badge(db, admin_client, admin_user):

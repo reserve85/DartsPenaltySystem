@@ -131,3 +131,134 @@ def unread_count(user) -> int:
             "Unread in-app notification count failed for user pk=%s.", getattr(user, "pk", None)
         )
         return 0
+
+
+# ---------------------------------------------------------------------------
+# Business events — additive to e-mail, never switchable off (decision 5)
+# ---------------------------------------------------------------------------
+def notify_user(*, recipient, verb, sender=None, target=None, level="info") -> None:
+    """ONE in-app row for ``recipient`` — the single write path for events.
+
+    ``verb`` may be a plain string OR a zero-arg callable that builds the
+    translated string; callables are invoked INSIDE the recipient's language
+    override, so the row is rendered in the recipient's preferred language
+    even when a different account triggered the event.
+
+    ``sender`` must be a model instance (the package resolves the actor as a
+    GenericForeignKey and does not accept ``None``) — when no actor is at
+    hand, the recipient becomes their own actor so the row still renders.
+
+    Project rule: a notification problem never breaks a business transaction —
+    failures are logged, never raised; inactive accounts are skipped.
+    """
+    from notifications.signals import notify
+
+    if recipient is None or not getattr(recipient, "is_active", False):
+        return
+    try:
+        language = getattr(recipient, "preferred_language", None) or settings.LANGUAGE_CODE
+        with translation.override(language):
+            text = verb() if callable(verb) else verb
+            notify.send(
+                sender=sender if sender is not None else recipient,
+                recipient=recipient,
+                verb=str(text),
+                target=target,
+                level=level,
+            )
+    except Exception:
+        logger.exception(
+            "In-app notification for recipient pk=%s could not be created.",
+            getattr(recipient, "pk", None),
+        )
+
+
+def _inapp_recipient_for(player):
+    """Active user account of ``player`` — the IN-App rule (no e-mail needed).
+
+    Deliberately NOT ``eligible_user_for`` (the MAIL rule): an in-app row
+    needs no e-mail address, only an existing, active account. Players
+    without an account are skipped (logged).
+    """
+    if player is None:
+        return None
+    user = player.user  # property: None when no account is linked
+    if user is None:
+        logger.info(
+            "In-app notification skipped: player '%s' has no linked user account.", player
+        )
+        return None
+    if not user.is_active:
+        logger.info("In-app notification skipped: user %s is inactive.", user.email or user.pk)
+        return None
+    return user
+
+
+def notify_penalties_assigned(penalties) -> None:
+    """One warning row per (active user, penalty) for NEW penalties."""
+    for penalty in penalties or []:
+        recipient = _inapp_recipient_for(penalty.player)
+        if recipient is None:
+            continue
+        amount = f"{penalty.amount_eur:.2f}"
+        notify_user(
+            recipient=recipient,
+            # default-arg binding: each row must capture ITS amount (B023).
+            verb=lambda amount=amount: _("New penalty: {amount} €").format(amount=amount),
+            sender=penalty.created_by,
+            target=penalty,
+            level="warning",
+        )
+
+
+def notify_payment_recorded(payment) -> None:
+    """Payer AND cashier learn about a recorded payment (always, in-app).
+
+    Deduplicated when both are the same account; the payment row (with
+    ``received_by``) resolves through ``_base_manager`` on the target side.
+    """
+    payer = _inapp_recipient_for(payment.player)
+    cashier = payment.received_by
+    amount = f"{payment.amount_eur:.2f}"
+    player_name = payment.player.name
+    sender = payment.created_by
+    seen: set = set()
+    if payer is not None:
+        seen.add(payer.pk)
+        notify_user(
+            recipient=payer,
+            verb=lambda: _("Your payment has been recorded: {amount} €").format(amount=amount),
+            sender=sender,
+            target=payment,
+            level="success",
+        )
+    if cashier is not None and cashier.is_active and cashier.pk not in seen:
+        notify_user(
+            recipient=cashier,
+            verb=lambda: _("Payment from {player}: {amount} €").format(
+                player=player_name, amount=amount
+            ),
+            sender=sender,
+            target=payment,
+            level="success",
+        )
+
+
+def notify_approval_decided(user, *, approved: bool) -> None:
+    """One row FOR the affected user after an admin's approve/reject decision.
+
+    Called AFTER ``clear_approval_notifications`` — first the admins' request
+    rows are marked read, then the decision lands in the affected user's
+    mailbox (order matters, accounts/views).
+    """
+    notify_user(
+        recipient=user,
+        verb=(
+            (lambda: _("Your account has been approved"))
+            if approved
+            else (lambda: _("Your account has been rejected"))
+        ),
+        sender=user,
+        target=user,
+        level="success" if approved else "warning",
+    )

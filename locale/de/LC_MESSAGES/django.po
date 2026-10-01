@@ -3012,4 +3012,20 @@ msgstr "Noch keine Einträge."
 msgid "Recorded by"
 msgstr "Erfasst von"
 
+#: app\notifications\inapp.py
+msgid "Your payment has been recorded: {amount} €"
+msgstr "Deine Zahlung wurde erfasst: {amount} €"
+
+#: app\notifications\inapp.py
+msgid "Payment from {player}: {amount} €"
+msgstr "Zahlung von {player}: {amount} €"
+
+#: app\notifications\inapp.py
+msgid "Your account has been approved"
+msgstr "Dein Konto wurde freigegeben"
+
+#: app\notifications\inapp.py
+msgid "Your account has been rejected"
+msgstr "Dein Konto wurde abgelehnt"
+
 
