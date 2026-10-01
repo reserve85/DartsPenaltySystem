@@ -159,6 +159,43 @@ def test_german_payment_button(
 
 
 @needs_catalog
+def test_german_cash_box_menu_entry(admin_client, team):
+    """Administration dropdown: the plain 'Cash box' / 'Kasse' entry.
+
+    Language-tolerant (the local ``.mo`` is stale for new msgids) and the
+    entry NEVER carries the money marker (decision 6 — the emoji is not part
+    of a translatable string and not part of the menu).
+    """
+    _switch_language(admin_client, "de")
+    content = admin_client.get(reverse("teams:team_list")).content.decode()
+    assert reverse("teams:cashier_list") in content
+    assert "Kasse" in content or "Cash box" in content
+    assert "💲" not in content  # no marker in the navigation
+
+
+def test_received_by_column_is_language_tolerant(
+    admin_client, matchday_with_players, catalog_normal, admin_user, cashier
+):
+    """Payments table column: 'Received by' (en) / 'Empfangen von' (de)."""
+    from app.penalties.services import assign_penalty, record_payment
+
+    md, players = matchday_with_players(2)
+    assign_penalty(
+        matchday=md,
+        player=players[0],
+        catalog_item=catalog_normal,
+        description_snapshot="Late arrival",
+        actor=admin_user,
+    )
+    record_payment(player=players[0], team=md.team, amount_eur=2, actor=admin_user)
+
+    _switch_language(admin_client, "de")
+    content = admin_client.get(reverse("dashboard:financial_overview")).content.decode()
+    assert "Received by" in content or "Empfangen von" in content
+    assert admin_user.email in content  # the receiver of THAT payment
+
+
+@needs_catalog
 def test_german_footer_legal_links(db):
     # Anonymous client: django-allauth redirects already logged-in users away
     # from the login page — the footer must be right for visitors.
