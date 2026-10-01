@@ -310,6 +310,18 @@ def _send_outbox_group(*, user, penalty_ids: Iterable, language: str) -> str:
     return "sent" if sent else "failed"
 
 
+def _user_display(user) -> str:
+    """Human label for an account in e-mail context: linked player name, else e-mail.
+
+    ``None`` (e.g. a deleted ``created_by``) renders as an en dash.
+    """
+    if user is None:
+        return "–"
+    player = getattr(user, "player_link", None)
+    name = getattr(player, "name", "") if player is not None else ""
+    return name or user.email
+
+
 # ---------------------------------------------------------------------------
 # Service
 # ---------------------------------------------------------------------------
@@ -684,9 +696,14 @@ class NotificationService:
         )
 
     def send_penalty_repayment(
-        self, *, user, repayment: Payment, request: HttpRequest | None = None
+        self,
+        *,
+        user,
+        repayment: Payment,
+        request: HttpRequest | None = None,
+        recipient_role: str = "payer",
     ) -> int:
-        """Recorded repayment: amount, team, season, remaining balance, date.
+        """Payment confirmation ("Bestätigung für die Zahlung") for ONE recipient.
 
         Remaining balance and the full/partial verdict are scoped to the
         payment's season — exactly what the financial overview shows.
@@ -698,7 +715,7 @@ class NotificationService:
         return self.send_templated(
             recipients=[user],
             template_base="emails/penalty_repayment",
-            subject=_("Payment received: {amount} €").format(amount=f"{repayment.amount_eur:.2f}"),
+            subject=_("Payment confirmation: {amount} €").format(amount=f"{repayment.amount_eur:.2f}"),
             context={
                 "recipient_user": user,
                 "repayment": repayment,
@@ -709,6 +726,10 @@ class NotificationService:
                 "season": season,
                 "remaining": remaining,
                 "is_full_repayment": remaining <= 0,
+                "recipient_role": recipient_role,
+                "is_payer": recipient_role == "payer",
+                "received_by_label": _user_display(repayment.received_by),
+                "recorded_by_label": _user_display(repayment.created_by),
             },
             request=request,
             language=getattr(user, "preferred_language", None),

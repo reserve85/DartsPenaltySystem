@@ -6,6 +6,8 @@
 {% translate "Date" %}: {{ repayment_date|date:"d.m.Y" }}
 {% translate "Team" %}: {{ team.name }}
 {% translate "Season" %}: {% if season %}{{ season.name }}{% else %}–{% endif %}
+{% translate "Received by" %}: {{ received_by_label }}
+{% translate "Recorded by" %}: {{ recorded_by_label }}
 {% if is_full_repayment %}
 {% translate "Status" %}: {% translate "Full repayment — nothing is owed anymore." %}
 {% else %}

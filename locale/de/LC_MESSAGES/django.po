@@ -599,8 +599,8 @@ msgstr "Neue Strafe: {amount} €"
 
 #: .\app\notifications\services.py:384
 #, python-brace-format
-msgid "Payment received: {amount} €"
-msgstr "Zahlung eingegangen: {amount} €"
+msgid "Payment confirmation: {amount} €"
+msgstr "Bestätigung für die Zahlung: {amount} €"
 
 #: .\app\notifications\services.py:408
 #, python-brace-format
@@ -1973,8 +1973,8 @@ msgid "Current open total"
 msgstr "Aktueller offener Betrag"
 
 #: .\app\templates\emails\penalty_repayment.html:2
-msgid "Payment received"
-msgstr "Zahlung eingegangen"
+msgid "Payment confirmation"
+msgstr "Bestätigung für die Zahlung"
 
 #: .\app\templates\emails\penalty_repayment.html:4
 #: .\app\templates\emails\penalty_repayment.txt:3
@@ -2775,10 +2775,6 @@ msgid "Round mails / club information from your club."
 msgstr "Rundschreiben und Vereinsinformationen deines Vereins."
 
 #: app\accounts\forms.py
-msgid "Payment confirmations"
-msgstr "Zahlungsbestätigungen"
-
-#: app\accounts\forms.py
 msgid "Club news / round mails"
 msgstr "Vereinsnachrichten / Rundschreiben"
 
@@ -2868,8 +2864,8 @@ msgid "Invitations, approval decisions, password and verification mails are alwa
 msgstr "Einladungen, Freigabe-Entscheidungen sowie Passwort- und Bestätigungs-Mails werden immer zugestellt."
 
 #: app\templates\accounts\settings.html
-msgid "One e-mail per recorded payment — the receipt for your transfer."
-msgstr "Eine E-Mail pro erfasste Zahlung — der Beleg für deine Überweisung."
+msgid "One e-mail per recorded payment — the confirmation for the payment."
+msgstr "Eine E-Mail pro erfasste Zahlung — die Bestätigung für die Zahlung."
 
 #: app\templates\accounts\settings.html
 msgid "Round mails and information from your club."
@@ -3011,5 +3007,9 @@ msgstr "Zugewiesen von"
 #: app\templates\teams\cashier_list.html
 msgid "No entries yet."
 msgstr "Noch keine Einträge."
+
+#: app\templates\emails\penalty_repayment.html app\templates\emails\penalty_repayment.txt
+msgid "Recorded by"
+msgstr "Erfasst von"
 
 

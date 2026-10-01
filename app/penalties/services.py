@@ -49,19 +49,33 @@ def _notify_penalties_created(penalties) -> None:
 
 
 def _notify_repayment(payment) -> None:
-    """E-mail the affected user about a recorded (partial) repayment.
+    """E-mail the payer AND the cashier — ONE confirmation per recipient.
 
-    A repayment is a RECEIPT (one e-mail per recorded payment, never
+    A payment confirmation is a RECEIPT (one e-mail per recorded payment, never
     collected) and can be switched off individually — Settings → "Payment
-    confirmations".
+    confirmation". The switch is evaluated SEPARATELY for the payer and for
+    the cashier (decision 3): each of them can switch off only *their own*
+    mail. The payer's account may be missing entirely — then only the
+    cashier's confirmation goes out.
     """
-    user = eligible_user_for(payment.player)
-    if user is None:
-        return
-    if not getattr(user, "repayment_notify", True):
-        logger.info("Repayment e-mail skipped: %s opted out.", user.email)
-        return
-    notification_service.send_penalty_repayment(user=user, repayment=payment)
+    payer = eligible_user_for(payment.player)
+    if payer is not None and getattr(payer, "repayment_notify", True):
+        notification_service.send_penalty_repayment(
+            user=payer, repayment=payment, recipient_role="payer"
+        )
+    elif payer is not None:
+        logger.info("Repayment e-mail skipped: %s opted out.", payer.email)
+
+    cashier = payment.received_by  # NOT NULL — the cashier of record time
+    if (
+        cashier.is_active
+        and cashier.email
+        and getattr(cashier, "repayment_notify", True)
+        and (payer is None or cashier.pk != payer.pk)
+    ):
+        notification_service.send_penalty_repayment(
+            user=cashier, repayment=payment, recipient_role="cashier"
+        )
 
 
 def assert_can_manage_penalty(user, penalty) -> None:

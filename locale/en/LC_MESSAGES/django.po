@@ -1444,10 +1444,6 @@ msgid "Round mails / club information from your club."
 msgstr ""
 
 #: app\accounts\forms.py
-msgid "Payment confirmations"
-msgstr ""
-
-#: app\accounts\forms.py
 msgid "Club news / round mails"
 msgstr ""
 
@@ -1537,7 +1533,7 @@ msgid "Invitations, approval decisions, password and verification mails are alwa
 msgstr ""
 
 #: app\templates\accounts\settings.html
-msgid "One e-mail per recorded payment — the receipt for your transfer."
+msgid "One e-mail per recorded payment — the confirmation for the payment."
 msgstr ""
 
 #: app\templates\accounts\settings.html
@@ -1678,6 +1674,22 @@ msgstr ""
 
 #: app\templates\teams\cashier_list.html
 msgid "No entries yet."
+msgstr ""
+
+#: app\templates\emails\penalty_repayment.html app\templates\emails\penalty_repayment.txt
+msgid "Recorded by"
+msgstr ""
+
+#: app\notifications\services.py
+msgid "Payment confirmation: {amount} €"
+msgstr ""
+
+#: app\templates\emails\penalty_repayment.html app\accounts\forms.py
+msgid "Payment confirmation"
+msgstr ""
+
+#: app\templates\accounts\settings.html
+msgid "One e-mail per recorded payment — the confirmation for the payment."
 msgstr ""
 
 msgstr ""

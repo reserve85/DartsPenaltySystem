@@ -188,13 +188,13 @@ def test_partial_repayment_email_content(
 
     record_payment(player=players[0], team=md.team, amount_eur=2, actor=admin_user)
 
-    assert len(mail.outbox) == 1
-    message = mail.outbox[0]
-    assert message.to == ["member@example.com"]
+    # ONE confirmation per recipient: payer AND cashier (two mails).
+    assert len(mail.outbox) == 2
+    message = next(m for m in mail.outbox if m.to == ["member@example.com"])
     # Subject follows the caller's language (de/en catalog).
     assert (
-        "Payment received: 2.00 €" in message.subject
-        or "Zahlung eingegangen: 2.00 €" in message.subject
+        "Payment confirmation: 2.00 €" in message.subject
+        or "Bestätigung für die Zahlung: 2.00 €" in message.subject
     )
 
     body = message.body
@@ -221,15 +221,16 @@ def test_full_repayment_email_content(
 
     record_payment(player=players[0], team=md.team, amount_eur=5, actor=admin_user)
 
-    assert len(mail.outbox) == 1
-    body = mail.outbox[0].body
+    assert len(mail.outbox) == 2  # payer + cashier
+    body = next(m for m in mail.outbox if m.to == ["member@example.com"]).body
     assert "Full repayment" in body or "Vollständig beglichen" in body
     assert "Partial repayment" not in body and "Teilzahlung" not in body
 
 
-def test_repayment_without_user_account_sends_no_email(
+def test_repayment_without_payer_account_sends_cashier_confirmation(
     matchday_with_players, catalog_normal, admin_user, cashier
 ):
+    """No payer account -> only the cashier's confirmation goes out."""
     md, players = matchday_with_players(2)
     assign_penalty(
         matchday=md,
@@ -241,7 +242,36 @@ def test_repayment_without_user_account_sends_no_email(
     )
     mail.outbox.clear()
     record_payment(player=players[0], team=md.team, amount_eur=5, actor=admin_user)
-    assert len(mail.outbox) == 0  # no account -> no e-mail, no error
+    assert len(mail.outbox) == 1  # the cashier's copy
+    assert mail.outbox[0].to == ["admin@example.com"]
+
+
+def test_cashier_gets_own_payment_confirmation(
+    matchday_with_players, catalog_normal, admin_user, cashier
+):
+    """Payer != cashier: BOTH receive the same 'Payment confirmation' subject."""
+    md, players = matchday_with_players(2)
+    _link_user(players[0])
+    assign_penalty(
+        matchday=md,
+        player=players[0],
+        catalog_item=catalog_normal,
+        amount_eur=5,
+        description_snapshot="Late arrival",
+        actor=admin_user,
+    )
+    mail.outbox.clear()
+    record_payment(player=players[0], team=md.team, amount_eur=2, actor=admin_user)
+
+    assert sorted(m.to[0] for m in mail.outbox) == ["admin@example.com", "member@example.com"]
+    cashier_mail = next(m for m in mail.outbox if m.to == ["admin@example.com"])
+    assert (
+        "Payment confirmation: 2.00 €" in cashier_mail.subject
+        or "Bestätigung für die Zahlung: 2.00 €" in cashier_mail.subject
+    )
+    # review L5c: the cashier's copy names receiver + recorder
+    assert "Received by" in cashier_mail.body or "Empfangen von" in cashier_mail.body
+    assert "Recorded by" in cashier_mail.body or "Erfasst von" in cashier_mail.body
 
 
 # ---------------------------------------------------------------------------
@@ -341,8 +371,8 @@ def test_repayment_email_carries_team_and_season(
 
     record_payment(player=players[0], team=md.team, amount_eur=2, actor=admin_user, season=season)
 
-    assert len(mail.outbox) == 1
-    body = mail.outbox[0].body
+    assert len(mail.outbox) == 2  # payer + cashier
+    body = next(m for m in mail.outbox if m.to == ["member@example.com"]).body
     assert md.team.name in body
     assert season.name in body
 

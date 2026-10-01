@@ -396,7 +396,7 @@ class SettingsForm(forms.ModelForm):
     )
     repayment_notify = forms.BooleanField(
         required=False,
-        label=_("Payment confirmations"),
+        label=_("Payment confirmation"),
         widget=forms.RadioSelect(
             choices=((True, _("Abonnieren")), (False, _("Off"))),
         ),

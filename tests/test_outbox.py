@@ -338,6 +338,9 @@ def test_payment_confirmation_can_be_switched_off(
     user = _link(players[0], mode="immediate")
     user.repayment_notify = False
     user.save(update_fields=["repayment_notify"])
+    # The cashier evaluates THEIR OWN switch separately (decision 3) — both off:
+    admin_user.repayment_notify = False
+    admin_user.save(update_fields=["repayment_notify"])
     _assign(md, players[0], catalog_normal, admin_user)
     mail.outbox.clear()
 
@@ -356,8 +359,11 @@ def test_payment_confirmation_is_sent_when_subscribed(
 
     record_payment(player=players[0], team=md.team, amount_eur=2, actor=admin_user)
 
-    assert len(mail.outbox) == 1
-    assert re.search(r"(Payment received|Zahlung eingegangen): 2\.00 €", mail.outbox[0].subject)
+    assert len(mail.outbox) == 2  # payer + cashier — one confirmation each
+    assert all(
+        re.search(r"(Payment confirmation|Bestätigung für die Zahlung): 2\.00 €", m.subject)
+        for m in mail.outbox
+    )
 
 
 def test_club_news_recipients_follow_the_subscription(db):
