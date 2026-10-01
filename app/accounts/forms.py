@@ -126,6 +126,9 @@ class UserCreateForm(forms.ModelForm):
         super().__init__(*args, **kwargs)
         # Only NOT-yet-linked players may be picked for a NEW user.
         self.fields["player_link"].queryset = unlinked_players_queryset()
+        # The team field IS a captaincy — rename it on the CREATE form too,
+        # otherwise the model's verbose_name would render a bare "Team".
+        self.fields["team"].label = _("Captain in this team")
 
     def clean_email(self):
         email = (self.cleaned_data.get("email") or "").strip().lower()

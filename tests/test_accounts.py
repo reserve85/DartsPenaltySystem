@@ -107,6 +107,14 @@ def test_user_list_permissions(admin_client, captain_client, player_client, clie
     assert client.get(reverse("accounts:user_list")).status_code == 302
 
 
+def test_user_list_team_column_is_labelled_captain(admin_client, team):
+    """The user table's team column is a CAPTAINCY — header reads 'Kapitän'."""
+    content = admin_client.get(reverse("accounts:user_list")).content.decode()
+    header = content[content.index("<thead>") : content.index("</thead>")]
+    assert "<th>Kapitän</th>" in header  # de is the default language
+    assert "<th>Team</th>" not in header
+
+
 def test_user_list_shows_linked_player(admin_client, player_user, player):
     """Column 'Verknüpfter Spieler' — player name + detail link, dash if none."""
     content = admin_client.get(reverse("accounts:user_list")).content.decode()
@@ -252,7 +260,7 @@ def test_update_user_keeps_staff_consistent(admin_client, player_user, team):
 
 
 # ---------------------------------------------------------------------------
-# Edit user form — "Captain in this team" label + role-gated team dropdown
+# Create + edit user form — "Captain in this team" label + role-gated dropdown
 # ---------------------------------------------------------------------------
 def _team_select_tag(content):
     """The rendered <select name="team"> opening tag of the edit form."""
@@ -306,8 +314,31 @@ def test_edit_form_team_dropdown_enabled_for_captain_and_admin(
         assert "disabled" not in _team_select_tag(response.content.decode())
 
 
+def test_create_form_renames_team_to_captaincy(admin_client):
+    """'Neuer Benutzer': the Team field is labelled 'Captain in this team' too."""
+    from django.utils import translation
+
+    response = admin_client.get(reverse("accounts:user_create"))
+    assert response.status_code == 200
+    with translation.override("en"):
+        label = str(response.context["form"].fields["team"].label)
+    assert label == "Captain in this team"
+
+
+def test_create_form_captaincy_label_is_translated(admin_client):
+    """The German catalog renders 'Kapitän in diesem Team' on the create form."""
+    from django.utils import translation
+
+    if not MO_DE.exists():
+        pytest.skip("compiled German catalog missing (run: python manage.py compilemessages)")
+    response = admin_client.get(reverse("accounts:user_create"))
+    with translation.override("de"):
+        label = str(response.context["form"].fields["team"].label)
+    assert label == "Kapitän in diesem Team"
+
+
 def test_create_form_team_dropdown_unaffected(admin_client):
-    """The rename/lockdown is scoped to the EDIT form — create stays untouched."""
+    """The widget lockdown is scoped to the EDIT form — create stays open."""
     response = admin_client.get(reverse("accounts:user_create"))
     assert response.status_code == 200
     attrs = response.context["form"].fields["team"].widget.attrs

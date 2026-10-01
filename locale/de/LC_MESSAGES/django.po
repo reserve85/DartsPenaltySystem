@@ -22,6 +22,7 @@ msgid "Admin"
 msgstr "Administrator"
 
 #: .\app\accounts\forms.py:27
+#: .\app\templates\accounts\user_list.html:26
 msgid "Captain"
 msgstr "Kapitän"
 
@@ -73,7 +74,7 @@ msgstr "Ein Benutzer mit dieser E-Mail-Adresse existiert bereits."
 msgid "A team can only be assigned to Admin or Captain accounts."
 msgstr "Ein Team kann nur Konten mit der Rolle Admin oder Captain zugewiesen werden."
 
-#: .\app\accounts\forms.py:201
+#: .\app\accounts\forms.py:131 .\app\accounts\forms.py:331
 msgid "Captain in this team"
 msgstr "Kapitän in diesem Team"
 
