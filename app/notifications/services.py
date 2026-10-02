@@ -249,6 +249,43 @@ def prune_outbox(*, now: datetime | None = None) -> int:
     return count
 
 
+def reschedule_pending(user) -> int:
+    """Move a user's PENDING outbox rows to their new due time.
+
+    Called right after the notification settings changed (Settings card):
+    rows were queued under the OLD mode/time and would otherwise keep waiting
+    for tomorrow's digest slot even though the user just switched to
+    "Quick (collected)" — which reads as "my penalty e-mails are never sent".
+    A moved digest time must likewise pull the already-queued rows along.
+
+    ``OFF`` leaves the rows untouched: the flusher skips them at their due
+    time (audited), so switching off never mails and switching back on can
+    still deliver what was queued meanwhile.
+
+    Returns the number of rescheduled rows. Never raises — a settings save
+    must not break on an outbox hiccup (project rule: notification problems
+    never interrupt a business transaction).
+    """
+    mode = getattr(user, "penalty_notify_mode", PenaltyNotifyChoice.DAILY)
+    if mode == PenaltyNotifyChoice.OFF:
+        logger.info(
+            "Pending notifications for %s left untouched (opted out of penalty e-mails).",
+            getattr(user, "email", user),
+        )
+        return 0
+    try:
+        send_after = _send_after_for(user, mode, timezone.now())
+        return NotificationOutbox.objects.filter(user=user, sent_at__isnull=True).update(
+            send_after=send_after
+        )
+    except Exception:  # pragma: no cover — defensive: settings save must not fail
+        logger.exception(
+            "Rescheduling pending notifications for %s failed.",
+            getattr(user, "email", user),
+        )
+        return 0
+
+
 def _deliver_outbox_group(rows: list[NotificationOutbox], now: datetime) -> str:
     """Claim one user's due rows and turn them into ONE e-mail.
 
@@ -272,7 +309,9 @@ def _deliver_outbox_group(rows: list[NotificationOutbox], now: datetime) -> str:
         )
     )
     try:
-        outcome = _send_outbox_group(user=user, penalty_ids=penalty_ids, language=rows[0].language)
+        outcome = _send_outbox_group(
+            user=user, rows=rows, penalty_ids=penalty_ids, language=rows[0].language
+        )
     except Exception:
         # Review B4: a rendering/context crash AFTER the claim must follow the
         # SAME path as a failed send — unclaim (retry up to MAX_SEND_ATTEMPTS)
@@ -311,18 +350,47 @@ def _deliver_outbox_group(rows: list[NotificationOutbox], now: datetime) -> str:
     return "failed"
 
 
-def _send_outbox_group(*, user, penalty_ids: Iterable, language: str) -> str:
-    """Render + send ONE message for the claimed rows: ``sent``/``skipped``/``failed``."""
+def _send_outbox_group(
+    *, user, rows: list[NotificationOutbox], penalty_ids: Iterable, language: str
+) -> str:
+    """Render + send ONE message for the claimed rows: ``sent``/``skipped``/``failed``.
+
+    Every SKIP is audited (``EMAIL_FAILED`` row + the reason stored in
+    ``last_error`` of the claimed rows): the claim finalizes the rows, so the
+    audit entry is the ONLY trace that a due batch deliberately produced no
+    e-mail. Without it "no mail at the digest time" is indistinguishable from
+    a broken scheduler — the live bug report of 10/2026 (both rows had been
+    flushed punctually, but every attached penalty was deleted in between).
+    """
+    row_ids = [row.pk for row in rows]
+    penalty_ids = list(penalty_ids)
+    # The batch would have gone out as ONE digest mail when several positions
+    # were collected — name the template that was actually withheld.
+    template_base = "emails/penalty_digest" if len(penalty_ids) > 1 else "emails/penalty_created"
+
+    def skip(reason: str) -> str:
+        logger.info("Queued notification skipped: %s.", reason)
+        # Best-effort — auditing a skip must never break the flush (and a
+        # failing audit write never raises: log_email_outcome swallows it).
+        address = getattr(user, "email", "") or rows[0].email or ""
+        log_email_outcome(
+            success=False,
+            recipients=[address] if address else [],
+            template=template_base,
+            subject="",
+            language=language or None,
+            error=reason,
+        )
+        NotificationOutbox.objects.filter(pk__in=row_ids).update(last_error=reason)
+        return "skipped"
+
     address = getattr(user, "email", "") or ""
     if not getattr(user, "is_active", False) or "@" not in address:
-        logger.info(
-            "Queued notification skipped: %s is no longer an eligible recipient.",
-            getattr(user, "pk", address),
+        return skip(
+            f"recipient {getattr(user, 'pk', None) or address} is no longer an eligible recipient"
         )
-        return "skipped"
     if getattr(user, "penalty_notify_mode", PenaltyNotifyChoice.DAILY) == PenaltyNotifyChoice.OFF:
-        logger.info("Queued notification skipped: %s opted out of penalty e-mails.", address)
-        return "skipped"
+        return skip(f"recipient {address} opted out of penalty e-mails")
 
     from app.penalties.models import Penalty
 
@@ -333,8 +401,7 @@ def _send_outbox_group(*, user, penalty_ids: Iterable, language: str) -> str:
         .order_by("created_at", "id")
     )
     if not penalties:
-        logger.info("Queued notification skipped: nothing left to report (all rows deleted).")
-        return "skipped"
+        return skip("all queued penalties were deleted before delivery")
 
     if len(penalties) == 1:
         # One penalty = the familiar single-penalty mail (subject + content).

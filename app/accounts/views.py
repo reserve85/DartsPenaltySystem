@@ -46,7 +46,7 @@ from app.notifications.inapp import (
     notify_approval_decided,
     notify_invitation_completed,
 )
-from app.notifications.services import notification_service
+from app.notifications.services import notification_service, reschedule_pending
 from app.players.models import Player
 
 
@@ -464,6 +464,13 @@ class SettingsView(LoginRequiredMixin, View):
         form = SettingsForm(request.POST, instance=request.user)
         if form.is_valid():
             form.save()
+            if {"penalty_notify_mode", "penalty_notify_time"} & set(form.changed_data):
+                # Already-queued outbox rows were scheduled under the OLD
+                # mode/time — bring them to the new due time. Without this a
+                # switch to "Quick (collected)" (or a moved digest time) never
+                # touched a row that was already waiting: it kept its old slot
+                # (typically tomorrow's digest) and no mail arrived.
+                reschedule_pending(request.user)
             log_action(AuditAction.USER_UPDATED, user=request.user, target=request.user)
             messages.success(request, _("Settings saved."))
             response = redirect("accounts:settings")

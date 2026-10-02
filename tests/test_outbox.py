@@ -7,6 +7,11 @@ pin the whole contract:
 * new accounts default to the 08:00 digest,
 * daily mode waits for the digest time, quick mode coalesces in its window,
 * opt-out, soft-deleted rows and inactive recipients never mail,
+* a settings change (Quick / digest time) RESCHEDULES already-queued rows —
+  otherwise switching to Quick left them waiting for tomorrow's digest slot,
+* a skip at flush time is AUDITED (never a silent black hole: the claim
+  finalizes the rows, so the audit entry is the only trace of a due batch
+  that deliberately produced no e-mail),
 * the atomic claim makes the scheduler thread and the management command
   idempotent (never a second copy),
 * a dead SMTP retries and is abandoned after ``MAX_SEND_ATTEMPTS`` — and a
@@ -32,10 +37,12 @@ from django.conf import settings as django_settings
 from django.contrib.auth import get_user_model
 from django.core import mail
 from django.core.management import call_command
+from django.test import Client
 from django.urls import reverse
 from django.utils import timezone
 
 from app.core.choices import PenaltyNotifyChoice
+from app.core.models import AuditAction, AuditLog
 from app.notifications.models import NotificationOutbox
 from app.notifications.services import (
     SENT_RETENTION_DAYS,
@@ -272,6 +279,43 @@ def test_recipient_deactivated_before_the_flush_is_skipped(
     assert NotificationOutbox.objects.filter(sent_at__isnull=True).count() == 0
 
 
+def test_skipped_batch_is_audited_and_marked(
+    settings, matchday_with_players, catalog_normal, admin_user
+):
+    """A due batch whose penalties were deleted must leave an audit trail.
+
+    Live bug report 10/2026: both rows were flushed punctually (digest time /
+    coalescing window), but every attached penalty had been soft-deleted in
+    between — the flush skipped silently, so the audit log showed NOTHING at
+    the digest time and the delivery pipeline looked dead. Now the claim is
+    followed by an ``EMAIL_FAILED`` row (reason in the metadata) and the
+    outbox rows carry the same reason in ``last_error`` — still no mail, still
+    no retry loop.
+    """
+    settings.NOTIFICATION_COALESCE_SECONDS = 90  # keep the batch queued for now
+    md, players = matchday_with_players(2)
+    _link(players[0], mode="immediate")
+    first = _assign(md, players[0], catalog_normal, admin_user)
+    second = _assign(md, players[0], catalog_normal, admin_user)
+
+    soft_delete_penalty(penalty=first, actor=admin_user, scope="single")
+    soft_delete_penalty(penalty=second, actor=admin_user, scope="single")
+
+    assert flush_outbox(now=timezone.now() + timedelta(seconds=91)) == 0
+    assert len(mail.outbox) == 0  # still no mail — the penalties are gone
+
+    # Claimed once (never retried), and both rows say WHY nothing went out …
+    assert NotificationOutbox.objects.filter(sent_at__isnull=True).count() == 0
+    for row in NotificationOutbox.objects.all():
+        assert "deleted" in row.last_error
+    # … and the audit log names the withheld batch (two rows -> ONE digest).
+    entry = AuditLog.objects.get(action=AuditAction.EMAIL_FAILED)
+    assert entry.metadata["success"] is False
+    assert "deleted" in entry.metadata["error"]
+    assert entry.metadata["template"] == "emails/penalty_digest"
+    assert entry.metadata["recipients"] == ["member@example.com"]
+
+
 # ---------------------------------------------------------------------------
 # Claim / retry — the scheduler thread and cron never double-send
 # ---------------------------------------------------------------------------
@@ -390,6 +434,117 @@ def test_settings_page_renders_the_notification_card(admin_client):
     assert 'name="repayment_notify"' in html
     assert 'name="club_news_optin"' in html
     assert 'id="digest-time-row"' in html
+
+
+# ---------------------------------------------------------------------------
+# Settings changes RESCHEDULE what is already queued
+# ---------------------------------------------------------------------------
+def _settings_payload(mode: str, digest_time: str) -> dict:
+    """POST payload of the Settings card (every field is required)."""
+    return {
+        "preferred_language": "de",
+        "preferred_theme": "auto",
+        "penalty_notify_mode": mode,
+        "penalty_notify_time": digest_time,
+        "repayment_notify": "True",
+        "club_news_optin": "True",
+    }
+
+
+def _logged_in_client(user) -> Client:
+    client = Client()
+    client.force_login(user)
+    return client
+
+
+def test_switching_to_quick_reschedules_the_pending_rows(
+    settings, matchday_with_players, catalog_normal, admin_user
+):
+    """A queued digest row must FOLLOW a switch to "Quick (collected)".
+
+    Rows are queued under the OLD mode — without ``reschedule_pending`` they
+    kept waiting for tomorrow's digest slot, so switching to "sofort" touched
+    nothing that was already pending and no mail ever arrived (live report
+    10/2026).
+    """
+    settings.NOTIFICATION_COALESCE_SECONDS = 90
+    md, players = matchday_with_players(2)
+    user = _link(players[0], mode="daily")
+    _assign(md, players[0], catalog_normal, admin_user)
+
+    row = NotificationOutbox.objects.get()
+    assert row.send_after > timezone.now() + timedelta(hours=1)  # tomorrow's slot
+    assert flush_outbox() == 0  # nothing due yet — the old bug in a nutshell
+
+    response = _logged_in_client(user).post(
+        reverse("accounts:settings"), _settings_payload("immediate", "08:00")
+    )
+    assert response.status_code == 302
+
+    row.refresh_from_db()
+    # The row now falls into the coalescing window instead of tomorrow …
+    assert row.send_after <= timezone.now() + timedelta(seconds=95)
+    assert flush_outbox(now=row.send_after) == 1
+    assert len(mail.outbox) == 1  # … and the batch is actually delivered
+
+
+def test_moving_the_digest_time_reschedules_the_pending_rows(
+    matchday_with_players, catalog_normal, admin_user
+):
+    """Already-queued rows follow a moved digest time — same live report.
+
+    "I pushed the digest one minute further" used to affect only FUTURE
+    queues; the pending rows kept the old (already passed) slot until the
+    next day.
+    """
+    md, players = matchday_with_players(2)
+    user = _link(players[0], mode="daily")  # default digest: 08:00
+    _assign(md, players[0], catalog_normal, admin_user)
+
+    row = NotificationOutbox.objects.get()
+    assert timezone.localtime(row.send_after).time() == dt_time(8, 0)
+
+    response = _logged_in_client(user).post(
+        reverse("accounts:settings"), _settings_payload("daily", "23:30")
+    )
+    assert response.status_code == 302
+
+    row.refresh_from_db()
+    # Today or tomorrow — either way the NEW time-of-day, never the old 08:00.
+    assert timezone.localtime(row.send_after).time() == dt_time(23, 30)
+    assert row.send_after > timezone.now()
+
+
+def test_switching_off_keeps_rows_queued_and_skips_them_audited(
+    settings, matchday_with_players, catalog_normal, admin_user
+):
+    """Opting out never mails — but the due batch still leaves a trace.
+
+    ``OFF`` deliberately does NOT reschedule (the rows stay queued and are
+    skipped at their original due time), and that skip is audited instead of
+    vanishing silently.
+    """
+    settings.NOTIFICATION_COALESCE_SECONDS = 90
+    md, players = matchday_with_players(2)
+    user = _link(players[0], mode="immediate")
+    _assign(md, players[0], catalog_normal, admin_user)
+
+    response = _logged_in_client(user).post(
+        reverse("accounts:settings"), _settings_payload("off", "08:00")
+    )
+    assert response.status_code == 302
+
+    row = NotificationOutbox.objects.get()
+    assert row.sent_at is None  # still queued, due time untouched
+    assert flush_outbox(now=timezone.now() + timedelta(seconds=91)) == 0
+
+    assert len(mail.outbox) == 0  # opted out — no mail
+    row.refresh_from_db()
+    assert row.sent_at is not None  # claimed once, no endless retries
+    assert "opted out" in row.last_error
+    entry = AuditLog.objects.get(action=AuditAction.EMAIL_FAILED)
+    assert entry.metadata["success"] is False
+    assert "opted out" in entry.metadata["error"]
 
 
 # ---------------------------------------------------------------------------

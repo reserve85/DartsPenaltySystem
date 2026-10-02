@@ -307,6 +307,19 @@ class PenaltyAssignForm(forms.Form):
                     .order_by("type", "description")
                     .distinct()
                 )
+                # Option labels must show THIS team's own fee: str(item) (the
+                # default ModelChoiceField label) renders the DEFAULT catalog
+                # amount — the seed value that usually still equals the first
+                # team's fee. Teams with their own override (e.g. 3.00 € while
+                # the default reads 5.00 €) therefore saw the WRONG amount in
+                # the dropdown, while the assignment itself always charged the
+                # right one (live display bug 10/2026). The label mirrors
+                # PenaltyCatalogItem.__str__ verbatim, only the amount is the
+                # effective per-team one.
+                team = matchday.team
+                self.fields["catalog_item"].label_from_instance = lambda item: (
+                    f"{item.description} ({item.amount_for_team(team)} €)"
+                )
         # pks of the MANUAL items — the template toggles the amount field.
         self.manual_ids = list(
             self.fields["catalog_item"]

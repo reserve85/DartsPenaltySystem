@@ -1,10 +1,12 @@
 """Team-specific catalog fees — override model, assignment, view permissions."""
 
+from datetime import date
 from decimal import Decimal
 
 import pytest
 from django.urls import reverse
 
+from app.penalties.forms import PenaltyAssignForm
 from app.penalties.models import PenaltyType, TeamCatalogAmount
 from app.penalties.services import assign_group_penalty
 
@@ -71,6 +73,67 @@ def test_group_assignment_uses_team_override(
     )
     assert created
     assert all(row.amount_eur == Decimal(2) for row in created)
+
+
+# ---------------------------------------------------------------------------
+# Assignment dropdown — the option labels show the TEAM's own fee
+# ---------------------------------------------------------------------------
+def test_dropdown_label_shows_the_teams_own_fee(
+    matchday_with_players, catalog_normal, team, other_team
+):
+    """The penalty-type dropdown used ``str(item)`` — the DEFAULT amount.
+
+    Teams with their own override therefore SAW the first team's fee (the
+    seed value kept on the catalog row) while the assignment charged their
+    real one — the display-only bug of 10/2026.
+    """
+    TeamCatalogAmount.objects.create(team=team, catalog_item=catalog_normal, amount_eur=3)
+    TeamCatalogAmount.objects.create(team=other_team, catalog_item=catalog_normal, amount_eur=1)
+    md, _players = matchday_with_players(1)  # a matchday of the default ``team``
+
+    field = PenaltyAssignForm(matchday=md).fields["catalog_item"]
+    label = field.label_from_instance(catalog_normal)
+
+    # The team's own fee — NOT the default amount str(item) would render …
+    assert label == f"{catalog_normal.description} ({catalog_normal.amount_for_team(team)} €)"
+    assert catalog_normal.amount_for_team(team) != catalog_normal.amount_eur
+    assert label != str(catalog_normal)
+
+
+def test_dropdown_label_falls_back_to_the_default_amount_without_a_matchday(catalog_normal):
+    """System/fixture usage (no matchday) keeps the plain ``str(item)`` label."""
+    field = PenaltyAssignForm().fields["catalog_item"]
+    assert field.label_from_instance(catalog_normal) == str(catalog_normal)
+
+
+def test_assign_page_renders_the_third_teams_fee_in_the_dropdown(
+    admin_client, catalog_normal, team, other_team
+):
+    """The exact live scenario: THREE teams, distinct fees, third team's page.
+
+    The rendered ``<option>`` of the third team must carry ITS fee (1.00 €)
+    — never the first team's 5.00 €, while the posted assignment still
+    charges the effective amount (covered above).
+    """
+    from app.matchdays.models import Matchday
+    from app.teams.models import Team
+
+    third = Team.objects.create(name="Wildboars 3")
+    TeamCatalogAmount.objects.create(team=team, catalog_item=catalog_normal, amount_eur=5)
+    TeamCatalogAmount.objects.create(team=other_team, catalog_item=catalog_normal, amount_eur=3)
+    TeamCatalogAmount.objects.create(team=third, catalog_item=catalog_normal, amount_eur=1)
+    md = Matchday.objects.create(
+        team=third, opponent="SV Eichenberg", venue="home", date=date(2026, 9, 24)
+    )
+
+    content = admin_client.get(reverse("penalties:penalty_create", args=[md.pk])).content.decode()
+    option = next(
+        line for line in content.splitlines() if "<option" in line and "Late arrival" in line
+    )
+
+    assert f"{catalog_normal.amount_for_team(third)} €" in option  # 1.00 € — team 3's fee
+    assert f"{catalog_normal.amount_for_team(other_team)} €" not in option  # no 3.00 €
+    assert f"{catalog_normal.amount_eur} €" not in option  # no default/first-team fee
 
 
 # ---------------------------------------------------------------------------
