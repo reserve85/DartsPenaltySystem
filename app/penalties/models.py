@@ -31,13 +31,16 @@ def active_for_team(team) -> Q:
 
 
 class PenaltyType(models.TextChoices):
-    NORMAL = "NORMAL", _("Normal")
+    # Labels answer "who does it hit?" (price list / catalog column "Affects").
+    # MANUAL is a NORMAL penalty in scope (the assigned player) — its special
+    # trait is the individually typed amount, hence the "special penalty" tag.
+    NORMAL = "NORMAL", _("Affects the player")
     PER_ALL_OTHER_MATCHDAY_PLAYERS = (
         "PER_ALL_OTHER_MATCHDAY_PLAYERS",
-        _("Per all other matchday players"),
+        _("Affects all other matchday players"),
     )
     # Manual entry: individual amount + required comment per assignment.
-    MANUAL = "MANUAL", _("Manual")
+    MANUAL = "MANUAL", _("Affects the player – special penalty")
 
 
 class PenaltyCatalogItem(models.Model):

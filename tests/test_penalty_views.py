@@ -696,3 +696,32 @@ def test_single_penalty_edit_page_keeps_plain_delete(
     assert 'name="scope"' not in content  # no group choice without siblings
     assert reverse("penalties:penalty_delete", args=[penalty.pk]) in content
     assert "Editing penalty" in content or "Strafe bearbeiten" in content  # en / de catalog
+
+
+def test_catalog_list_affects_column_and_scope_labels(
+    admin_client, catalog_normal, catalog_group, catalog_manual
+):
+    """Column header 'Affects' + the scope labels (en / de catalog).
+
+    Old labels were 'Normal' / 'Manual' / 'Per all other matchday players' —
+    the type now answers WHO the penalty hits; MANUAL carries the
+    'special penalty' tag (its amount is typed individually).
+    """
+    content = admin_client.get(reverse("penalties:catalog_list")).content.decode()
+    assert "<th>Affects</th>" in content or "<th>Betrifft</th>" in content
+    assert "<th>Type</th>" not in content and "<th>Typ</th>" not in content
+    assert "Affects the player" in content or "Betrifft den Spieler" in content
+    assert (
+        "Affects all other matchday players" in content
+        or "Betrifft alle anderen Spieltagsteilnehmer" in content
+    )
+    assert (
+        "Affects the player – special penalty" in content
+        or "Betrifft den Spieler – Sonderstrafe" in content
+    )
+    # the DB values are untouched (labels are display-only)
+    assert {item.type for item in PenaltyCatalogItem.objects.all()} == {
+        "NORMAL",
+        "PER_ALL_OTHER_MATCHDAY_PLAYERS",
+        "MANUAL",
+    }

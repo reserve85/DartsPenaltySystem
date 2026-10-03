@@ -10,9 +10,10 @@ from app.core.permissions import (
 )
 from app.core.utils import numeric_pk
 from app.matchdays.services import season_for_request
-from app.penalties.models import Payment
+from app.penalties.models import Payment, PenaltyType
 from app.penalties.services import (
     assigned_penalties_qs,
+    catalog_overview,
     inactive_player_balances,
     matchday_totals,
     most_common_penalties,
@@ -132,6 +133,7 @@ class FinancialOverviewView(LoginRequiredMixin, View):
         balances = team_balances(team, season=season)
         inactive = inactive_player_balances(team, season=season)
         captains = captains_by_team.get(team.pk, [])
+        catalog_rows = catalog_overview(team)
         return {
             "teams": teams,
             "selected_team": team,
@@ -161,6 +163,12 @@ class FinancialOverviewView(LoginRequiredMixin, View):
             "inactive_balances": inactive,
             "matchday_totals": matchday_totals(team, season=season),
             "most_common": most_common_penalties(team, season=season),
+            # Read-only price list, visible to EVERY role (embedded twin of
+            # the 403 management catalog): effective team fee per active item.
+            "catalog_overview": catalog_rows,
+            # MANUAL items are assigned with an individually typed amount —
+            # the shown fee is only their default, hence the footnote.
+            "catalog_has_manual": any(item.type == PenaltyType.MANUAL for item in catalog_rows),
             "assigned_penalties": assigned_penalties_qs(team, season=season),
         }
 

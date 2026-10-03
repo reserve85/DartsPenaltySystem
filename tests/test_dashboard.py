@@ -472,3 +472,72 @@ def test_matchday_totals_marks_today_and_mutes_past(admin_client, team):
     assert 'class="matchday-past"' in row_for("Past FC")
     assert "text-bg-success" not in row_for("Past FC")
     assert "matchday-past" not in row_for("Today FC")
+
+
+# ---------------------------------------------------------------------------
+# Read-only price list ("Penalties and amounts") — every role
+# ---------------------------------------------------------------------------
+def test_price_list_visible_for_player_role(player_client, team, catalog_normal, catalog_manual):
+    """Players get 403 on the management catalog but see the read-only price
+    list on the financial overview (transparency decision)."""
+    assert player_client.get(reverse("penalties:catalog_list")).status_code == 403
+
+    response = player_client.get(reverse("dashboard:index"))
+    assert response.status_code == 200
+    items = response.context["catalog_overview"]
+    assert {item.description for item in items} == {"Late arrival", "Manual"}
+    content = response.content.decode()
+    assert "Late arrival" in content
+    # locale-aware floatformat: "5.00" (en) / "5,00" (de)
+    assert "5.00" in content or "5,00" in content
+    # scope label + column header answer "who does it hit" (en / de catalog)
+    assert "Affects the player" in content or "Betrifft den Spieler" in content
+    assert "<th>Affects</th>" in content or "<th>Betrifft</th>" in content
+
+
+def test_price_list_shows_team_fee_override(admin_client, team, catalog_normal):
+    """The rendered amount is THIS team's fee, not the catalog default."""
+    from app.penalties.models import TeamCatalogAmount
+
+    TeamCatalogAmount.objects.create(team=team, catalog_item=catalog_normal, amount_eur=1)
+    response = admin_client.get(reverse("dashboard:index"), {"team": team.pk})
+    assert response.status_code == 200
+    item = next(i for i in response.context["catalog_overview"] if i.pk == catalog_normal.pk)
+    assert item.team_amount == Decimal(1)
+
+
+def test_price_list_hides_item_deactivated_for_team(admin_client, team, catalog_normal):
+    """An item inactive for the selected team is not part of its price list."""
+    from app.penalties.models import TeamCatalogAmount
+
+    TeamCatalogAmount.objects.create(
+        team=team, catalog_item=catalog_normal, amount_eur=5, active=False
+    )
+    response = admin_client.get(reverse("dashboard:index"), {"team": team.pk})
+    assert response.context["catalog_overview"] == []
+
+
+def test_price_list_manual_hint_flag(admin_client, team, catalog_normal):
+    """No MANUAL item in the list -> no 'entered individually' footnote."""
+    response = admin_client.get(reverse("dashboard:index"), {"team": team.pk})
+    assert response.context["catalog_overview"]  # the NORMAL item is listed
+    assert response.context["catalog_has_manual"] is False
+    content = response.content.decode()
+    assert "Manual penalties: the amount is entered individually." not in content
+    assert "Manuelle Strafen: Der Betrag wird einzeln erfasst." not in content
+
+
+def test_price_list_manual_hint_flag_with_manual_item(admin_client, team, catalog_manual):
+    """A MANUAL item shows the default fee plus the footnote (variable amount)."""
+    response = admin_client.get(reverse("dashboard:index"), {"team": team.pk})
+    assert response.context["catalog_has_manual"] is True
+    content = response.content.decode()
+    # en / de catalog
+    assert (
+        "Manual penalties: the amount is entered individually." in content
+        or "Manuelle Strafen: Der Betrag wird einzeln erfasst." in content
+    )
+    assert (
+        "Affects the player – special penalty" in content
+        or "Betrifft den Spieler – Sonderstrafe" in content
+    )

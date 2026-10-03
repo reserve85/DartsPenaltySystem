@@ -895,6 +895,24 @@ msgstr ""
 msgid "No penalties yet."
 msgstr ""
 
+msgid "Penalties and amounts"
+msgstr ""
+
+msgid "Manual penalties: the amount is entered individually."
+msgstr ""
+
+msgid "Affects the player"
+msgstr ""
+
+msgid "Affects all other matchday players"
+msgstr ""
+
+msgid "Affects the player – special penalty"
+msgstr ""
+
+msgid "Affects"
+msgstr ""
+
 msgid "Assigned penalties"
 msgstr ""
 

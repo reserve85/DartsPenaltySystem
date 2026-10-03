@@ -29,7 +29,13 @@ from app.notifications.inapp import (
     notify_penalties_changed,
 )
 from app.notifications.services import eligible_user_for, flush_outbox, notification_service
-from app.penalties.models import Payment, Penalty, PenaltyType
+from app.penalties.models import (
+    Payment,
+    Penalty,
+    PenaltyCatalogItem,
+    PenaltyType,
+    TeamCatalogAmount,
+)
 from app.players.models import Player
 from app.teams.services import cashier_user_for
 
@@ -746,6 +752,40 @@ def most_common_penalties(team=None, *, season=None, limit=10) -> list:
     return [
         {"description": row["label"], "count": row["count"], "total": row["total"]} for row in rows
     ]
+
+
+def catalog_overview(team) -> list:
+    """Read-only price list for ONE team: every catalog item ACTIVE there.
+
+    The financial overview renders this for EVERY signed-in account — the
+    Player role gets 403 on the management view (``CatalogListView``) but
+    shall still see which penalties exist and what THIS team charges.
+
+    Semantics match ``PenaltyCatalogItem.is_active_for_team`` /
+    ``amount_for_team``: a missing ``TeamCatalogAmount`` row means "active
+    with the default amount", an explicit row decides alone. Items
+    deactivated FOR this team are dropped (other teams may still use them).
+
+    Two queries total — one for the catalog, one for this team's override
+    rows (a per-item ``amount_for_team`` call would be an N+1, see
+    ``CatalogListView`` for the same bulk pattern). Each model instance
+    carries its effective fee as ``team_amount`` for the template.
+    """
+    items = list(PenaltyCatalogItem.objects.order_by("type", "description"))
+    overrides = {
+        row.catalog_item_id: row
+        for row in TeamCatalogAmount.objects.filter(team=team, catalog_item__in=items)
+    }
+    overview = []
+    for item in items:
+        row = overrides.get(item.pk)
+        if row is not None and not row.active:
+            continue  # deactivated for THIS team — not part of its price list
+        item.team_amount = (
+            item.amount_eur if row is None or row.amount_eur is None else row.amount_eur
+        )
+        overview.append(item)
+    return overview
 
 
 def assigned_penalties_qs(team=None, *, season=None):

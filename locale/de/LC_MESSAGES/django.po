@@ -1893,6 +1893,24 @@ msgstr "Anzahl"
 msgid "No penalties yet."
 msgstr "Noch keine Strafen."
 
+msgid "Penalties and amounts"
+msgstr "Strafen und Beträge"
+
+msgid "Manual penalties: the amount is entered individually."
+msgstr "Manuelle Strafen: Der Betrag wird einzeln erfasst."
+
+msgid "Affects the player"
+msgstr "Betrifft den Spieler"
+
+msgid "Affects all other matchday players"
+msgstr "Betrifft alle anderen Spieltagsteilnehmer"
+
+msgid "Affects the player – special penalty"
+msgstr "Betrifft den Spieler – Sonderstrafe"
+
+msgid "Affects"
+msgstr "Betrifft"
+
 #: .\app\templates\dashboard\financial_overview.html:196
 msgid "Assigned penalties"
 msgstr "Vergebene Strafen"

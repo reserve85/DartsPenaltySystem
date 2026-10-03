@@ -101,6 +101,38 @@
             {% endif %}
         </p>
 
+        {# Price list for EVERY signed-in account: which penalties exist and what #}
+        {# THIS team charges (fee overrides via TeamCatalogAmount apply). The     #}
+        {# Player role gets 403 on the management catalog — this read-only twin   #}
+        {# delivers the transparency decision. EMBEDDED on purpose: read-only     #}
+        {# reference data stays a table; the modals below are reserved for the    #}
+        {# cashier's write actions (payment/payout).                             #}
+        <h3 class="h6 mt-4">{% translate "Penalties and amounts" %}</h3>
+        <div class="table-responsive">
+            <table class="table table-striped align-middle">
+                <thead><tr>
+                    <th>{% translate "Description" %}</th>
+                    <th>{% translate "Affects" %}</th>
+                    <th class="text-end">{% translate "Amount" %}</th>
+                </tr></thead>
+                <tbody>
+                {% for item in catalog_overview %}
+                    <tr>
+                        <td>{{ item.description }}</td>
+                        <td>{{ item.get_type_display }}</td>
+                        {# Effective fee: this team's override or the catalog default (catalog_overview service). #}
+                        <td class="text-end text-danger">{{ item.team_amount|floatformat:2 }} €</td>
+                    </tr>
+                {% empty %}
+                    <tr><td colspan="3" class="text-muted text-center py-3">{% translate "No penalties." %}</td></tr>
+                {% endfor %}
+                </tbody>
+            </table>
+            {% if catalog_has_manual %}
+            <div class="form-text">{% translate "Manual penalties: the amount is entered individually." %}</div>
+            {% endif %}
+        </div>
+
         <h3 class="h6 mt-4">{% translate "Players (active)" %}</h3>
         <div class="table-responsive">
             <table class="table table-striped align-middle">
