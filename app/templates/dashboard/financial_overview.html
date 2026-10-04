@@ -5,7 +5,13 @@
 <h1 class="h3 mb-3">{% translate "Financial overview" %}</h1>
 
 {% if own_mode %}
-    <h2 class="h5">{% translate "My penalties" %}</h2>
+    <h2 class="h5">
+        <button type="button" class="section-toggle" data-bs-toggle="collapse"
+                data-bs-target="#sec-own" aria-expanded="true" aria-controls="sec-own">
+            {% translate "My penalties" %}
+        </button>
+    </h2>
+    <div class="collapse show" id="sec-own">
     {% if no_player_link %}
         <p class="text-muted">{% translate "Your account is not linked to a player yet." %}</p>
     {% else %}
@@ -36,6 +42,7 @@
             </table>
         </div>
     {% endif %}
+    </div>
     {% if selected_team %}<hr class="my-4">{% endif %}
 {% endif %}
 
@@ -107,7 +114,15 @@
         {# delivers the transparency decision. EMBEDDED on purpose: read-only     #}
         {# reference data stays a table; the modals below are reserved for the    #}
         {# cashier's write actions (payment/payout).                             #}
-        <h3 class="h6 mt-4">{% translate "Penalties and amounts" %}</h3>
+        <h3 class="h6 mt-4">
+            {# Collapsible section: clicking the heading toggles the table below. #}
+            {# Default: COLLAPSED (the price list is reference data, not daily use). #}
+            <button type="button" class="section-toggle" data-bs-toggle="collapse"
+                    data-bs-target="#sec-prices" aria-expanded="false" aria-controls="sec-prices">
+                {% translate "Penalties and amounts" %}
+            </button>
+        </h3>
+        <div class="collapse" id="sec-prices">
         <div class="table-responsive">
             <table class="table table-striped align-middle">
                 <thead><tr>
@@ -132,8 +147,15 @@
             <div class="form-text">{% translate "Manual penalties: the amount is entered individually." %}</div>
             {% endif %}
         </div>
+        </div>
 
-        <h3 class="h6 mt-4">{% translate "Players (active)" %}</h3>
+        <h3 class="h6 mt-4">
+            <button type="button" class="section-toggle" data-bs-toggle="collapse"
+                    data-bs-target="#sec-players-active" aria-expanded="true" aria-controls="sec-players-active">
+                {% translate "Players (active)" %}
+            </button>
+        </h3>
+        <div class="collapse show" id="sec-players-active">
         <div class="table-responsive">
             <table class="table table-striped align-middle">
                 <thead><tr>
@@ -178,8 +200,18 @@
                 </tbody>
             </table>
         </div>
+        </div>
 
-        <h3 class="h6 mt-4">{% translate "Players (inactive)" %}</h3>
+        {# Inactive players: rendered ONLY when the team actually has any — #}
+        {# an empty section would just be noise on the overview.            #}
+        {% if inactive_balances %}
+        <h3 class="h6 mt-4">
+            <button type="button" class="section-toggle" data-bs-toggle="collapse"
+                    data-bs-target="#sec-players-inactive" aria-expanded="true" aria-controls="sec-players-inactive">
+                {% translate "Players (inactive)" %}
+            </button>
+        </h3>
+        <div class="collapse show" id="sec-players-inactive">
         <div class="table-responsive">
             <table class="table table-striped align-middle">
                 <thead><tr>
@@ -224,8 +256,16 @@
                 </tbody>
             </table>
         </div>
+        </div>
+        {% endif %}
 
-        <h3 class="h6 mt-4">{% translate "Payments" %}</h3>
+        <h3 class="h6 mt-4">
+            <button type="button" class="section-toggle" data-bs-toggle="collapse"
+                    data-bs-target="#sec-payments" aria-expanded="true" aria-controls="sec-payments">
+                {% translate "Payments" %}
+            </button>
+        </h3>
+        <div class="collapse show" id="sec-payments">
         <div class="table-responsive">
             <table class="table table-sm table-striped align-middle">
                 <thead><tr>
@@ -266,9 +306,15 @@
                 </tbody>
             </table>
         </div>
+        </div>
 
-
-        <h3 class="h6 mt-4">{% translate "Matchday totals" %}</h3>
+        <h3 class="h6 mt-4">
+            <button type="button" class="section-toggle" data-bs-toggle="collapse"
+                    data-bs-target="#sec-matchday-totals" aria-expanded="true" aria-controls="sec-matchday-totals">
+                {% translate "Matchday totals" %}
+            </button>
+        </h3>
+        <div class="collapse show" id="sec-matchday-totals">
         <div class="table-responsive">
             <table class="table table-striped align-middle">
                 <thead><tr><th>{% translate "Matchday" %}</th><th class="text-end">{% translate "Total" %}</th></tr></thead>
@@ -287,8 +333,15 @@
                 </tbody>
             </table>
         </div>
+        </div>
 
-        <h3 class="h6 mt-4">{% translate "Most common penalties" %}</h3>
+        <h3 class="h6 mt-4">
+            <button type="button" class="section-toggle" data-bs-toggle="collapse"
+                    data-bs-target="#sec-most-common" aria-expanded="true" aria-controls="sec-most-common">
+                {% translate "Most common penalties" %}
+            </button>
+        </h3>
+        <div class="collapse show" id="sec-most-common">
         <div class="table-responsive">
             <table class="table table-striped align-middle">
                 <thead><tr><th>{% translate "Description" %}</th><th class="text-end">{% translate "Count" %}</th><th class="text-end">{% translate "Total" %}</th></tr></thead>
@@ -301,8 +354,15 @@
                 </tbody>
             </table>
         </div>
+        </div>
 
-        <h3 class="h6 mt-4">{% translate "Assigned penalties" %}</h3>
+        <h3 class="h6 mt-4">
+            <button type="button" class="section-toggle" data-bs-toggle="collapse"
+                    data-bs-target="#sec-assigned" aria-expanded="true" aria-controls="sec-assigned">
+                {% translate "Assigned penalties" %}
+            </button>
+        </h3>
+        <div class="collapse show" id="sec-assigned">
         <div class="table-responsive">
             <table class="table table-sm table-striped align-middle">
                 <thead><tr><th>{% translate "Date" %}</th><th>{% translate "Player" %}</th><th>{% translate "Matchday" %}</th><th>{% translate "Description" %}</th><th class="text-end">{% translate "Amount" %}</th></tr></thead>
@@ -320,6 +380,7 @@
                 {% endfor %}
                 </tbody>
             </table>
+        </div>
         </div>
 
         {% if is_cashier %}

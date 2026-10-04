@@ -278,3 +278,37 @@ input[type="date"], input[type="search"], input[type="url"], select, textarea {
         display: none;
     }
 }
+
+/* Financial overview: every section heading toggles the table below it
+   (Bootstrap collapse, wired via data-bs-toggle). Deliberately NOT .btn —
+   style.css gives .btn a 2.75rem min-height that would break the heading
+   scale. The caret reflects aria-expanded, which Bootstrap keeps in sync
+   while the collapse animates (▾ open / ▸ closed). */
+.section-toggle {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    padding: 0;
+    border: 0;
+    background: none;
+    font: inherit;
+    color: inherit;
+    text-align: start;
+    cursor: pointer;
+}
+.section-toggle::before {
+    content: "▾";
+    font-size: 0.85em;
+    line-height: 1;
+}
+.section-toggle[aria-expanded="false"]::before {
+    content: "▸";
+}
+.section-toggle:hover {
+    text-decoration: underline;
+}
+.section-toggle:focus-visible {
+    outline: 2px solid var(--bs-primary);
+    outline-offset: 2px;
+    border-radius: 2px;
+}

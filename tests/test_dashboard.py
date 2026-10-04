@@ -541,3 +541,73 @@ def test_price_list_manual_hint_flag_with_manual_item(admin_client, team, catalo
         "Affects the player – special penalty" in content
         or "Betrifft den Spieler – Sonderstrafe" in content
     )
+
+
+# ---------------------------------------------------------------------------
+# Collapsible sections — default state (click a heading -> toggle its table)
+# ---------------------------------------------------------------------------
+def test_financial_overview_sections_default_to_expanded_except_price_list(
+    admin_client, team
+):
+    """Every section starts OPEN; only "Penalties and amounts" starts CLOSED.
+
+    The toggles are plain Bootstrap collapses (``data-bs-toggle="collapse"``)
+    wired to the heading buttons — no custom JS.
+    """
+    content = admin_client.get(
+        reverse("dashboard:financial_overview"), {"team": team.pk}
+    ).content.decode()
+
+    # the price list is the ONE section collapsed by default
+    assert 'data-bs-target="#sec-prices" aria-expanded="false"' in content
+    assert '<div class="collapse" id="sec-prices">' in content
+
+    # …all other sections are expanded
+    for target in (
+        "sec-players-active",
+        "sec-payments",
+        "sec-matchday-totals",
+        "sec-most-common",
+        "sec-assigned",
+    ):
+        assert f'data-bs-target="#{target}" aria-expanded="true"' in content
+        assert f'<div class="collapse show" id="{target}">' in content
+
+    assert 'data-bs-toggle="collapse"' in content
+
+
+def test_financial_overview_hides_inactive_section_without_inactive_players(
+    admin_client, team
+):
+    """No inactive players with balances -> the section is not rendered at all
+    (not even as an empty table)."""
+    content = admin_client.get(
+        reverse("dashboard:financial_overview"), {"team": team.pk}
+    ).content.decode()
+    assert 'id="sec-players-inactive"' not in content
+    assert 'data-bs-target="#sec-players-inactive"' not in content
+
+
+def test_financial_overview_shows_inactive_section_with_inactive_players(
+    admin_client, matchday_with_players, catalog_normal, admin_user
+):
+    """An inactive player with a balance brings the section back, expanded."""
+    md, players = matchday_with_players(2)
+    players[1].active = False
+    players[1].save()
+    assign_penalty(
+        matchday=md,
+        player=players[1],
+        catalog_item=catalog_normal,
+        amount_eur=5,
+        description_snapshot="Keks",
+        actor=admin_user,
+    )
+
+    content = admin_client.get(
+        reverse("dashboard:financial_overview"), {"team": md.team.pk}
+    ).content.decode()
+    assert 'data-bs-target="#sec-players-inactive" aria-expanded="true"' in content
+    assert '<div class="collapse show" id="sec-players-inactive">' in content
+    assert players[1].name in content
+
