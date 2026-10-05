@@ -993,12 +993,16 @@ msgid ""
 "Unable to confirm this address because it is already confirmed by a "
 "different account."
 msgstr ""
+"Diese Adresse kann nicht bestätigt werden, da sie bereits von einem "
+"anderen Konto bestätigt wurde."
 
 #: .\app\templates\account\email_confirm.html:26
 msgid ""
 "This confirmation link expired or is invalid. Please request a new "
 "confirmation e-mail after logging in."
 msgstr ""
+"Dieser Bestätigungslink ist abgelaufen oder ungültig. Bitte fordern Sie "
+"nach dem Anmelden eine neue Bestätigungs-E-Mail an."
 
 #: .\app\templates\account\login.html:13
 #: .\app\templates\accounts\approval_form.html:16
@@ -1062,6 +1066,8 @@ msgid ""
 "Forgotten your password? Enter your e-mail address below and we will send "
 "you a link to set a new one."
 msgstr ""
+"Passwort vergessen? Geben Sie unten Ihre E-Mail-Adresse ein und wir "
+"senden Ihnen einen Link zum Festlegen eines neuen Passworts."
 
 #: .\app\templates\account\password_reset.html:23
 msgid "Send reset link"
@@ -1079,6 +1085,8 @@ msgid ""
 "We have sent you an e-mail. If you have not received it, please check your "
 "spam folder."
 msgstr ""
+"Wir haben Ihnen eine E-Mail gesendet. Falls Sie sie nicht erhalten haben, "
+"prüfen Sie bitte Ihren Spam-Ordner."
 
 #: .\app\templates\account\password_reset_from_key.html:8
 msgid "Invalid link"
@@ -1110,6 +1118,9 @@ msgid ""
 "After registration, an administrator must release your account before you "
 "can log in. You will receive an e-mail as soon as your account is active."
 msgstr ""
+"Nach der Registrierung muss ein Administrator Ihr Konto freigeben, bevor "
+"Sie sich anmelden können. Sie erhalten eine E-Mail, sobald Ihr Konto "
+"aktiv ist."
 
 #: .\app\templates\account\signup.html:28 .\app\templates\base.html:116
 msgid "Register"
@@ -1133,12 +1144,17 @@ msgid ""
 "to finalize your registration. If you do not see the e-mail, check your spam "
 "folder."
 msgstr ""
+"Wir haben Ihnen eine Bestätigungs-E-Mail gesendet. Folgen Sie dem Link in "
+"der Nachricht, um Ihre Registrierung abzuschließen. Falls Sie die E-Mail "
+"nicht sehen, prüfen Sie Ihren Spam-Ordner."
 
 #: .\app\templates\account\verification_sent.html:13
 msgid ""
 "Your account will be activated by an administrator after the registration "
 "has been checked."
 msgstr ""
+"Ihr Konto wird von einem Administrator aktiviert, sobald die "
+"Registrierung geprüft wurde."
 
 #: .\app\templates\accounts\approval_form.html:3
 #: .\app\templates\accounts\approval_form.html:8
@@ -1931,6 +1947,8 @@ msgid ""
 "Your account on the Darts Penalty Manager has been approved by an "
 "administrator. You can now log in with your e-mail address:"
 msgstr ""
+"Ihr Konto im Darts Penalty Manager wurde von einem Administrator "
+"freigegeben. Sie können sich jetzt mit Ihrer E-Mail-Adresse anmelden:"
 
 #: .\app\templates\emails\account_approved.html:9
 #: .\app\templates\emails\account_approved.txt:8
@@ -1962,6 +1980,8 @@ msgid ""
 "Unfortunately, your registration on the Darts Penalty Manager has been "
 "reviewed and declined:"
 msgstr ""
+"Leider wurde Ihre Registrierung im Darts Penalty Manager geprüft und "
+"abgelehnt:"
 
 #: .\app\templates\emails\account_rejected.html:6
 #: .\app\templates\emails\account_rejected.txt:7
@@ -1969,6 +1989,8 @@ msgid ""
 "If you think this is a mistake, please contact the club (support address "
 "below)."
 msgstr ""
+"Wenn Sie dies für einen Fehler halten, wenden Sie sich bitte an den "
+"Verein (Support-Adresse unten)."
 
 #: .\app\templates\emails\base_email.html:20
 msgid "This is an automated message from the Darts Penalty Manager."
@@ -2039,6 +2061,8 @@ msgstr "Supportanfrage"
 msgid ""
 "A support request has been sent via the Darts Penalty Manager by %(name)s:"
 msgstr ""
+"Über den Darts Penalty Manager wurde eine Support-Anfrage von %(name)s "
+"gesendet:"
 
 #: .\app\templates\includes\_cookie_consent.html:3
 msgid "Cookie notice"

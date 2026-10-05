@@ -79,6 +79,12 @@ def test_german_signup_page(db):
     # The new name field: label (language-tolerant — the local .mo is stale).
     assert "Vorname + Name" in content or "First and last name" in content
     assert "Already have an account?" not in content
+    # Regression: the approval notice used to be untranslated (empty msgstr),
+    # leaving the page half German / half English.
+    assert "muss ein Administrator Ihr Konto freigeben" in content
+    assert "After registration, an administrator must release" not in content
+    assert "Wurdest du eingeladen" in content
+    assert "Were you invited?" not in content
 
 
 @needs_catalog
@@ -457,6 +463,52 @@ def test_po_files_have_no_structural_errors():
     assert catalogs, "no .po catalogs found next to the tests"
     problems = [msg for catalog in catalogs for msg in _po_structural_errors(catalog)]
     assert not problems, "broken .po catalog(s):\n" + "\n".join(problems)
+
+
+def _po_untranslated(path: Path) -> list[str]:
+    """Msgids whose ``msgstr`` is still empty.
+
+    gettext falls back to the (English) msgid for those — which is exactly how
+    the signup page ended up half German / half English: heading translated,
+    approval paragraph still English.
+    """
+    untranslated: list[str] = []
+    target: str | None = None
+    parts: list[str] = []  # concatenated pieces of the current msgid
+    value: list[str] = []  # concatenated pieces of the current msgstr
+
+    def finish() -> None:
+        nonlocal target, parts, value
+        if target == "msgstr":
+            msgid = "".join(parts)
+            if msgid and not "".join(value):  # skip the '' header entry
+                untranslated.append(msgid)
+        target, parts, value = None, [], []
+
+    for raw in path.read_text(encoding="utf-8").splitlines():
+        line = raw.strip()
+        if not line or line.startswith("#"):
+            continue
+        if line.startswith("msgid "):
+            finish()
+            target, parts = "msgid", [line[6:].strip()[1:-1]]
+        elif line.startswith("msgstr"):
+            target = "msgstr"
+            rest = line[6:].strip()
+            value = [rest[1:-1]] if rest.startswith('"') else []
+        elif line.startswith('"'):
+            (parts if target == "msgid" else value).append(line[1:-1])
+    finish()
+    return untranslated
+
+
+def test_german_catalog_has_no_untranslated_entries():
+    """An empty German msgstr silently renders the ENGLISH source string."""
+    problems = _po_untranslated(LOCALES_DIR / "de" / "LC_MESSAGES" / "django.po")
+    assert not problems, (
+        "untranslated entries in the German catalog (msgstr is empty, the UI "
+        "would fall back to English):\n" + "\n".join(repr(msg) for msg in problems)
+    )
 
 
 @needs_catalog
