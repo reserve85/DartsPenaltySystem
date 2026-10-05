@@ -12,6 +12,7 @@
         <thead>
         <tr>
             <th>{% translate "Email" %}</th>
+            <th>{% translate "First and last name" %}</th>
             <th>{% translate "Registered at" %}</th>
             <th>{% translate "Language" %}</th>
             <th></th>
@@ -21,6 +22,7 @@
         {% for pending_user in pending_users %}
             <tr>
                 <td>{{ pending_user.email }}</td>
+                <td>{{ pending_user.full_name|default:"–" }}</td>
                 <td>{{ pending_user.date_joined|date:"d.m.Y H:i" }}</td>
                 <td>{{ pending_user.get_preferred_language_display|default:"–" }}</td>
                 <td class="text-end">
@@ -30,7 +32,7 @@
                 </td>
             </tr>
         {% empty %}
-            <tr><td colspan="4" class="text-center text-muted py-4">{% translate "No pending registrations." %}</td></tr>
+            <tr><td colspan="5" class="text-center text-muted py-4">{% translate "No pending registrations." %}</td></tr>
         {% endfor %}
         </tbody>
     </table>

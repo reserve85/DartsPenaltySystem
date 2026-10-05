@@ -1455,11 +1455,13 @@ msgstr ""
 
 #: .\app\templates\core\privacy.html:20
 msgid ""
-"User accounts: e-mail address, password hash, role, team assignment and "
+"User accounts: e-mail address, password hash, first and last name entered "
+"during registration (used to assign the player), role, team assignment and "
 "language/theme preferences."
 msgstr ""
-"Benutzerkonten: E-Mail-Adresse, Passwort-Hash, Rolle, Mannschaftszuweisung "
-"sowie Sprach- und Design-Einstellungen."
+"Benutzerkonten: E-Mail-Adresse, Passwort-Hash, bei der Registrierung "
+"eingegebener Vor- und Nachname (für die Spielerzuordnung), Rolle, "
+"Mannschaftszuweisung sowie Sprach- und Design-Einstellungen."
 
 #: .\app\templates\core\privacy.html:21
 msgid "Player and team data: names, team memberships and active status."
@@ -3170,5 +3172,29 @@ msgstr "Vollständige Auszahlung — das Guthaben wurde ausgezahlt."
 #, python-format
 msgid "Hi %(name)s, your payout has been recorded:"
 msgstr "Hallo %(name)s, Ihre Auszahlung wurde erfasst:"
+
+#: .\app\templates\account\signup.html:21
+#: .\app\templates\accounts\approval_form.html:18
+#: .\app\templates\accounts\pending_list.html:15
+msgid "First and last name"
+msgstr "Vorname + Name"
+
+#: .\app\accounts\models.py
+msgid "first and last name"
+msgstr "Vorname + Name"
+
+#: .\app\templates\account\signup.html:24
+msgid "Required to assign your account to your player record."
+msgstr "Wird für die Zuordnung des Spielers benötigt."
+
+#: .\app\templates\account\signup.html:23
+msgid "Please enter your first and last name."
+msgstr "Bitte geben Sie Ihren Vor- und Nachnamen ein."
+
+#: .\app\accounts\models.py
+msgid "Name entered at registration — used to assign the player during approval."
+msgstr ""
+"Bei der Registrierung eingegebener Name — dient der Spielerzuordnung beim "
+"Freigeben."
 
 

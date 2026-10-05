@@ -35,6 +35,7 @@ from app.accounts.services import (
     cancel_invitation,
     create_invitation,
     mark_emails_verified,
+    match_player_for_name,
     resend_invitation,
 )
 from app.core.choices import ThemeChoice
@@ -104,8 +105,16 @@ class UserApprovalView(GroupRequiredMixin, LoginRequiredMixin, View):
 
     def get(self, request, pk):
         user = self.get_object(pk)
+        # Pre-select the best-matching unlinked player for the name the user
+        # entered at registration (exact -> fuzzy -> nothing). The suggestion
+        # only affects the initial render — the POST validates the submitted
+        # player against the form queryset as before.
+        matched = match_player_for_name(user.full_name)
+        initial = {"player": matched.pk} if matched is not None else {}
         return render(
-            request, self.template_name, {"pending_user": user, "form": UserApprovalForm()}
+            request,
+            self.template_name,
+            {"pending_user": user, "form": UserApprovalForm(initial=initial)},
         )
 
     def post(self, request, pk):

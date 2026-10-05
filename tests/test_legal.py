@@ -60,6 +60,9 @@ def test_privacy_shows_responsible_party_and_rights():
     assert "max@example.com" in content
     assert "GDPR" in content
     assert "Cookies" in content
+    # The registration name is personal data the app stores — the privacy
+    # policy must list it (language-tolerant: en source / de catalog).
+    assert "first and last name" in content or "Vor- und Nachname" in content
 
 
 def test_footer_links_imprint_privacy_and_github():

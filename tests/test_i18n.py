@@ -76,6 +76,8 @@ def test_german_signup_page(db):
     assert "Konto erstellen" in content
     assert "Create an account" not in content
     assert "Registrieren" in content  # submit button
+    # The new name field: label (language-tolerant — the local .mo is stale).
+    assert "Vorname + Name" in content or "First and last name" in content
     assert "Already have an account?" not in content
 
 

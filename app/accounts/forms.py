@@ -12,6 +12,7 @@ Also home of the allauth login gate (``ACCOUNT_FORMS = {"login": …}``):
 from typing import ClassVar
 
 from allauth.account.forms import LoginForm as AllauthLoginForm
+from allauth.account.forms import SignupForm as AllauthSignupForm
 from django import forms
 from django.conf import settings
 from django.contrib.auth import get_user_model
@@ -70,6 +71,33 @@ class ApprovalLoginForm(AllauthLoginForm):
                     )
                 )
         return cleaned_data
+
+
+class SignupForm(AllauthSignupForm):
+    """Self-registration with the name needed for player assignment.
+
+    Wired via ``ACCOUNT_FORMS["signup"]`` (settings). allauth's
+    ``BaseSignupForm.save()`` calls ``signup(request, user)`` right after the
+    adapter persisted the account — that hook stores the extra field. The
+    honeypot/rate-limit behaviour of the parent class is untouched.
+    """
+
+    full_name = forms.CharField(
+        label=_("First and last name"),
+        max_length=150,
+        required=True,
+        help_text=_("Required to assign your account to your player record."),
+        widget=forms.TextInput(attrs={"autocomplete": "name"}),
+        error_messages={"required": _("Please enter your first and last name.")},
+    )
+    # Render order: e-mail, name, passwords — fields not listed (the honeypot
+    # allauth appends afterwards) keep their declaration order.
+    field_order: ClassVar[list] = ["email", "full_name", "password1", "password2"]
+
+    def signup(self, request, user):
+        """Persist ONLY the new field (the adapter already saved the user)."""
+        user.full_name = (self.cleaned_data.get("full_name") or "").strip()
+        user.save(update_fields=["full_name"])
 
 
 def unlinked_players_queryset(user=None):

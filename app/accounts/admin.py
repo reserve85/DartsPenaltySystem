@@ -29,7 +29,10 @@ class UserAdmin(admin.ModelAdmin):
                 ),
             },
         ),
-        ("Personal", {"fields": ("team", "player_link", "preferred_language", "preferred_theme")}),
+        (
+            "Personal",
+            {"fields": ("full_name", "team", "player_link", "preferred_language", "preferred_theme")},
+        ),
         (
             "Permissions",
             {

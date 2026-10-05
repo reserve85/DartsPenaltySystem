@@ -42,6 +42,18 @@ class User(AbstractUser):
     username = None
     email = models.EmailField(_("email address"), unique=True)
 
+    # Name entered at self-registration ("Konto erstellen"): shown to admins
+    # on the approval screen and matched against Player.name to pre-select
+    # the player link. Optional at model level — invited accounts, legacy
+    # pending users and admin-created accounts never go through the signup
+    # form and simply carry an empty value.
+    full_name = models.CharField(
+        _("first and last name"),
+        max_length=150,
+        blank=True,
+        help_text=_("Name entered at registration — used to assign the player during approval."),
+    )
+
     # Approval workflow: self-registered users start as "pending" and can only
     # log in once an admin approved them (admin-created accounts are set to
     # "approved" directly, see UserCreateForm / bootstrap).

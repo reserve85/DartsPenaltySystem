@@ -6,8 +6,11 @@ written by the callers (views) except ``cancel``/``resend``/``obsolete``,
 which run without a request context or deep inside a signal.
 """
 
+import re
 import secrets
+import unicodedata
 from datetime import timedelta
+from difflib import SequenceMatcher
 
 from allauth.account.models import EmailAddress
 from django.conf import settings
@@ -225,3 +228,75 @@ def obsolete_invitations_for_player(player, *, exclude_user=None) -> None:
             },
         )
     User.objects.filter(pk__in=[row[0] for row in rows]).delete()
+
+
+# ---------------------------------------------------------------------------
+# Approval: resolve the registrant's name to a player (pre-selection)
+# ---------------------------------------------------------------------------
+# Below this similarity the pre-select would be a guess, not a help — leave
+# the dropdown empty and let the admin decide (decision 4 in the plan).
+_PLAYER_NAME_MIN_SIMILARITY = 0.8
+
+
+def _normalize_person_name(value) -> str:
+    """Comparison key for person names.
+
+    Case, whitespace, punctuation, German umlauts (``ü`` → ``ue``) and other
+    diacritics (``é`` → ``e``) must not change the outcome of the match:
+    ``"  Max   Mustermann "``, ``"max mustermann"`` and ``"Mueller"`` vs
+    ``"Müller"`` all compare equal to their counterparts. Anything without a
+    single letter/digit normalizes to ``""`` (never matches).
+    """
+    if not value:
+        return ""
+    text = unicodedata.normalize("NFKC", str(value)).casefold()
+    # Umlauts BEFORE stripping combining marks — otherwise ü would degrade
+    # to u instead of the ue that German keyboards produce.
+    text = text.translate(str.maketrans({"ä": "ae", "ö": "oe", "ü": "ue"}))
+    text = unicodedata.normalize("NFD", text)
+    text = "".join(char for char in text if not unicodedata.combining(char))
+    text = re.sub(r"[^0-9a-z]+", " ", text)
+    return " ".join(text.split())
+
+
+def match_player_for_name(full_name):
+    """Best pre-selection candidate for ``full_name`` among UNLINKED players.
+
+    Powers the approval screen's player dropdown (decision 4):
+
+    * no usable input / no candidates → ``None`` (the dropdown stays empty —
+      legacy pending users without a name behave exactly like before);
+    * one exact normalized hit → that player (the "1:1" case);
+    * otherwise the highest ``difflib`` similarity, used only when it reaches
+      ``_PLAYER_NAME_MIN_SIMILARITY`` and the normalized input has at least
+      3 characters (2-char fuzzy matching is noise).
+
+    Only players that are NOT yet linked to an account are considered —
+    ``app.accounts.forms.unlinked_players_queryset`` is imported lazily to
+    keep this module import-order safe, and because the result must be a
+    valid option of the approval form at render time.
+    """
+    from app.accounts.forms import unlinked_players_queryset
+
+    target = _normalize_person_name(full_name)
+    if not target:
+        return None
+    candidates = list(unlinked_players_queryset())
+    if not candidates:
+        return None
+    exact = [player for player in candidates if _normalize_person_name(player.name) == target]
+    if len(exact) == 1:
+        return exact[0]
+    if len(target) < 3:
+        return None
+    best = None
+    best_score = -1.0
+    for candidate in candidates:
+        score = SequenceMatcher(None, target, _normalize_person_name(candidate.name)).ratio()
+        # Strict ">" keeps the first candidate (name order) on ties — the
+        # pre-selection stays deterministic.
+        if score > best_score:
+            best, best_score = candidate, score
+    if best_score >= _PLAYER_NAME_MIN_SIMILARITY:
+        return best
+    return None

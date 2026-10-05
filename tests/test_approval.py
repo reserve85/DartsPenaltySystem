@@ -190,6 +190,7 @@ def test_signup_creates_pending_user_and_notifies_admins(db, admin_user, setting
         reverse("account_signup"),
         {
             "email": "fresh@example.com",
+            "full_name": "Fresh Register",
             "password1": "Strong-Pass-123!",
             "password2": "Strong-Pass-123!",
         },

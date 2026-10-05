@@ -666,7 +666,8 @@ msgid "This application stores the following data to provide its services:"
 msgstr ""
 
 msgid ""
-"User accounts: e-mail address, password hash, role, team assignment and "
+"User accounts: e-mail address, password hash, first and last name entered "
+"during registration (used to assign the player), role, team assignment and "
 "language/theme preferences."
 msgstr ""
 
@@ -1762,4 +1763,26 @@ msgstr ""
 
 #: app\templates\notifications\list.html
 msgid "Delete all read messages?"
+msgstr ""
+
+#: .\app\templates\account\signup.html:21
+#: .\app\templates\accounts\approval_form.html:18
+#: .\app\templates\accounts\pending_list.html:15
+msgid "First and last name"
+msgstr ""
+
+#: .\app\accounts\models.py
+msgid "first and last name"
+msgstr ""
+
+#: .\app\templates\account\signup.html:24
+msgid "Required to assign your account to your player record."
+msgstr ""
+
+#: .\app\templates\account\signup.html:23
+msgid "Please enter your first and last name."
+msgstr ""
+
+#: .\app\accounts\models.py
+msgid "Name entered at registration — used to assign the player during approval."
 msgstr ""

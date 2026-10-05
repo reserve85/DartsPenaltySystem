@@ -382,7 +382,7 @@ def test_cancel_deletes_user_frees_player_and_allows_later_signup(
     cache.clear()  # isolate from allauth confirmation cooldowns
     response = Client().post(
         reverse("account_signup"),
-        {"email": INVITEE, "password1": PW, "password2": PW},
+        {"email": INVITEE, "full_name": "Invited Person", "password1": PW, "password2": PW},
     )
     assert response.status_code in (200, 302)
     user = User.objects.get(email=INVITEE)

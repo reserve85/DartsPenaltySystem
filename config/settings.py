@@ -363,7 +363,12 @@ ACCOUNT_PASSWORD_INPUT_RENDER_VALUE = False
 # POST-only logout (the navbar already submits a form).
 ACCOUNT_LOGOUT_ON_GET = False
 # Gate: never log in a user whose approval_status is pending/rejected.
-ACCOUNT_FORMS = {"login": "app.accounts.forms.ApprovalLoginForm"}
+ACCOUNT_FORMS = {
+    "login": "app.accounts.forms.ApprovalLoginForm",
+    # Self-registration collects "Vorname + Name" for the player assignment
+    # at approval time (see app.accounts.forms.SignupForm).
+    "signup": "app.accounts.forms.SignupForm",
+}
 # Custom adapter: missing/broken SMTP must not break auth flows (logged instead).
 ACCOUNT_ADAPTER = "app.accounts.adapters.AccountAdapter"
 

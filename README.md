@@ -52,7 +52,8 @@ mobile-first responsive design and one-club/multi-team support.
 - **Audit log** (admin-only): one entry per generated row, group edits/deletes
   write one entry per affected row.
 - **Accounts & e-mail notifications** (django-allauth): self-registration with
-  e-mail verification, **admin approval workflow** (pending → approved/rejected,
+  e-mail verification (the **"Vorname + Name"** entered there is used to assign
+  the player at approval), **admin approval workflow** (pending → approved/rejected,
   see below), password reset/change — and a central `NotificationService` that
   sends HTML + plain-text e-mails for registrations, approvals, new penalties
   and repayments (players **without** a user account stay fully manageable and
@@ -201,12 +202,16 @@ everyone else → `False`, re-synced by forms, signals and `bootstrap`.
 
 Self-registered users are **not active immediately** — an admin releases them:
 
-1. User registers at `/accounts/signup/` (django-allauth) → account is created
+1. User registers at `/accounts/signup/` (django-allauth) and enters their
+   **first and last name** (needed to assign the player) → account is created
    with status **pending**, the user confirms the e-mail address.
 2. The system e-mails all admins (`SUPPORT_EMAIL` + Admin group) —
    *"New registration: …"* with a direct link to the review page.
 3. Admin opens **Administration → Users → Pending approvals**
-   (`/accounts/users/pending/`) and reviews the user:
+   (`/accounts/users/pending/`) and reviews the user — the review screen shows
+   the entered name and **pre-selects the best-matching player** in the
+   dropdown (exact match, else the closest similarity above a threshold, else
+   empty; the admin always confirms):
    - **Approve** — optionally link an existing player *or* create a new player
      directly. Approval + player assignment happen in **one single save**
      (one click, no page switching); the user automatically gets the *Player*
@@ -250,6 +255,9 @@ directly (**Administration → Users → Invitations**, `/accounts/users/invitat
 
 Expiry/accepted states show as badges on the list (open / expires soon /
 expired / accepted); the invitation row is kept after acceptance for history.
+The name field of the self-registration form does not apply here —
+invitations assign the player exactly at invite time and the invitee only sets
+a password, so both paths complement each other.
 
 **Spam protection** (no external services, no JS):
 

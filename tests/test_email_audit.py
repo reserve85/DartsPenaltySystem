@@ -54,6 +54,7 @@ def _signup(client, email="fresh@example.com"):
         reverse("account_signup"),
         {
             "email": email,
+            "full_name": "Fresh Register",
             "password1": "Strong-Pass-123!",
             "password2": "Strong-Pass-123!",
         },

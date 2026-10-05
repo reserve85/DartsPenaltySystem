@@ -125,6 +125,7 @@ def test_signup_with_filled_honeypot_creates_no_account(db):
         reverse("account_signup"),
         {
             "email": "bot@example.com",
+            "full_name": "Bot Name",
             "password1": "Strong-Pass-123!",
             "password2": "Strong-Pass-123!",
             "website": "http://spam.example",  # honeypot filled in
@@ -148,6 +149,7 @@ def test_signup_rate_limit_returns_429_and_renders_friendly_page(db):
     url = reverse("account_signup")
     payload = {
         "email": "flood@example.com",
+        "full_name": "Flood Register",
         "password1": "Strong-Pass-123!",
         "password2": "Strong-Pass-123!",
     }
