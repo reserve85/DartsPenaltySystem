@@ -6,15 +6,19 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies: ClassVar[list] = [
-        ('accounts', '0005_user_club_news_optin_user_penalty_notify_mode_and_more'),
+        ("accounts", "0005_user_club_news_optin_user_penalty_notify_mode_and_more"),
     ]
 
     operations: ClassVar[list] = [
         migrations.AddField(
-            model_name='user',
-            name='full_name',
-            field=models.CharField(blank=True, help_text='Name entered at registration — used to assign the player during approval.', max_length=150, verbose_name='first and last name'),
+            model_name="user",
+            name="full_name",
+            field=models.CharField(
+                blank=True,
+                help_text="Name entered at registration — used to assign the player during approval.",
+                max_length=150,
+                verbose_name="first and last name",
+            ),
         ),
     ]

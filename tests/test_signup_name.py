@@ -129,9 +129,7 @@ def test_signup_without_the_name_is_rejected(db):
     response = _signup(Client(), full_name=None)
     assert response.status_code == 200  # re-rendered with a field error
     text = response.content.decode()
-    assert "Please enter your first and last name." in text or (
-        "Vor- und Nachnamen" in text
-    )
+    assert "Please enter your first and last name." in text or ("Vor- und Nachnamen" in text)
     assert not User.objects.filter(email="newbie@example.com").exists()
 
 
@@ -217,4 +215,3 @@ def test_pending_list_shows_the_name_column(admin_client, db):
     _pending(SIGNUP_NAME, "listed@example.com")
     content = admin_client.get(reverse("accounts:approval_list")).content.decode()
     assert SIGNUP_NAME in content
-
